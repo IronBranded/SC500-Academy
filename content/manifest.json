@@ -1,0 +1,222 @@
+{
+  "generated": "2026-09-15",
+  "skills_source": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500",
+  "domains": [
+    {
+      "id": "00",
+      "name": "Lab Safety and Environment Setup",
+      "weight": "n/a",
+      "folder": "00-lab-safety",
+      "modules": [
+        {
+          "id": "00-00",
+          "title": "Module Overview: Lab Topology and Conventions",
+          "objective": "(Project prerequisite - not an SC-500 exam objective)",
+          "content": "content/00-lab-safety/00-00-module-overview.md",
+          "lab": null
+        },
+        {
+          "id": "00-01",
+          "title": "Cost Guardrails and Budget Alerts",
+          "objective": "(Project prerequisite - not an SC-500 exam objective)",
+          "content": "content/00-lab-safety/00-01-cost-guardrails-and-budgets.md",
+          "lab": "labs/00-lab-safety/00-01-lab.md"
+        },
+        {
+          "id": "00-02",
+          "title": "PIM-Based Just-in-Time Lab Access",
+          "objective": "(Project prerequisite - doubles as practice for 01-01)",
+          "content": "content/00-lab-safety/00-02-pim-just-in-time-lab-access.md",
+          "lab": "labs/00-lab-safety/00-02-lab.md"
+        },
+        {
+          "id": "00-03",
+          "title": "Reusable Teardown Checklist",
+          "objective": "(Project prerequisite - not an SC-500 exam objective)",
+          "content": "content/00-lab-safety/00-03-teardown-checklist-template.md",
+          "lab": null
+        }
+      ]
+    },
+    {
+      "id": "01",
+      "name": "Manage identity, access, and governance",
+      "weight": "20-25%",
+      "folder": "01-identity-access-governance",
+      "modules": [
+        {
+          "id": "01-01",
+          "title": "Secure Access with Microsoft Entra ID",
+          "objective": "Secure access to resources by using Microsoft Entra ID",
+          "content": "content/01-identity-access-governance/01-01-entra-id-secure-access.md",
+          "lab": "labs/01-identity-access-governance/01-01-lab.md"
+        },
+        {
+          "id": "01-02",
+          "title": "Secrets and Keys with Azure Key Vault",
+          "objective": "Secure secrets and keys by using Azure Key Vault",
+          "content": "content/01-identity-access-governance/01-02-key-vault-secrets-and-keys.md",
+          "lab": "labs/01-identity-access-governance/01-02-lab.md"
+        },
+        {
+          "id": "01-03",
+          "title": "Governance and Regulatory Compliance",
+          "objective": "Implement governance to enforce security and regulatory compliance",
+          "content": "content/01-identity-access-governance/01-03-governance-and-regulatory-compliance.md",
+          "lab": "labs/01-identity-access-governance/01-03-lab.md"
+        }
+      ]
+    },
+    {
+      "id": "02",
+      "name": "Secure storage, databases, and networking",
+      "weight": "25-30%",
+      "folder": "02-storage-databases-networking",
+      "modules": [
+        {
+          "id": "02-01",
+          "title": "Storage Account Security",
+          "objective": "Implement security for storage accounts",
+          "content": "content/02-storage-databases-networking/02-01-storage-account-security.md",
+          "lab": "labs/02-storage-databases-networking/02-01-lab.md"
+        },
+        {
+          "id": "02-02",
+          "title": "Database Security",
+          "objective": "Implement security for databases",
+          "content": "content/02-storage-databases-networking/02-02-database-security.md",
+          "lab": "labs/02-storage-databases-networking/02-02-lab.md"
+        },
+        {
+          "id": "02-03",
+          "title": "Network Segmentation and Connectivity",
+          "objective": "Implement security for Azure network services",
+          "content": "content/02-storage-databases-networking/02-03-network-segmentation-and-connectivity.md",
+          "lab": "labs/02-storage-databases-networking/02-03-lab.md"
+        },
+        {
+          "id": "02-04",
+          "title": "Private Access and Network Perimeter",
+          "objective": "Implement security for Azure network services",
+          "content": "content/02-storage-databases-networking/02-04-private-access-and-perimeter.md",
+          "lab": "labs/02-storage-databases-networking/02-04-lab.md"
+        }
+      ]
+    },
+    {
+      "id": "03",
+      "name": "Secure compute",
+      "weight": "20-25%",
+      "folder": "03-secure-compute",
+      "modules": [
+        {
+          "id": "03-01",
+          "title": "AI Data Exposure and Purview DSPM",
+          "objective": "Implement security for AI",
+          "content": "content/03-secure-compute/03-01-ai-data-exposure-and-purview-dspm.md",
+          "lab": "labs/03-secure-compute/03-01-lab.md"
+        },
+        {
+          "id": "03-02",
+          "title": "AI Agent Identity and Governance",
+          "objective": "Implement security for AI",
+          "content": "content/03-secure-compute/03-02-ai-agent-identity-and-governance.md",
+          "lab": "labs/03-secure-compute/03-02-lab.md"
+        },
+        {
+          "id": "03-03",
+          "title": "AI Platform and Workload Protection",
+          "objective": "Implement security for AI",
+          "content": "content/03-secure-compute/03-03-ai-platform-and-workload-protection.md",
+          "lab": "labs/03-secure-compute/03-03-lab.md"
+        },
+        {
+          "id": "03-04",
+          "title": "Server and Virtual Machine Security",
+          "objective": "Implement security for servers and virtual machines (VMs)",
+          "content": "content/03-secure-compute/03-04-servers-and-virtual-machines.md",
+          "lab": "labs/03-secure-compute/03-04-lab.md"
+        },
+        {
+          "id": "03-05",
+          "title": "Container Platform Security",
+          "objective": "Implement security for application platform services",
+          "content": "content/03-secure-compute/03-05-app-platform-containers.md",
+          "lab": "labs/03-secure-compute/03-05-lab.md"
+        },
+        {
+          "id": "03-06",
+          "title": "Serverless, Web, and API Security",
+          "objective": "Implement security for application platform services",
+          "content": "content/03-secure-compute/03-06-app-platform-serverless-web-and-apis.md",
+          "lab": "labs/03-secure-compute/03-06-lab.md"
+        }
+      ]
+    },
+    {
+      "id": "04",
+      "name": "Manage and monitor security posture",
+      "weight": "20-25%",
+      "folder": "04-security-posture",
+      "modules": [
+        {
+          "id": "04-01",
+          "title": "Security Posture with Defender for Cloud",
+          "objective": "Manage security posture by using Defender for Cloud",
+          "content": "content/04-security-posture/04-01-defender-for-cloud-posture.md",
+          "lab": "labs/04-security-posture/04-01-lab.md"
+        },
+        {
+          "id": "04-02",
+          "title": "Sentinel Workspace, Roles, and Content Hub",
+          "objective": "Implement activity and event collection in Microsoft Sentinel",
+          "content": "content/04-security-posture/04-02-sentinel-workspace-roles-and-content.md",
+          "lab": "labs/04-security-posture/04-02-lab.md"
+        },
+        {
+          "id": "04-03",
+          "title": "Sentinel Data Connectors and Event Collection",
+          "objective": "Implement activity and event collection in Microsoft Sentinel",
+          "content": "content/04-security-posture/04-03-sentinel-data-connectors-and-collection.md",
+          "lab": "labs/04-security-posture/04-03-lab.md"
+        },
+        {
+          "id": "04-04",
+          "title": "Sentinel Automation, Retention, and Purview Audit",
+          "objective": "Implement activity and event collection in Microsoft Sentinel",
+          "content": "content/04-security-posture/04-04-sentinel-automation-retention-and-audit.md",
+          "lab": "labs/04-security-posture/04-04-lab.md"
+        },
+        {
+          "id": "04-05",
+          "title": "Microsoft Security Copilot",
+          "objective": "Implement Microsoft Security Copilot",
+          "content": "content/04-security-posture/04-05-security-copilot.md",
+          "lab": "labs/04-security-posture/04-05-lab.md"
+        }
+      ]
+    }
+  ],
+  "appendix": [
+    {
+      "title": "PowerShell and Microsoft Graph Module Reference",
+      "content": "content/appendix/a1-powershell-and-graph-module-reference.md"
+    },
+    {
+      "title": "Licensing and Lab Cost Matrix",
+      "content": "content/appendix/a2-licensing-and-lab-cost-matrix.md"
+    },
+    {
+      "title": "Glossary",
+      "content": "content/appendix/a3-glossary.md"
+    },
+    {
+      "title": "Exam Logistics and Scoring",
+      "content": "content/appendix/a4-exam-logistics-and-scoring.md"
+    },
+    {
+      "title": "AZ-500 to SC-500 Delta",
+      "content": "content/appendix/a5-az500-to-sc500-delta.md"
+    }
+  ]
+}

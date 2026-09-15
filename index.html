@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SC500 Academy</title>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <button id="nav-toggle" aria-expanded="false" aria-controls="sidebar">Menu</button>
+  <span class="topbar__title">SC500 Academy</span>
+  <input id="search" type="search" placeholder="Search modules" aria-label="Search modules">
+</header>
+
+<div class="shell">
+  <nav id="sidebar" class="sidebar" aria-label="Modules"><!-- built by nav.js --></nav>
+  <main id="content" class="content" tabindex="-1">
+    <p class="loading">Loading&hellip;</p>
+  </main>
+  <aside id="meta" class="meta" aria-label="Objective metadata"><!-- built by app.js --></aside>
+</div>
+
+<script src="assets/js/vendor/marked.min.js"></script>
+<script src="assets/js/frontmatter.js"></script>
+<script src="assets/js/nav.js"></script>
+<script src="assets/js/tabs.js"></script>
+<script src="assets/js/progress.js"></script>
+<script src="assets/js/quiz.js"></script>
+<script src="assets/js/search.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
