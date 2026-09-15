@@ -1,5 +1,12 @@
 # SC500 Academy
 
+<h3 align="center">
+  <a href="https://ironbranded.github.io/SC500-Academy/" target="_blank" rel="noopener noreferrer">
+    🟢 TRY THE ACADEMY🟢
+  </a>
+</h3>
+
+____
 A dependency-free, static interactive study guide for **Exam SC-500: Implementing
 End-to-End Security Controls for Cloud and AI Workloads** (Microsoft Certified:
 Cloud and AI Security Engineer Associate).
