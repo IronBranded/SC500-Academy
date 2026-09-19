@@ -1,0 +1,72 @@
+{
+  "module": "02-04",
+  "title": "Private Access and Network Perimeter",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "02-04-q1",
+      "sub_skill": "Implement and configure Azure Firewall",
+      "prompt": "A firewall policy has an application rule allowing only *.contoso.com, and a network rule allowing TCP 443 to any destination in a lower-priority rule collection group. A VM reaches an arbitrary external site over HTTPS. Why?",
+      "options": [
+        "Application rules apply only to HTTP, so HTTPS bypasses them",
+        "The network rule matched first, and a network rule match stops processing before application rules run",
+        "The lower-priority group is evaluated first, overriding the application rule",
+        "Threat intelligence allowed the traffic because the destination is not known-malicious"
+      ],
+      "answer": 1,
+      "explanation": "Azure Firewall processes DNAT, then network, then application rules - always in that order, regardless of rule collection group priority or policy inheritance. A network rule match ends processing, so a broad network allow silently disables FQDN filtering even when the application rule is perfectly correct."
+    },
+    {
+      "id": "02-04-q2",
+      "sub_skill": "Configure Azure private endpoints to secure access to Azure platform as a service (PaaS) resources",
+      "prompt": "You create a private endpoint for a storage account and confirm a VM in the virtual network resolves it to a private address. A colleague at home still reaches the same account over the internet. What is required so that only the virtual network can reach it?",
+      "options": [
+        "Nothing further; DNS propagation will complete within 24 hours",
+        "Set the storage account's public network access to disabled, or its firewall to deny",
+        "Add the colleague's address to the private DNS zone as an exclusion",
+        "Convert the private endpoint to a service endpoint"
+      ],
+      "answer": 1,
+      "explanation": "Creating a private endpoint does not close the public door. The service's public endpoint stays reachable until you separately set that service's network rules. A private endpoint alongside an open public endpoint is a more expensive version of no change."
+    },
+    {
+      "id": "02-04-q3",
+      "sub_skill": "Configure Azure private endpoints to secure access to Azure platform as a service (PaaS) resources",
+      "prompt": "A private endpoint works from the virtual network but not from an on-premises host over ExpressRoute, and nslookup from on-premises returns a public address. What is missing?",
+      "options": [
+        "The private endpoint must be recreated in the on-premises region",
+        "Hybrid DNS resolution - the private DNS zone must be reachable from on-premises",
+        "A service endpoint on the gateway subnet",
+        "The storage firewall must allow the on-premises public egress address"
+      ],
+      "answer": 1,
+      "explanation": "Resolving the name from outside the virtual network returns the public endpoint by design. DNS is the whole implementation of a private endpoint, and making it work for on-premises clients is a separate piece of hybrid DNS forwarding work."
+    },
+    {
+      "id": "02-04-q4",
+      "sub_skill": "Implement and configure Microsoft Entra Private Access",
+      "prompt": "A legacy internal application on TCP 8443 must be reachable by remote staff with MFA and device compliance enforced, without a VPN. Which component makes the Conditional Access requirement possible?",
+      "options": [
+        "The Global Secure Access client, which evaluates policy on the device",
+        "The private network connector, which authenticates users before forwarding",
+        "Publication as an enterprise application, so Conditional Access policies can be assigned to it",
+        "The Private Access traffic forwarding profile, which carries the policy"
+      ],
+      "answer": 2,
+      "explanation": "Both Quick Access and per-app access publish the resource as an enterprise application. Because it is an enterprise app, users and groups are assigned to it and Conditional Access governs it - which is precisely what a VPN gateway cannot do, since it authenticates once at the tunnel and then routes."
+    },
+    {
+      "id": "02-04-q5",
+      "sub_skill": "Evaluate effective security rules by using Azure Network Watcher diagnostics",
+      "prompt": "Traffic from a spoke VM is not reaching the firewall, although the firewall rules are correct. Which Network Watcher tool would you use first, and what result confirms the problem?",
+      "options": [
+        "IP flow verify - a Deny result naming the firewall policy",
+        "Next hop - a result of Internet rather than VirtualAppliance",
+        "Effective security rules - a missing application rule",
+        "Connection troubleshoot - a failure at the DNS stage"
+      ],
+      "answer": 1,
+      "explanation": "Next hop answers where a packet actually goes. If it returns Internet instead of VirtualAppliance with the firewall's private address, the route table is not associated with the subnet and every firewall rule is decorative. IP flow verify evaluates NSGs and admin rules, not firewall policy - knowing which tool answers which question is the skill being tested."
+    }
+  ]
+}

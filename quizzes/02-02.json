@@ -1,0 +1,72 @@
+{
+  "module": "02-02",
+  "title": "Database Security",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "02-02-q1",
+      "sub_skill": "Implement platform-level security configurations in Azure SQL",
+      "prompt": "A logical server has a Microsoft Entra admin assigned, and Conditional Access requires MFA for all users. An attacker connects successfully from an unmanaged device using the SQL administrator password. Why, and what closes it?",
+      "options": [
+        "The Entra admin assignment failed to apply; reassign it",
+        "SQL authentication is a separate login system that Conditional Access cannot see; enable Microsoft Entra-only authentication",
+        "Conditional Access does not apply to service endpoints; add a private endpoint",
+        "The attacker's device was compliant; tighten the device filter"
+      ],
+      "answer": 1,
+      "explanation": "SQL logins live inside the database engine and predate Entra entirely. Nothing from Domain 1 - MFA, PIM, Conditional Access - can see them. Setting the Entra admin is step one of two; Entra-only authentication is what disables SQL logins, including the original admin."
+    },
+    {
+      "id": "02-02-q2",
+      "sub_skill": "Implement platform-level security configurations in Azure SQL",
+      "prompt": "A compliance report states that national ID numbers are protected because Dynamic Data Masking is enabled. Write the rebuttal.",
+      "options": [
+        "DDM encrypts only at rest, so data in transit is exposed",
+        "DDM masks the result set but the data remains fully queryable; a WHERE clause recovers values one predicate at a time",
+        "DDM applies only to columns of type nvarchar",
+        "DDM is disabled whenever auditing is enabled"
+      ],
+      "answer": 1,
+      "explanation": "DDM is a presentation-layer control. It prevents casual exposure in an application and does nothing against someone who can run queries. Where the requirement is to protect data from the database administrator, the answer is Always Encrypted, where keys never reach the server."
+    },
+    {
+      "id": "02-02-q3",
+      "sub_skill": "Configure database auditing for Azure SQL Database and Azure SQL Managed Instance",
+      "prompt": "Auditing is enabled at both server and database level, to both a storage account and Log Analytics. What is the result?",
+      "options": [
+        "The database policy overrides the server policy; one set of records is written to both destinations",
+        "The two policies run side by side, so events are recorded twice, to each destination",
+        "Only the server policy applies; database-level auditing is ignored when a server policy exists",
+        "Log Analytics deduplicates the records automatically"
+      ],
+      "answer": 1,
+      "explanation": "Server and database policies run side by side. You get duplicate records, duplicate ingestion cost, and duplicate rows in every query. A server-level policy already covers every database including ones created later, so enable database-level auditing only for a requirement the server policy genuinely cannot meet."
+    },
+    {
+      "id": "02-02-q4",
+      "sub_skill": "Configure Defender for Databases protection across Azure database services",
+      "prompt": "You enable the Defender for Azure SQL plan on a subscription containing one Azure SQL database, one Cosmos DB account, and SQL Server running on an Azure VM. What is protected?",
+      "options": [
+        "All three, since Defender for Databases is a single plan",
+        "Only the Azure SQL database; the other two need their own sub-plans",
+        "The Azure SQL database and the SQL Server on the VM, but not Cosmos DB",
+        "All three, but vulnerability assessment covers only the Azure SQL database"
+      ],
+      "answer": 1,
+      "explanation": "Defender for Databases has independent sub-plans: Azure SQL databases, SQL servers on machines, open-source relational databases, and Azure Cosmos DB. Each is toggled separately, so 'protect all database services' is several switches rather than one."
+    },
+    {
+      "id": "02-02-q5",
+      "sub_skill": "Configure Defender for Databases protection across Azure database services",
+      "prompt": "You open a database's vulnerability assessment configuration and it asks you to select a storage account. What does this tell you?",
+      "options": [
+        "The database is using express configuration and needs a results container",
+        "The database is on the classic configuration",
+        "Defender for Databases is not enabled on the subscription",
+        "The scan results exceed the 1 MB per-rule limit"
+      ],
+      "answer": 1,
+      "explanation": "Express configuration requires no storage account and is enabled automatically when the plan is turned on. If the pane asks for one, you are on the legacy classic path - and reverting to classic from express requires disabling the plan and reconfiguring through PowerShell."
+    }
+  ]
+}

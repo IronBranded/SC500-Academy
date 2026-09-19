@@ -1,0 +1,73 @@
+{
+  "module": "01-01",
+  "title": "Secure Access with Microsoft Entra ID",
+  "schema": 1,
+  "_note": "One file per module. 'sub_skill' must quote a verbatim sub-objective from the module's front matter, so a wrong answer names what to re-read. 'answer' is a zero-based index, or an array of indexes for multiple response.",
+  "questions": [
+    {
+      "id": "01-01-q1",
+      "sub_skill": "Implement and configure managed identities for Azure resources",
+      "prompt": "An application running on several virtual machines must read secrets from Key Vault. The security team requires that no credential exists in code or configuration, and that the same identity survives if any individual VM is rebuilt. What should you configure?",
+      "options": [
+        "A system-assigned managed identity on each virtual machine",
+        "A user-assigned managed identity attached to each virtual machine",
+        "An app registration with a client secret stored in Key Vault",
+        "An app registration with a certificate deployed to each virtual machine"
+      ],
+      "answer": 1,
+      "explanation": "A user-assigned identity is a standalone Azure resource, shareable across resources and surviving their deletion. A system-assigned identity is tied to one resource and deleted with it, so it fails the second requirement. Both app registration options reintroduce a credential."
+    },
+    {
+      "id": "01-01-q2",
+      "sub_skill": "Implement conditional access policies",
+      "prompt": "Policy A requires multifactor authentication. Policy B requires a compliant device. Policy C blocks sign-ins from a named country. A user in scope of all three signs in from that country, with MFA satisfied and a compliant device. What is the outcome?",
+      "options": [
+        "Access is granted, because the grant controls in A and B were satisfied",
+        "Access is granted, because policy priority favours the lower-numbered policy",
+        "Access is blocked, because block takes precedence over grant",
+        "Access is granted only for the session duration configured in policy C"
+      ],
+      "answer": 2,
+      "explanation": "Every applicable policy is evaluated on every sign-in and there is no priority ordering. If any applicable policy blocks, the sign-in is blocked regardless of how many others would have granted."
+    },
+    {
+      "id": "01-01-q3",
+      "sub_skill": "Manage OAuth permission grants and consent settings",
+      "prompt": "Two applications each hold the Microsoft Graph permission Mail.Read. Application A holds it as a delegated permission; application B holds it as an application permission. A user with access to one mailbox signs in to application A. Which statements are true?",
+      "options": [
+        "Application A can read only that user's mailbox",
+        "Application A can read every mailbox in the tenant",
+        "Application B can read every mailbox in the tenant",
+        "Application B requires admin consent"
+      ],
+      "answer": [0, 2, 3],
+      "explanation": "Delegated permissions give the intersection of the grant and the signed-in user's own access. Application permissions have no user to intersect with, so the scope is tenant-wide, and they always require admin consent. The permission name is identical in both cases."
+    },
+    {
+      "id": "01-01-q4",
+      "sub_skill": "Implement and configure authentication methods, including multifactor authentication (MFA) and passwordless",
+      "prompt": "A requirement states that administrators must authenticate with a passkey or certificate, and that SMS must not be accepted. Which Conditional Access grant control satisfies this?",
+      "options": [
+        "Require multifactor authentication",
+        "Require authentication strength, set to phishing-resistant MFA",
+        "Require compliant device",
+        "Require approved client app"
+      ],
+      "answer": 1,
+      "explanation": "The generic MFA control accepts any registered method, including SMS. An authentication strength names the acceptable method combinations, which is how the requirement is expressed as policy rather than as guidance."
+    },
+    {
+      "id": "01-01-q5",
+      "sub_skill": "Implement and configure identity for applications, including enterprise applications and app registrations",
+      "prompt": "You delete an app registration from your tenant for a multi-tenant application that several partner organisations had consented to. What happens to the service principals in the partner tenants?",
+      "options": [
+        "They are deleted automatically, because the application object was the parent",
+        "They remain, because each tenant holds its own service principal and consent grants",
+        "They are disabled but retained for 30 days in each partner tenant",
+        "They are converted to single-tenant app registrations in each partner tenant"
+      ],
+      "answer": 1,
+      "explanation": "The app registration is the definition and exists once, in the home tenant. Each consenting tenant holds its own service principal with its own grants, and those are not removed by deleting the registration."
+    }
+  ]
+}

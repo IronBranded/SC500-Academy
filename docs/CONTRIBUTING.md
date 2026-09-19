@@ -1,3 +1,150 @@
 # Contributing
 
-<!-- Run tools/Test-GuideContent.ps1 before every commit. -->
+How to add or change content without breaking the guide. Read
+[STYLE-GUIDE.md](./STYLE-GUIDE.md) for the conventions themselves; this file is
+the workflow.
+
+---
+
+## Before you write anything
+
+**Re-fetch the skills-measured outline and diff it.** SC-500 is recent and
+Microsoft revises these lists after general availability. The snapshot in
+`docs/SKILLS-MEASURED-SNAPSHOT.md` is the drift baseline:
+
+```powershell
+$url = 'https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500?accept=text/markdown'
+(Invoke-WebRequest -Uri $url -UseBasicParsing).Content |
+    Set-Content -Path '.\docs\SKILLS-MEASURED-SNAPSHOT.new.md' -Encoding utf8
+
+Compare-Object (Get-Content .\docs\SKILLS-MEASURED-SNAPSHOT.md) `
+               (Get-Content .\docs\SKILLS-MEASURED-SNAPSHOT.new.md)
+```
+
+If the diff is empty, delete the `.new` file. If it is not, the outline moved:
+update the affected module's `sub_objectives`, `manifest.json`, `docs/SYLLABUS.md`,
+and the snapshot together, in one commit.
+
+**Then re-verify the product documentation for the module you are touching.** Not
+the study guide — the actual product pages. Several things in this guide changed
+between the scaffold and the writing: authentication method management, Key Vault
+defaults, NSG flow logs, Entra Permissions Management, the Sentinel portal
+retirement date. Assume something has moved.
+
+---
+
+## Authoring a module
+
+1. **Copy an existing module of similar shape.** 02-01 for a service-hardening
+   module, 03-04 for a many-bullet one, 03-02 for a preview-heavy one.
+2. **Write the front matter first**, all eighteen keys. It drives the site's field
+   card, so an empty `licensing` or a wrong `lab_cost_estimate` is visible to the
+   reader.
+3. **Write `Why this exists` before opening any portal.** If you cannot explain the
+   threat without naming a product, you do not understand the control yet.
+4. **Write the lab second**, and actually run it. Every cmdlet in this repository
+   was either executed or explicitly flagged as version-sensitive.
+5. **Add the AZ-500 divergence note**, and mirror it into `content/appendix/a5-*`.
+6. **Add the quiz** at `quizzes/<id>.json`.
+7. **Update `content/manifest.json` and `docs/SYLLABUS.md`** if the module is new.
+8. **Tear down your own lab** before committing. Then run the sweep from
+   `content/appendix/a2-licensing-and-lab-cost-matrix.md` §6.
+
+---
+
+## Validate before every commit
+
+```powershell
+.\tools\Test-GuideContent.ps1
+```
+
+Checks front-matter schema, `domain_weight` and `status` values, `last_verified`
+format and age, internal relative links, the presence of `## Teardown` in every
+lab, and that `manifest.json` points at files that exist.
+
+Weekly, or before a release:
+
+```powershell
+.\tools\Test-GuideContent.ps1 -CheckExternalLinks
+```
+
+This HEADs roughly 120 Microsoft Learn URLs. A 404 usually means a page moved
+rather than a claim being wrong — find the new page and update the Sources block.
+A redirect chain is fine.
+
+### Serve the site and click through
+
+```powershell
+python -m http.server 8080
+```
+
+The site fetches Markdown at runtime, so `file://` will not work. Clicking through
+is a second link check the PowerShell validator cannot do: **an internal link the
+site cannot resolve renders with a dotted underline and a tooltip naming the bad
+path.**
+
+---
+
+## Known validator gaps
+
+Things `Test-GuideContent.ps1` does not currently catch. Each is a real defect
+class found while writing the content, not a hypothetical. Patching these is the
+highest-value improvement to the tooling.
+
+| Gap | Why it matters |
+| --- | --- |
+| **Required sections are not checked.** Only front matter and links are. | A module missing `## Sources` or `## How this is tested` passes. |
+| **Lab files are not schema-checked at all** — only for `## Teardown`. | A lab with no `## Validation` or no `## Prerequisites` passes. |
+| **`sub_objectives` are not diffed against the snapshot.** | The whole point of keeping a verbatim baseline is undone by not comparing it. |
+| **Quiz files are unvalidated.** | A `sub_skill` that does not match any `sub_objective`, an `answer` index out of range, or malformed JSON fails silently in the browser. |
+| **`manifest.json` appendix paths are not checked.** | The loop only walks `domains`. The nav now depends on `appendix`. |
+| **Windows path separators are assumed** (`content\manifest.json`, `-replace '/','\'`). | Fails on PowerShell 7 on Linux or macOS. |
+| **No check that every module has a quiz**, or that `lab` paths in the manifest resolve for modules that declare one. | Silent coverage gaps. |
+| **No orphan check**: files on disk that no manifest entry references. | A renamed file leaves an unreachable page. |
+
+---
+
+## When to bump `last_verified`
+
+Bump it when you **re-checked the product documentation**, not when you edited
+prose. The field answers "when was this last known to be true", and the site shows
+a day count past 60 to match the validator's warning. Fixing a typo does not make
+a claim fresher.
+
+If a warning fires and you re-check and nothing changed, bump it anyway — that is
+a verification, and it is the one you want recorded.
+
+---
+
+## Commit conventions
+
+```
+content(02-04): private access and network perimeter module and lab
+docs(appendix): AZ-500 delta and licensing/cost matrix
+feat(site): progress tracking, collapsible depth, search and quiz engine
+fix(01-02): correct Key Vault default permission model
+```
+
+Scope is the module id, `appendix`, `site`, `docs`, or `tools`. One module per
+commit — content and lab together, since they are written as a pair.
+
+---
+
+## Things that are deliberate
+
+Do not "fix" these without discussing them first:
+
+- **22 modules, not the 12 in the master prompt.** Three sub-headings were split
+  because they carry 9-11 bullets each. Every one of the 87 sub-objectives lands
+  in exactly one file. Sections 5.3 and 6 of the master prompt are stale as a
+  result and still need rewriting.
+- **Walkthrough-only labs.** Virtual WAN, VPN gateways, Front Door Premium, and
+  parts of Entra Private Access and Agent ID. Each says why, and each ends in a
+  written deliverable so the objective still maps to lab work.
+- **Portal-only steps** where the cmdlet surface is unstable. See STYLE-GUIDE §5.
+- **`rg-sc500-core` is never torn down.** It holds the budget, action group, brake
+  runbook, and `law-sc500`. Labs 00-01, 00-02 and 04-02 have deliberately different
+  teardown sections for this reason.
+- **The guide names its own uncertainty.** Where Microsoft does not publish a fact
+  — SC-500's question count and passing score — appendix A4 says so instead of
+  repeating a third-party number. Keep that habit.

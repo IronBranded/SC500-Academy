@@ -1,1 +1,122 @@
-/* tokens.css - SC-500 guide. TODO: design pass. */
+/* tokens.css - SC-500 guide
+   Design tokens. Nothing here paints anything; layout.css and components.css do.
+
+   Palette rationale: green-black ink on cool pale paper, brass accent. Strong
+   colour is reserved for encoding lab cost, because spend risk is the thing this
+   guide most needs to signal at a glance. Everything else stays quiet.
+
+   No web fonts. The site must work from file:// on a plane, so every family is
+   one the reader already has. */
+
+:root {
+  /* --- base palette ------------------------------------------------------ */
+  --ink:        #14211e;   /* green-black, body text and headings */
+  --ink-soft:   #46564f;   /* secondary text, captions */
+  --ink-faint:  #7c8a83;   /* tertiary, disabled */
+  --paper:      #f2f4f2;   /* page background: cool, faintly green */
+  --paper-raise:#fbfcfb;   /* cards, code blocks, meta rail */
+  --rule:       #d3dad5;   /* hairlines, borders */
+  --brass:      #b4813a;   /* the one accent: links, focus, active nav */
+  --brass-deep: #8a6229;   /* accent on hover / visited */
+
+  /* --- cost signals ------------------------------------------------------
+     These map to the lab_cost_estimate front-matter values. They are the only
+     saturated colours on the page, and they always mean money. */
+  --cost-none:  #2e7d62;   /* $0 */
+  --cost-low:   #4c7f6e;   /* Low */
+  --cost-mid:   #b4813a;   /* Medium */
+  --cost-high:  #a63a2b;   /* HIGH */
+  --cost-max:   #7d2318;   /* HIGHEST */
+
+  /* --- status ------------------------------------------------------------ */
+  --status-ga:      var(--ink-soft);
+  --status-preview: var(--brass);
+
+  /* --- domain accents ----------------------------------------------------
+     Muted, used only as a 3px spine on nav groups and dashboard rows so the
+     four domains stay distinguishable without becoming a colour wheel. */
+  --domain-00: #7c8a83;
+  --domain-01: #3f6f7a;
+  --domain-02: #4a6a91;
+  --domain-03: #6b5a8e;
+  --domain-04: #3f7a63;
+
+  /* --- type -------------------------------------------------------------- */
+  --face-body: Charter, "Bitstream Charter", "Iowan Old Style", "Palatino Linotype",
+               Georgia, "Times New Roman", serif;
+  --face-ui:   ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  --face-mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono",
+               "Roboto Mono", Menlo, Consolas, monospace;
+
+  /* Type scale, ~1.25 ratio off a 17px base. Serif body gets generous leading. */
+  --t-xs:   0.75rem;
+  --t-sm:   0.875rem;
+  --t-base: 1.0625rem;
+  --t-md:   1.25rem;
+  --t-lg:   1.5rem;
+  --t-xl:   1.9rem;
+  --t-2xl:  2.4rem;
+
+  --lh-tight: 1.2;
+  --lh-body:  1.65;   /* serif wants more than a sans would */
+
+  --measure: 68ch;    /* body line length */
+
+  /* --- spacing ----------------------------------------------------------- */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4.5rem;
+
+  /* --- shell geometry ---------------------------------------------------- */
+  --w-sidebar: 19rem;
+  --w-meta:    17rem;
+  --h-topbar:  3.25rem;
+
+  --radius:    3px;    /* almost square; this is a document, not an app */
+  --radius-lg: 5px;
+
+  --focus: 2px solid var(--brass);
+}
+
+/* Dark mode. Not an inversion - a separate, warmer-black reading surface, since
+   most of this guide gets read late. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink:        #e4e9e5;
+    --ink-soft:   #a3b0a9;
+    --ink-faint:  #6f7d76;
+    --paper:      #111917;
+    --paper-raise:#18221f;
+    --rule:       #2b3733;
+    --brass:      #d6a15b;
+    --brass-deep: #e8b877;
+
+    --cost-none:  #5fb894;
+    --cost-low:   #74ab97;
+    --cost-mid:   #d6a15b;
+    --cost-high:  #e07a66;
+    --cost-max:   #f09182;
+
+    --domain-00: #7c8a83;
+    --domain-01: #6aa3b0;
+    --domain-02: #7d9cc4;
+    --domain-03: #9c8cc0;
+    --domain-04: #6fae93;
+  }
+}
+
+/* Honour the reader's motion preference. The only motion in this site answers a
+   click; even that goes away here. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

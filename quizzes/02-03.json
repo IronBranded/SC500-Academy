@@ -1,0 +1,72 @@
+{
+  "module": "02-03",
+  "title": "Network Segmentation and Connectivity",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "02-03-q1",
+      "sub_skill": "Implement and configure network access policies by using Azure Virtual Network Manager",
+      "prompt": "A central team needs a rule denying inbound RDP from the internet that no application team can override with their own NSG. Which action on a Virtual Network Manager security admin rule achieves this?",
+      "options": [
+        "Allow, because it takes precedence over NSG rules",
+        "AlwaysAllow, because it stops further evaluation",
+        "Deny, because no NSG can permit traffic an admin rule has denied",
+        "Any action, because admin rules always override NSGs"
+      ],
+      "answer": 2,
+      "explanation": "Security admin rules are evaluated before NSGs. Deny blocks and stops evaluation, so the NSG never runs. Allow permits evaluation to continue, meaning an NSG can still deny. AlwaysAllow stops evaluation in the other direction - use it for traffic that must survive an over-broad local deny."
+    },
+    {
+      "id": "02-03-q2",
+      "sub_skill": "Implement and configure network access policies by using Azure Virtual Network Manager",
+      "prompt": "A security admin configuration is saved with the correct rules targeting the correct network group, and has no effect on any virtual network. What is missing?",
+      "options": [
+        "The rule collection priority is above 4096",
+        "The configuration was never deployed to a region",
+        "The network group uses static rather than dynamic membership",
+        "The virtual networks lack an NSG for the admin rules to override"
+      ],
+      "answer": 1,
+      "explanation": "Nothing takes effect until you deploy the configuration to the regions in use. A saved-but-undeployed configuration produces no enforcement, no error and no clue in the rule view, which makes it the classic 'why isn't my rule working' answer."
+    },
+    {
+      "id": "02-03-q3",
+      "sub_skill": "Implement and manage network security groups (NSGs) and application security groups (ASGs)",
+      "prompt": "A NIC has an NSG allowing TCP 443 inbound at priority 200 and denying it at priority 150. The subnet NSG allows 443 at priority 100. Does traffic on 443 reach the VM?",
+      "options": [
+        "Yes - the subnet NSG allows it and subnet rules take precedence",
+        "Yes - the lowest priority number across both NSGs wins",
+        "No - traffic must pass both NSGs, and the NIC NSG denies at 150 before reaching 200",
+        "No - NSGs are stateless, so a matching outbound rule is also required"
+      ],
+      "answer": 2,
+      "explanation": "Inbound traffic is evaluated against the subnet NSG first, then the NIC NSG, and must pass both. Within the NIC NSG, first match wins and 150 is evaluated before 200. NSGs are stateful, so no outbound rule is needed for return traffic."
+    },
+    {
+      "id": "02-03-q4",
+      "sub_skill": "Implement and manage network security groups (NSGs) and application security groups (ASGs)",
+      "prompt": "You need flow-level logging for traffic allowed and denied across your virtual networks. What should you configure?",
+      "options": [
+        "NSG flow logs, with traffic analytics enabled",
+        "Virtual network flow logs",
+        "Diagnostic settings on each network security group",
+        "Connection monitor in Network Watcher"
+      ],
+      "answer": 1,
+      "explanation": "NSG flow logs cannot be created - new ones have been unavailable since 30 June 2025 - and the feature retires on 30 September 2027. Virtual network flow logs replace them, and they are also the only place traffic allowed or denied by Virtual Network Manager security admin rules is visible."
+    },
+    {
+      "id": "02-03-q5",
+      "sub_skill": "Implement and configure security for virtual private network (VPN) connections",
+      "prompt": "Remote users connecting over point-to-site VPN must be subject to Conditional Access and MFA. Which configuration is required?",
+      "options": [
+        "IKEv2 with certificate authentication",
+        "SSTP with RADIUS authentication",
+        "OpenVPN with Microsoft Entra ID authentication",
+        "Any tunnel type, with Entra ID authentication selected"
+      ],
+      "answer": 2,
+      "explanation": "Microsoft Entra ID authentication for point-to-site requires the OpenVPN tunnel type. IKEv2 and SSTP support certificate and RADIUS authentication only, neither of which brings the connection under Conditional Access."
+    }
+  ]
+}

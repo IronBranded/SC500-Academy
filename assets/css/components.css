@@ -1,1 +1,352 @@
-/* components.css - SC-500 guide. TODO: design pass. */
+/* components.css - SC-500 guide
+   Everything that is a thing rather than a frame. */
+
+/* ======================================================================
+   Prose
+   ====================================================================== */
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  font-family: var(--face-body);
+  line-height: var(--lh-tight);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.content h1 { font-size: var(--t-2xl); margin: 0 0 var(--s-4); letter-spacing: -0.015em; }
+.content h2 {
+  font-size: var(--t-xl);
+  margin: var(--s-7) 0 var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--rule);
+}
+.content h3 { font-size: var(--t-md); margin: var(--s-6) 0 var(--s-2); }
+.content h4 { font-size: var(--t-base); margin: var(--s-5) 0 var(--s-2); color: var(--ink-soft); }
+
+.content p { margin: 0 0 var(--s-4); }
+.content ul, .content ol { margin: 0 0 var(--s-4); padding-left: var(--s-5); }
+.content li { margin-bottom: var(--s-2); }
+.content li > ul, .content li > ol { margin-top: var(--s-2); }
+
+.content a { color: var(--brass); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.content a:hover { color: var(--brass-deep); }
+
+.content hr { border: 0; border-top: 1px solid var(--rule); margin: var(--s-6) 0; }
+
+.content strong { font-weight: 700; }
+
+/* Blockquote carries the guide's warnings, so it gets a brass spine rather than
+   decoration. */
+.content blockquote {
+  margin: var(--s-5) 0;
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--brass);
+  background: var(--paper-raise);
+  color: var(--ink-soft);
+}
+.content blockquote p:last-child { margin-bottom: 0; }
+
+/* ======================================================================
+   Code
+   ====================================================================== */
+
+.content code {
+  font-family: var(--face-mono);
+  font-size: 0.86em;
+  background: var(--paper-raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.1em 0.35em;
+}
+
+.content pre {
+  position: relative;
+  margin: 0 0 var(--s-5);
+  padding: var(--s-4);
+  overflow-x: auto;
+  background: var(--paper-raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  line-height: 1.5;
+}
+.content pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: var(--t-sm);
+}
+
+/* One-click copy, required by the brief. Appears on hover and on focus so it is
+   reachable by keyboard. */
+.copy-btn {
+  position: absolute;
+  top: var(--s-2);
+  right: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+pre:hover .copy-btn,
+.copy-btn:focus-visible { opacity: 1; }
+.copy-btn[data-state="copied"] { opacity: 1; color: var(--cost-none); border-color: var(--cost-none); }
+
+/* ======================================================================
+   Tables
+   ====================================================================== */
+
+.table-scroll { overflow-x: auto; margin: 0 0 var(--s-5); }
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--face-ui);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+}
+.content th,
+.content td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--rule);
+}
+.content th { font-weight: 600; color: var(--ink-soft); border-bottom-width: 2px; }
+.content tbody tr:last-child td { border-bottom: 0; }
+
+/* ======================================================================
+   Sidebar navigation
+   ====================================================================== */
+
+.nav-group { margin-bottom: var(--s-5); }
+
+.nav-group__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  padding-left: var(--s-3);
+  border-left: 3px solid var(--domain-tint, var(--rule));
+}
+.nav-group__name { font-weight: 600; font-size: var(--t-sm); }
+.nav-group__weight { font-size: var(--t-xs); color: var(--ink-faint); white-space: nowrap; }
+
+.nav-list { list-style: none; margin: 0; padding: 0 0 0 var(--s-3); }
+
+.nav-link {
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.nav-link:hover { background: var(--paper-raise); color: var(--ink); }
+.nav-link[aria-current="page"] {
+  background: var(--paper-raise);
+  color: var(--ink);
+  box-shadow: inset 2px 0 0 var(--brass);
+}
+.nav-link__id { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--ink-faint); padding-top: 0.15em; }
+.nav-link__title { flex: 1; }
+.nav-link[data-done="true"] .nav-link__title { color: var(--ink-faint); text-decoration: line-through; text-decoration-color: var(--rule); }
+
+.nav-sub { display: block; font-size: var(--t-xs); color: var(--ink-faint); }
+
+/* ======================================================================
+   Field card - the meta rail
+   Built entirely from module front matter. It answers "what will this cost me
+   and what do I need open" before the reader starts.
+   ====================================================================== */
+
+.field {
+  background: var(--paper-raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: var(--s-4);
+}
+
+.field__title {
+  margin: 0 0 var(--s-3);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.field__row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+  border-top: 1px solid var(--rule);
+}
+.field__row:first-of-type { border-top: 0; }
+.field__key { color: var(--ink-faint); font-size: var(--t-xs); padding-top: 0.15em; }
+.field__val { min-width: 0; overflow-wrap: anywhere; }
+.field__val code { font-family: var(--face-mono); font-size: var(--t-xs); }
+
+/* Cost chip. The only saturated colour on a module page, and it always means
+   money. */
+.cost {
+  display: inline-block;
+  padding: 0.1em 0.5em;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: var(--t-xs);
+  color: var(--paper-raise);
+  background: var(--cost-low);
+}
+.cost[data-level="none"] { background: var(--cost-none); }
+.cost[data-level="low"]  { background: var(--cost-low); }
+.cost[data-level="mid"]  { background: var(--cost-mid); }
+.cost[data-level="high"] { background: var(--cost-high); }
+.cost[data-level="max"]  { background: var(--cost-max); }
+
+.status {
+  display: inline-block;
+  padding: 0.05em 0.45em;
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--status-ga);
+}
+.status[data-status="Preview"] { color: var(--status-preview); }
+
+.field__note {
+  margin: var(--s-3) 0 0;
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--rule);
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+}
+
+.field__links { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+.field__links a {
+  font-size: var(--t-xs);
+  color: var(--brass);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+
+/* ======================================================================
+   Progress
+   ====================================================================== */
+
+.progress-strip {
+  position: sticky;
+  top: var(--h-topbar);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: 0 0 var(--s-5);
+  padding: var(--s-2) 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  color: var(--ink-soft);
+}
+
+.bar {
+  flex: 1;
+  height: 6px;
+  background: var(--rule);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.bar__fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--brass);
+  border-radius: 99px;
+  transition: width 200ms ease-out;
+}
+
+/* Dashboard: each row's WIDTH is the domain's exam weight, its FILL is your
+   completion. Two facts, one shape - study time should follow exam weight. */
+.dash { display: grid; gap: var(--s-4); margin: var(--s-6) 0; }
+
+.dash__row { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); }
+.dash__label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-family: var(--face-ui);
+  font-size: var(--t-sm);
+}
+.dash__weight { color: var(--ink-faint); font-size: var(--t-xs); white-space: nowrap; }
+
+.dash__track {
+  height: 1.4rem;
+  background: var(--paper-raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.dash__weightbar { height: 100%; background: var(--rule); }
+.dash__fill { height: 100%; background: var(--domain-tint, var(--brass)); }
+
+/* ======================================================================
+   Checkboxes, callouts, quiz
+   ====================================================================== */
+
+.content input[type="checkbox"] {
+  accent-color: var(--brass);
+  margin-right: var(--s-2);
+  transform: translateY(1px);
+}
+.content .task-list-item { list-style: none; margin-left: calc(var(--s-5) * -1); }
+
+details.depth {
+  margin: 0 0 var(--s-4);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+}
+details.depth > summary {
+  padding: var(--s-3) var(--s-4);
+  cursor: pointer;
+  font-family: var(--face-ui);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+details.depth[open] > summary { border-bottom: 1px solid var(--rule); }
+details.depth > div { padding: var(--s-4) var(--s-4) var(--s-1); }
+
+.btn {
+  font-family: var(--face-ui);
+  font-size: var(--t-sm);
+  padding: var(--s-2) var(--s-4);
+  color: var(--ink);
+  background: var(--paper-raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--brass); color: var(--brass); }
+.btn[data-variant="danger"]:hover { border-color: var(--cost-high); color: var(--cost-high); }
+.btn[data-confirm="armed"] { border-color: var(--cost-high); color: var(--cost-high); }
+
+.empty {
+  padding: var(--s-5);
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius-lg);
+  color: var(--ink-soft);
+  font-family: var(--face-ui);
+  font-size: var(--t-sm);
+}
+.empty strong { color: var(--ink); }

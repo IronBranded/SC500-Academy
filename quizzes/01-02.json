@@ -1,0 +1,72 @@
+{
+  "module": "01-02",
+  "title": "Secrets and Keys with Azure Key Vault",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "01-02-q1",
+      "sub_skill": "Configure access to Key Vault",
+      "prompt": "A requirement states that an administrator holding Contributor on a key vault must not be able to grant themselves access to its secrets. Which permission model satisfies this?",
+      "options": [
+        "The vault access policy model, with the administrator omitted from all policies",
+        "The Azure RBAC permission model",
+        "The vault access policy model, with a resource lock applied to the vault",
+        "Either model, provided the vault firewall denies the administrator's address"
+      ],
+      "answer": 1,
+      "explanation": "Under the access policy model, anyone holding Microsoft.KeyVault/vaults/write can add a policy granting themselves data-plane access, so omitting them from today's policies changes nothing. Azure RBAC makes data-plane permissions role assignments, creatable only by Owner or User Access Administrator. A firewall does not help: the control plane is not filtered by it."
+    },
+    {
+      "id": "01-02-q2",
+      "sub_skill": "Configure firewall settings on Key Vault",
+      "prompt": "You set a vault's network rules to deny by default with no allowed addresses. From your laptop, which operations still succeed?",
+      "options": [
+        "Reading the vault's tags and changing its SKU",
+        "Retrieving a secret value",
+        "Listing the names of secrets in the vault",
+        "Adding a new access policy to the vault"
+      ],
+      "answer": [0, 3],
+      "explanation": "The vault firewall filters the data plane at <vault>.vault.azure.net only. Control-plane operations go to Azure Resource Manager and are governed by Azure RBAC, so reading properties, changing the SKU, and adding access policies all still work. Reading or listing secrets is data plane and is blocked."
+    },
+    {
+      "id": "01-02-q3",
+      "sub_skill": "Configure Key Vault settings",
+      "prompt": "A lab vault is deleted and the same lab must run again next week with the same vault name. Which configuration choice made at creation determines whether that is possible?",
+      "options": [
+        "The SKU, because Premium vaults are purged automatically",
+        "Purge protection, because it cannot be disabled once enabled",
+        "The soft-delete setting, because soft delete can be turned off at creation",
+        "The permission model, because RBAC vaults release their names immediately"
+      ],
+      "answer": 1,
+      "explanation": "Soft delete is always on and cannot be disabled, and it reserves the name for the retention period. With purge protection off you can purge the deleted vault and reclaim the name; with it on, nobody can, at any privilege level, until retention expires."
+    },
+    {
+      "id": "01-02-q4",
+      "sub_skill": "Implement Defender for Key Vault",
+      "prompt": "Which question does Defender for Key Vault answer, and which does Defender CSPM secret scanning answer?",
+      "options": [
+        "Defender for Key Vault finds credentials stored outside the vault; secret scanning detects anomalous vault access",
+        "Defender for Key Vault detects anomalous access to the vault; secret scanning finds credentials stored outside it",
+        "Both detect anomalous access, at different scopes",
+        "Both find exposed credentials, one at rest and one in transit"
+      ],
+      "answer": 1,
+      "explanation": "They face opposite directions. Defender for Key Vault is a workload protection plan watching the vault's data plane for unusual principals, locations and volume. Secret scanning is agentless discovery of credentials that never made it into a vault, which is usually how lateral movement was possible."
+    },
+    {
+      "id": "01-02-q5",
+      "sub_skill": "Configure access to Key Vault",
+      "prompt": "An application must read one specific secret and nothing else in the vault. Which assignment is least privilege?",
+      "options": [
+        "Key Vault Reader at vault scope",
+        "Key Vault Secrets User at vault scope",
+        "Key Vault Secrets User scoped to the individual secret",
+        "Key Vault Secrets Officer scoped to the individual secret"
+      ],
+      "answer": 2,
+      "explanation": "RBAC assignments can be scoped to an individual secret, key or certificate, and that is the least-privilege answer people forget exists. Key Vault Reader sees that a secret exists but not its value; Secrets User at vault scope reads every secret; Secrets Officer can also delete."
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "module": "01-03",
+  "title": "Governance and Regulatory Compliance",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "01-03-q1",
+      "sub_skill": "Implement and configure security controls by using Azure Policy, including built-in and custom policy definitions",
+      "prompt": "You assign a policy with the Deny effect requiring HTTPS-only on storage accounts, at subscription scope. A week later compliance still reports 40% and no deployments have failed. What explains both observations, and what would change the number?",
+      "options": [
+        "The assignment has no managed identity; add one and re-evaluate",
+        "Deny acts only on create and update requests; assign Modify or DeployIfNotExists and run a remediation task",
+        "The policy is in report-only mode; switch it to enforced",
+        "Compliance data refreshes monthly; wait for the next cycle"
+      ],
+      "answer": 1,
+      "explanation": "Deny blocks new and changed resources and never touches existing ones, so pre-existing non-compliant accounts stay non-compliant and nothing fails because nobody deployed a new one. Remediating existing resources needs Modify or DeployIfNotExists plus a remediation task. Azure Policy has no report-only mode - that is Conditional Access."
+    },
+    {
+      "id": "01-03-q2",
+      "sub_skill": "Implement resource locks",
+      "prompt": "A ReadOnly lock is applied to a storage account as a hardening measure. An application that only reads blobs stops working. Why?",
+      "options": [
+        "ReadOnly locks block data-plane reads as well as writes",
+        "Listing storage account keys is a POST operation, which ReadOnly blocks",
+        "ReadOnly locks remove the application's role assignment",
+        "ReadOnly locks require the application to re-authenticate every hour"
+      ],
+      "answer": 1,
+      "explanation": "Locks are control-plane controls. ReadOnly does not stop blob reads, but it does block operations implemented as POST that look like reads - listing account keys being the standard example. This is why CanNotDelete is the usual recommendation and ReadOnly causes more outages than it prevents."
+    },
+    {
+      "id": "01-03-q3",
+      "sub_skill": "Evaluate and remediate overprivileged access assignments by using Azure role-based access control (RBAC)",
+      "prompt": "A colleague's notes say to evaluate overprivileged assignments in the Microsoft Entra Permissions Management blade. What is wrong, and where would you do this now?",
+      "options": [
+        "Nothing is wrong; the blade moved to the Defender portal",
+        "Permissions Management was retired; use CIEM capabilities in Defender CSPM, PIM access reviews, and Azure RBAC enumeration",
+        "Nothing is wrong, but it requires an add-on licence",
+        "Permissions Management was renamed Entra ID Governance; use that blade"
+      ],
+      "answer": 1,
+      "explanation": "Microsoft Entra Permissions Management was retired on 1 October 2025, with support ending 1 November 2025. Its entitlement capabilities live on inside Defender CSPM. This is one of the sharper traps in AZ-500-era material, and the SC-500 bullet is worded 'by using Azure role-based access control' for that reason."
+    },
+    {
+      "id": "01-03-q4",
+      "sub_skill": "Configure security controls for backup protection by using Azure Backup security features",
+      "prompt": "Multi-user authorization is configured on a Recovery Services vault, with the Resource Guard in the same subscription and owned by the same administrator. What does this configuration protect against?",
+      "options": [
+        "A compromised administrator account deleting backups",
+        "Accidental deletion by that administrator, but not a deliberate one",
+        "Nothing at all; MUA requires a separate tenant to function",
+        "Ransomware encrypting the recovery points"
+      ],
+      "answer": 1,
+      "explanation": "MUA works only if the Resource Guard lives where the vault's administrator cannot reach it - a different subscription, ideally a different tenant, under different people. Same-owner MUA is a speed bump against accident and no defence against an attacker who already holds that account."
+    },
+    {
+      "id": "01-03-q5",
+      "sub_skill": "Manage custom roles, including Azure roles and Microsoft Entra roles",
+      "prompt": "A custom Azure role includes NotActions for Microsoft.KeyVault/vaults/secrets/read. A user holding this role reads a secret successfully. Give the two most likely explanations.",
+      "options": [
+        "NotActions is a subtraction within one role definition, not a deny, and another assignment grants the operation",
+        "The vault uses the access policy model, so the RBAC role is not what governs data-plane access",
+        "NotActions only applies to DataActions, never to Actions",
+        "Custom roles cannot contain NotActions for Key Vault"
+      ],
+      "answer": [0, 1],
+      "explanation": "NotActions subtracts within a single role definition; effective permission is the union of every assignment, so a broader role elsewhere still grants it. Separately, if the vault is in access policy mode, RBAC does not govern the data plane at all - check enableRbacAuthorization before debugging anything else."
+    }
+  ]
+}
