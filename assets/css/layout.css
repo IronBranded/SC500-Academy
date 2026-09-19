@@ -182,10 +182,49 @@ body {
   .content { grid-row: 2; }
 }
 
+/* --- print ---------------------------------------------------------------
+   Offline revision is a real use for this guide, and a lab printout goes to a
+   desk next to a terminal. So: no chrome, no interactive affordances, code that
+   does not clip, and checkboxes that can be ticked with a pen. */
+
 @media print {
-  .topbar, .sidebar, .skip { display: none; }
+  .topbar, .sidebar, .skip, .pal, #search-results,
+  .progress-strip, .outline, .copy-btn, .field__links,
+  .quiz__form input, .quiz .btn { display: none !important; }
+
   .shell { display: block; max-width: none; }
-  .meta { position: static; border: 0; max-height: none; }
+  .meta { position: static; border: 0; max-height: none; padding: 0 0 1rem; }
   .content { padding: 0; }
-  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; }
+
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .content > * { max-width: none; }
+
+  /* Everything folded by the review pass prints open. */
+  details, details.depth { display: block !important; }
+  details > div, details > summary { display: block !important; }
+  details.depth { border: 0; background: none; }
+
+  /* Keep a section and its heading together, and never split a code block. */
+  h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+  pre, table, .shape[data-shape="teardown"] { break-inside: avoid; page-break-inside: avoid; }
+  pre { white-space: pre-wrap; word-wrap: break-word; border: 1px solid #ccc; background: #f7f7f7; }
+
+  /* A printed teardown checklist is a form. */
+  .task-list-item input[type="checkbox"] {
+    display: inline-block !important;
+    appearance: none;
+    width: 0.85em; height: 0.85em;
+    border: 1px solid #000;
+    margin-right: 0.5em;
+  }
+
+  .field { border: 1px solid #999; }
+  .shape > h2::before { color: #555; }
+  .t-danger { background: none; text-decoration: underline; }
+
+  a { color: #000; text-decoration: underline; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.75em; color: #555; word-break: break-all; }
+  a[href^="#"]::after { content: none; }
+
+  @page { margin: 18mm 16mm; }
 }

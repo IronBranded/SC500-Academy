@@ -1,4 +1,4 @@
-﻿---
+---
 layout: Conceptual
 title: 'Study guide for Exam SC-500: Implementing End-to-End Security Controls for Cloud and AI Workloads | Microsoft Learn'
 canonicalUrl: https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500

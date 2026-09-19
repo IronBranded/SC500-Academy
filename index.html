@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SC500 Academy</title>
+<meta name="description" content="A dependency-free interactive study guide for Exam SC-500: Implementing End-to-End Security Controls for Cloud and AI Workloads.">
+<meta name="color-scheme" content="light dark">
+<script src="assets/js/theme.js"></script>
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/layout.css">
 <link rel="stylesheet" href="assets/css/components.css">
@@ -14,7 +17,8 @@
 <header class="topbar">
   <button id="nav-toggle" aria-expanded="false" aria-controls="sidebar">Menu</button>
   <span class="topbar__title">SC500 Academy</span>
-  <input id="search" type="search" placeholder="Search modules" aria-label="Search modules">
+  <button id="theme-toggle" type="button">Dark</button>
+  <input id="search" type="search" placeholder="Search  /  or ⌘K" aria-label="Search modules">
 </header>
 
 <div class="shell">
@@ -22,16 +26,24 @@
   <main id="content" class="content" tabindex="-1">
     <p class="loading">Loading&hellip;</p>
   </main>
-  <aside id="meta" class="meta" aria-label="Objective metadata"><!-- built by app.js --></aside>
+  <aside id="meta" class="meta" aria-label="Objective metadata"><!-- built by app.js and outline.js --></aside>
 </div>
 
 <script src="assets/js/vendor/marked.min.js"></script>
+<!-- optional: vendor mermaid.min.js here and ```mermaid fences render as diagrams -->
+<script src="assets/js/vendor/mermaid.min.js" onerror="void 0"></script>
 <script src="assets/js/frontmatter.js"></script>
 <script src="assets/js/nav.js"></script>
 <script src="assets/js/tabs.js"></script>
+<script src="assets/js/sections.js"></script>
+<script src="assets/js/highlight.js"></script>
+<script src="assets/js/outline.js"></script>
+<script src="assets/js/objectives.js"></script>
 <script src="assets/js/progress.js"></script>
 <script src="assets/js/quiz.js"></script>
 <script src="assets/js/search.js"></script>
+<script src="assets/js/views.js"></script>
+<script src="assets/js/palette.js"></script>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

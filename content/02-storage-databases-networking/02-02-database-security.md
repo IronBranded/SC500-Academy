@@ -13,7 +13,7 @@ product_docs:
   - "https://learn.microsoft.com/en-us/azure/azure-sql/database/auditing-setup"
   - "https://learn.microsoft.com/en-us/azure/defender-for-cloud/sql-azure-vulnerability-assessment-enable"
   - "https://learn.microsoft.com/en-us/azure/defender-for-cloud/configure-vulnerability-findings-express"
-  - "https://learn.microsoft.com/en-us/AZURE/defender-for-cloud/sql-azure-vulnerability-assessment-manage"
+  - "https://learn.microsoft.com/azure/defender-for-cloud/sql-azure-vulnerability-assessment-manage"
 last_verified: "2026-09-17"
 portal: "Azure portal > SQL databases / SQL servers > Security; Defender for Cloud > Environment settings"
 powershell_module: "Az.Sql, Az.Security, Az.Monitor"
@@ -329,4 +329,4 @@ See [02-02 lab](../../labs/02-storage-databases-networking/02-02-lab.md).
 - Set up auditing for Azure SQL Database: <https://learn.microsoft.com/en-us/azure/azure-sql/database/auditing-setup>
 - Enable SQL vulnerability assessment (express configuration): <https://learn.microsoft.com/en-us/azure/defender-for-cloud/sql-azure-vulnerability-assessment-enable>
 - Express configuration vulnerability findings: <https://learn.microsoft.com/en-us/azure/defender-for-cloud/configure-vulnerability-findings-express>
-- Manage vulnerability findings in Azure SQL databases: <https://learn.microsoft.com/en-us/AZURE/defender-for-cloud/sql-azure-vulnerability-assessment-manage>
+- Manage vulnerability findings in Azure SQL databases: <https://learn.microsoft.com/azure/defender-for-cloud/sql-azure-vulnerability-assessment-manage>

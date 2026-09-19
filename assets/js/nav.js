@@ -28,6 +28,24 @@
     return a;
   }
 
+  var OPEN_KEY = 'sc500:nav:v1';
+
+  function openState(id) {
+    try {
+      var raw = localStorage.getItem(OPEN_KEY);
+      if (!raw) return true;                 // first visit: everything open
+      var map = JSON.parse(raw);
+      return map[id] !== false;
+    } catch (e) { return true; }
+  }
+  function saveState(id, open) {
+    try {
+      var map = JSON.parse(localStorage.getItem(OPEN_KEY) || '{}');
+      map[id] = open;
+      localStorage.setItem(OPEN_KEY, JSON.stringify(map));
+    } catch (e) {}
+  }
+
   function render(manifest) {
     el.textContent = '';
 
@@ -38,17 +56,46 @@
     home.appendChild(node('span', 'nav-link__title', 'Dashboard'));
     var homeWrap = node('div', 'nav-group');
     homeWrap.appendChild(home);
+
+    /* Derived views: what can I afford, and what should I study next. */
+    [['cost', 'Cost planner', '#/cost'], ['readiness', 'Readiness', '#/readiness']].forEach(function (v) {
+      var a = node('a', 'nav-link');
+      a.href = v[2];
+      a.dataset.kind = v[0];
+      a.appendChild(node('span', 'nav-link__id', '—'));
+      a.appendChild(node('span', 'nav-link__title', v[1]));
+      homeWrap.appendChild(a);
+    });
+
     el.appendChild(homeWrap);
 
+    /* Accordions. With 22 modules and five appendices the flat tree is longer
+       than a laptop screen, so domains collapse and remember their state. The
+       domain containing the current page is always opened. */
     manifest.domains.forEach(function (domain) {
-      var group = node('section', 'nav-group');
+      var group = node('details', 'nav-group');
+      group.dataset.domain = domain.id;
       group.style.setProperty('--domain-tint', 'var(--domain-' + domain.id + ')');
+      group.open = openState(domain.id);
+      group.addEventListener('toggle', function () { saveState(domain.id, group.open); });
 
-      var head = node('div', 'nav-group__head');
-      head.appendChild(node('span', 'nav-group__name', domain.name));
+      var head = document.createElement('summary');
+      head.className = 'nav-group__head';
+
+      var top = node('div', 'nav-group__top');
+      top.appendChild(node('span', 'nav-group__name', domain.name));
       if (domain.weight && domain.weight !== 'n/a') {
-        head.appendChild(node('span', 'nav-group__weight', domain.weight));
+        top.appendChild(node('span', 'nav-group__weight', domain.weight));
       }
+      head.appendChild(top);
+
+      /* A thin progress bar per domain: momentum without leaving the nav. */
+      var bar = node('div', 'nav-group__bar');
+      var fill = node('span', 'nav-group__fill');
+      fill.dataset.domain = domain.id;
+      bar.appendChild(fill);
+      head.appendChild(bar);
+
       group.appendChild(head);
 
       var list = node('ul', 'nav-list');
@@ -89,10 +136,30 @@
      works without progress.js loaded. */
   function markProgress() {
     if (!global.SC500Progress || !global.SC500Progress.isComplete) return;
+
     var links = el.querySelectorAll('.nav-link[data-module-id]');
+    var tally = {};
     for (var i = 0; i < links.length; i++) {
       var a = links[i];
-      a.dataset.done = global.SC500Progress.isComplete(a.dataset.kind, a.dataset.moduleId) ? 'true' : 'false';
+      var done = global.SC500Progress.isComplete(a.dataset.kind, a.dataset.moduleId);
+      a.dataset.done = done ? 'true' : 'false';
+
+      var group = a.closest('.nav-group');
+      var d = group && group.dataset.domain;
+      if (d) {
+        tally[d] = tally[d] || { total: 0, done: 0 };
+        tally[d].total++;
+        if (done) tally[d].done++;
+      }
+    }
+
+    var fills = el.querySelectorAll('.nav-group__fill');
+    for (var f = 0; f < fills.length; f++) {
+      var t = tally[fills[f].dataset.domain];
+      var pct = t && t.total ? Math.round((t.done / t.total) * 100) : 0;
+      fills[f].style.width = pct + '%';
+      var head = fills[f].closest('.nav-group__head');
+      if (head) head.dataset.complete = pct === 100 ? 'true' : 'false';
     }
   }
 
@@ -100,10 +167,15 @@
     var links = el.querySelectorAll('.nav-link');
     for (var i = 0; i < links.length; i++) {
       var a = links[i];
+      var simple = kind === 'dashboard' || kind === 'cost' || kind === 'readiness';
       var match = a.dataset.kind === kind &&
-                  (kind === 'dashboard' || String(a.dataset.moduleId || a.href.split('/').pop()) === String(id));
-      if (match) { a.setAttribute('aria-current', 'page'); }
-      else { a.removeAttribute('aria-current'); }
+                  (simple || String(a.dataset.moduleId || a.href.split('/').pop()) === String(id));
+      if (match) {
+        a.setAttribute('aria-current', 'page');
+        var grp = a.closest('.nav-group');
+        if (grp && grp.tagName === 'DETAILS') grp.open = true;
+        a.scrollIntoView({ block: 'nearest' });
+      } else { a.removeAttribute('aria-current'); }
     }
   }
 

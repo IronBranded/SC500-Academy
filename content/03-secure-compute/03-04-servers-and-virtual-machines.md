@@ -20,7 +20,7 @@ product_docs:
   - "https://learn.microsoft.com/azure/defender-for-cloud/plan-defender-for-servers-select-plan"
   - "https://learn.microsoft.com/azure/defender-for-cloud/file-integrity-monitoring-overview"
   - "https://learn.microsoft.com/azure/virtual-machines/trusted-launch"
-  - "https://learn.microsoft.com/en-my/azUre/security/fundamentals/virtual-machines-overview"
+  - "https://learn.microsoft.com/azure/security/fundamentals/virtual-machines-overview"
 last_verified: "2026-09-17"
 portal: "Azure portal > Virtual machines; Defender for Cloud > Environment settings"
 powershell_module: "Az.Compute, Az.ConnectedMachine, Az.Security, Az.Network"
@@ -332,4 +332,4 @@ See [03-04 lab](../../labs/03-secure-compute/03-04-lab.md).
 - Select a Defender for Servers plan: <https://learn.microsoft.com/azure/defender-for-cloud/plan-defender-for-servers-select-plan>
 - File integrity monitoring overview: <https://learn.microsoft.com/azure/defender-for-cloud/file-integrity-monitoring-overview>
 - Trusted launch for Azure virtual machines: <https://learn.microsoft.com/azure/virtual-machines/trusted-launch>
-- Azure virtual machine security overview: <https://learn.microsoft.com/en-my/azUre/security/fundamentals/virtual-machines-overview>
+- Azure virtual machine security overview: <https://learn.microsoft.com/azure/security/fundamentals/virtual-machines-overview>

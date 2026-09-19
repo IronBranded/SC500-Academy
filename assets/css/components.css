@@ -350,3 +350,688 @@ details.depth > div { padding: var(--s-4) var(--s-4) var(--s-1); }
   font-size: var(--t-sm);
 }
 .empty strong { color: var(--ink); }
+
+/* ======================================================================
+   Drilldown: dashboard domain rows open into their modules
+   ====================================================================== */
+
+.dash__row { border: 1px solid transparent; border-radius: var(--radius-lg); }
+.dash__row[open] { border-color: var(--rule); background: var(--paper-raise); padding-bottom: var(--s-2); }
+
+.dash__summary {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  cursor: pointer;
+  list-style: none;
+}
+.dash__summary::-webkit-details-marker { display: none; }
+
+/* A disclosure caret that rotates, drawn in the domain's own tint so the four
+   domains stay distinguishable when several are open at once. */
+.dash__label { position: relative; padding-left: var(--s-5); }
+.dash__label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 0;
+  height: 0;
+  border-left: 5px solid var(--domain-tint, var(--ink-faint));
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 140ms ease-out;
+}
+.dash__row[open] .dash__label::before { transform: rotate(90deg) translateX(1px); }
+
+.drill { padding: 0 var(--s-3) var(--s-2) var(--s-5); display: grid; gap: 1px; }
+
+.drill__row {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+  border-left: 2px solid var(--rule);
+  font-family: var(--face-ui);
+  font-size: var(--t-sm);
+}
+.drill__row:hover { border-left-color: var(--domain-tint, var(--brass)); background: var(--paper); }
+
+.drill__id { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--ink-faint); text-decoration: none; }
+.drill__title { color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.drill__title:hover { color: var(--brass); }
+
+/* ----------------------------------------------------------------- chips */
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.1em 0.5em;
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  line-height: 1.6;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--ink-faint);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 99px;
+}
+.chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rule);
+}
+.chip[data-on="true"] { color: var(--cost-none); border-color: currentColor; }
+.chip[data-on="true"]::before { background: currentColor; }
+.chip:hover { border-color: var(--brass); color: var(--brass); }
+
+/* ======================================================================
+   Objective coverage
+   The exam is a fixed list of 87 enumerable items, so a matrix is an honest
+   shape for it: one glance answers which of them you have touched.
+   ====================================================================== */
+
+.cov { margin: var(--s-7) 0 var(--s-6); }
+.cov__head h2 { margin-bottom: var(--s-2); }
+.cov__total { color: var(--ink-soft); font-size: var(--t-sm); max-width: var(--measure); }
+
+.cov__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  margin: var(--s-3) 0 var(--s-4);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+}
+.cov__legenditem { display: inline-flex; align-items: center; gap: var(--s-2); }
+
+.cov__cell {
+  display: inline-block;
+  width: 10px;
+  height: 16px;
+  border-radius: 1px;
+  background: var(--rule);
+  text-decoration: none;
+}
+.cov__cell[data-level="read"]      { background: color-mix(in srgb, var(--brass) 45%, var(--rule)); }
+.cov__cell[data-level="practised"] { background: var(--brass); }
+.cov__cell[data-level="tested"]    { background: var(--cost-none); }
+.cov__cell:hover { outline: 1px solid var(--ink); outline-offset: 1px; }
+
+.cov__grid { display: grid; gap: var(--s-2); }
+
+.cov__domain { border: 1px solid var(--rule); border-radius: var(--radius-lg); background: var(--paper-raise); }
+.cov__dsummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  cursor: pointer;
+  font-family: var(--face-ui);
+  border-left: 3px solid var(--domain-tint, var(--rule));
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+.cov__domain[open] .cov__dsummary { border-bottom: 1px solid var(--rule); border-radius: var(--radius-lg) 0 0 0; }
+.cov__dname { font-weight: 600; font-size: var(--t-sm); }
+.cov__dmeta { font-size: var(--t-xs); color: var(--ink-faint); }
+
+.cov__dbody { padding: var(--s-2); display: grid; gap: 1px; }
+
+.cov__module { border-radius: var(--radius); }
+.cov__summary {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto 2rem;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+  font-family: var(--face-ui);
+  font-size: var(--t-sm);
+  list-style: none;
+}
+.cov__summary::-webkit-details-marker { display: none; }
+.cov__module:hover > .cov__summary { background: var(--paper); }
+.cov__id { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--ink-faint); }
+.cov__obj { overflow-wrap: anywhere; }
+.cov__cells { display: flex; gap: 2px; }
+.cov__count { font-size: var(--t-xs); color: var(--ink-faint); text-align: right; }
+
+.cov__body { padding: var(--s-2) var(--s-3) var(--s-4) calc(3.5rem + var(--s-3) * 2); }
+.cov__list { list-style: none; margin: var(--s-3) 0 0; padding: 0; font-size: var(--t-sm); }
+.cov__list li {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: var(--s-2);
+  align-items: start;
+  padding: var(--s-1) 0;
+  color: var(--ink-soft);
+  font-family: var(--face-ui);
+}
+.cov__dot {
+  width: 7px; height: 7px;
+  margin-top: 0.55em;
+  border-radius: 50%;
+  background: var(--rule);
+}
+.cov__list li[data-level="read"] .cov__dot      { background: color-mix(in srgb, var(--brass) 45%, var(--rule)); }
+.cov__list li[data-level="practised"] .cov__dot { background: var(--brass); }
+.cov__list li[data-level="tested"] .cov__dot    { background: var(--cost-none); }
+.cov__list li[data-level="tested"],
+.cov__list li[data-level="practised"] { color: var(--ink); }
+
+@media (max-width: 720px) {
+  .cov__summary { grid-template-columns: 3.5rem minmax(0, 1fr); }
+  .cov__cells, .cov__count { grid-column: 1 / -1; }
+  .cov__body { padding-left: var(--s-3); }
+  .drill__row { grid-template-columns: 3.5rem minmax(0, 1fr); }
+  .drill__row .chips { grid-column: 1 / -1; }
+}
+
+/* ======================================================================
+   In-page outline (meta rail) and heading anchors
+   ====================================================================== */
+
+.outline { margin-top: var(--s-5); }
+.outline__list { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--rule); }
+.outline__list li[data-depth="3"] { padding-left: var(--s-3); }
+
+.outline__link {
+  display: block;
+  padding: var(--s-1) var(--s-3);
+  margin-left: -1px;
+  border-left: 2px solid transparent;
+  color: var(--ink-faint);
+  text-decoration: none;
+  font-size: var(--t-xs);
+  line-height: 1.45;
+}
+.outline__link:hover { color: var(--ink); }
+.outline__link[aria-current="true"] { color: var(--brass); border-left-color: var(--brass); }
+
+.anchor {
+  margin-left: 0.4em;
+  color: var(--ink-faint);
+  text-decoration: none;
+  font-size: 0.7em;
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+h2:hover .anchor, h3:hover .anchor, .anchor:focus-visible { opacity: 1; }
+.anchor:hover { color: var(--brass); }
+
+/* ======================================================================
+   Cost meter - a five-step scale, so the chip reads as a position rather
+   than a label
+   ====================================================================== */
+
+.meter { display: flex; gap: 2px; margin-top: var(--s-2); }
+.meter__step {
+  flex: 1;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--rule);
+}
+.meter[data-level="none"] .meter__step:nth-child(-n+1) { background: var(--cost-none); }
+.meter[data-level="low"]  .meter__step:nth-child(-n+2) { background: var(--cost-low); }
+.meter[data-level="mid"]  .meter__step:nth-child(-n+3) { background: var(--cost-mid); }
+.meter[data-level="high"] .meter__step:nth-child(-n+4) { background: var(--cost-high); }
+.meter[data-level="max"]  .meter__step                 { background: var(--cost-max); }
+
+/* Code fences carry a language label when marked is given one. */
+.content pre > code[class*="language-"]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: var(--s-2);
+  left: var(--s-4);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+  letter-spacing: 0.03em;
+}
+.content pre:has(code[class*="language-"]) { padding-top: var(--s-6); }
+
+/* ======================================================================
+   Syntax highlighting
+   Muted throughout, with one exception: destructive and billing tokens.
+   ====================================================================== */
+
+.t-comment  { color: var(--syn-comment); font-style: italic; }
+.t-string   { color: var(--syn-string); }
+.t-key      { color: var(--syn-string); font-weight: 600; }
+.t-keyword  { color: var(--syn-keyword); font-weight: 600; }
+.t-fn       { color: var(--syn-fn); }
+.t-table    { color: var(--syn-fn); font-weight: 600; }
+.t-tag      { color: var(--syn-keyword); }
+.t-attr     { color: var(--syn-variable); }
+.t-variable { color: var(--syn-variable); }
+.t-param    { color: var(--syn-param); }
+.t-number   { color: var(--syn-number); }
+
+/* The whole point of writing the tokenizer rather than importing one. */
+.t-danger {
+  color: var(--syn-danger);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--syn-danger) 10%, transparent);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ======================================================================
+   Section silhouettes
+   Each recurring shape reads differently, so a 300-line module is navigable
+   by recognition rather than by reading every heading.
+   ====================================================================== */
+
+.shape { margin: 0 0 var(--s-5); }
+.shape > h2 { position: relative; }
+
+/* A small standing label above the heading, in the shape's own accent. */
+.shape > h2::before {
+  content: attr(data-label);
+  display: block;
+  margin-bottom: var(--s-1);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--shape-tint, var(--ink-faint));
+}
+
+.shape[data-shape="concept"]    { --shape-tint: var(--domain-01); }
+.shape[data-shape="mechanism"]  { --shape-tint: var(--domain-02); }
+.shape[data-shape="config"]     { --shape-tint: var(--ink-faint); }
+.shape[data-shape="failure"]    { --shape-tint: var(--cost-high); }
+.shape[data-shape="exam"]       { --shape-tint: var(--brass); }
+.shape[data-shape="selfcheck"]  { --shape-tint: var(--domain-03); }
+.shape[data-shape="teardown"]   { --shape-tint: var(--cost-high); }
+.shape[data-shape="validation"] { --shape-tint: var(--cost-none); }
+.shape[data-shape="prereq"]     { --shape-tint: var(--domain-04); }
+.shape[data-shape="sources"]    { --shape-tint: var(--ink-faint); }
+
+.shape > h2[data-shape="concept"]::before    { content: "First principles"; }
+.shape > h2[data-shape="mechanism"]::before  { content: "Mechanism"; }
+.shape > h2[data-shape="config"]::before     { content: "Reference"; }
+.shape > h2[data-shape="failure"]::before    { content: "What goes wrong"; }
+.shape > h2[data-shape="exam"]::before       { content: "On the exam"; }
+.shape > h2[data-shape="selfcheck"]::before  { content: "Test yourself"; }
+.shape > h2[data-shape="teardown"]::before   { content: "Mandatory"; }
+.shape > h2[data-shape="validation"]::before { content: "Prove it works"; }
+.shape > h2[data-shape="prereq"]::before     { content: "Before you start"; }
+.shape > h2[data-shape="objectives"]::before { content: "Verbatim from the exam outline"; }
+.shape > h2[data-shape="handoff"]::before,
+.shape > h2[data-shape="sources"]::before    { content: none; }
+
+/* The two shapes that warrant a surface of their own. */
+.shape[data-shape="exam"],
+.shape[data-shape="teardown"] {
+  padding: var(--s-4) var(--s-5);
+  border-left: 3px solid var(--shape-tint);
+  background: var(--paper-raise);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+.shape[data-shape="exam"] > h2,
+.shape[data-shape="teardown"] > h2 { border-bottom: 0; margin-top: 0; }
+
+.shape[data-shape="sources"] { font-size: var(--t-sm); color: var(--ink-soft); }
+.shape[data-shape="sources"] ul { padding-left: var(--s-4); }
+
+/* Failure modes read as a scan list rather than paragraphs. */
+.shape[data-shape="failure"] p strong:first-child { color: var(--cost-high); }
+
+/* Teardown buckets get a numbered spine. */
+h3.bucket { position: relative; padding-left: var(--s-6); }
+h3.bucket::before {
+  content: attr(data-bucket);
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cost-high);
+  color: var(--paper-raise);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  font-weight: 700;
+}
+
+/* --- table shapes ------------------------------------------------------ */
+
+.content table[data-table="exam"] th:first-child { width: 42%; }
+.content table[data-table="exam"] td:first-child {
+  font-family: var(--face-body);
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.content table[data-table="exam"] td:last-child { font-weight: 600; }
+
+.content table[data-table="config"] th { font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+.content table[data-table="config"] td:nth-child(2) { color: var(--ink-faint); font-family: var(--face-mono); font-size: var(--t-xs); }
+
+.content table[data-table="compare"] td:first-child,
+.content table[data-table="compare"] th:first-child { font-weight: 600; color: var(--ink-soft); }
+
+.content td[data-cost="max"]  { color: var(--cost-max);  font-weight: 700; }
+.content td[data-cost="high"] { color: var(--cost-high); font-weight: 700; }
+.content td[data-cost="none"] { color: var(--cost-none); font-weight: 600; }
+
+/* ======================================================================
+   Command palette
+   ====================================================================== */
+
+.pal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: start center;
+  padding-top: 12vh;
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+  backdrop-filter: blur(2px);
+}
+.pal__box {
+  width: min(42rem, 92vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--ink) 28%, transparent);
+  overflow: hidden;
+}
+.pal__input {
+  padding: var(--s-4);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--face-ui);
+  font-size: var(--t-md);
+}
+.pal__input:focus { outline: none; }
+
+.pal__list { list-style: none; margin: 0; padding: var(--s-2); overflow-y: auto; }
+.pal__item {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: baseline;
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.pal__item[data-active="true"] { background: var(--paper); box-shadow: inset 2px 0 0 var(--brass); }
+.pal__kind {
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+}
+.pal__body { display: grid; min-width: 0; }
+.pal__label { font-family: var(--face-ui); font-size: var(--t-sm); color: var(--ink); overflow-wrap: anywhere; }
+.pal__sub { font-size: var(--t-xs); color: var(--ink-faint); }
+.pal__empty { padding: var(--s-4); color: var(--ink-faint); font-family: var(--face-ui); font-size: var(--t-sm); }
+
+.pal__hint {
+  display: flex;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  border-top: 1px solid var(--rule);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+}
+
+/* ======================================================================
+   Search result context
+   ====================================================================== */
+
+.search-ctx {
+  display: block;
+  margin-top: var(--s-1);
+  font-family: var(--face-body);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.search-ctx mark {
+  background: color-mix(in srgb, var(--brass) 28%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ======================================================================
+   Cost planner and readiness views
+   ====================================================================== */
+
+.plan, .ready { display: grid; gap: var(--s-5); margin: var(--s-5) 0; }
+
+.plan__group { border: 1px solid var(--rule); border-radius: var(--radius-lg); overflow: hidden; }
+.plan__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--paper-raise);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--face-ui);
+}
+.plan__note { flex: 1; font-size: var(--t-xs); color: var(--ink-soft); }
+.plan__count { font-size: var(--t-xs); color: var(--ink-faint); white-space: nowrap; }
+
+.plan__row, .ready__row {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  gap: var(--s-3);
+  align-items: center;
+  padding: var(--s-3) var(--s-4);
+  border-top: 1px solid var(--rule);
+  text-decoration: none;
+  color: inherit;
+  font-family: var(--face-ui);
+}
+.plan__group > .plan__row:first-of-type { border-top: 0; }
+.plan__row:hover, .ready__row:hover { background: var(--paper-raise); }
+
+.plan__body { display: grid; min-width: 0; gap: 2px; }
+.plan__title { font-size: var(--t-sm); color: var(--ink); }
+.plan__est { font-size: var(--t-xs); color: var(--ink-faint); overflow-wrap: anywhere; }
+
+.plan__meter {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--cost-high);
+  border: 1px solid currentColor;
+  border-radius: 99px;
+  padding: 0.1em 0.6em;
+  white-space: nowrap;
+}
+
+.ready__block { border: 1px solid var(--rule); border-radius: var(--radius-lg); overflow: hidden; }
+.ready__block h2 {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-raise);
+  font-size: var(--t-md);
+}
+.ready__block .empty { border: 0; }
+.ready__row[data-weight="high"] { box-shadow: inset 3px 0 0 var(--cost-high); }
+
+@media (max-width: 720px) {
+  .plan__row, .ready__row { grid-template-columns: 3.5rem minmax(0, 1fr); }
+  .plan__meter, .ready__row .chip { grid-column: 1 / -1; justify-self: start; }
+  .pal__item { grid-template-columns: minmax(0, 1fr); }
+  .pal__kind { font-size: 0.65rem; }
+  /* The outline rail is noise on a phone - the palette replaces it. */
+  .outline { display: none; }
+}
+
+/* ======================================================================
+   Callouts
+   The content already writes warnings as blockquotes with a bold lead.
+   sections.js types them; this gives each type a voice.
+   ====================================================================== */
+
+.content blockquote[data-callout] {
+  position: relative;
+  margin: var(--s-5) 0;
+  padding: var(--s-3) var(--s-4) var(--s-3) var(--s-5);
+  border-left: 3px solid var(--call-note);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: color-mix(in srgb, var(--call-note) 8%, var(--paper-raise));
+  color: var(--ink-soft);
+}
+.content blockquote[data-callout] strong:first-child { color: var(--ink); }
+
+.content blockquote[data-callout="exam"] {
+  border-left-color: var(--call-exam);
+  background: color-mix(in srgb, var(--call-exam) 12%, var(--paper-raise));
+}
+.content blockquote[data-callout="warn"] {
+  border-left-color: var(--call-warn);
+  background: color-mix(in srgb, var(--call-warn) 12%, var(--paper-raise));
+}
+.content blockquote[data-callout="warn"] strong:first-child { color: var(--call-warn); }
+.content blockquote[data-callout="tactical"] {
+  border-left-color: var(--call-tactical);
+  background: color-mix(in srgb, var(--call-tactical) 12%, var(--paper-raise));
+}
+
+/* A standing label, so the type is named rather than merely coloured. */
+.content blockquote[data-callout]::before {
+  content: attr(data-label);
+  display: block;
+  margin-bottom: var(--s-1);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--call-note);
+}
+.content blockquote[data-callout="exam"]::before     { content: "Exam focus";     color: var(--call-exam); }
+.content blockquote[data-callout="warn"]::before     { content: "Warning";        color: var(--call-warn); }
+.content blockquote[data-callout="tactical"]::before { content: "In an investigation"; color: var(--call-tactical); }
+.content blockquote[data-callout="note"]::before     { content: none; }
+.content blockquote[data-label]::before              { content: attr(data-label); }
+
+/* ======================================================================
+   Sidebar accordions and per-domain progress
+   ====================================================================== */
+
+.nav-group[data-domain] { border-bottom: 1px solid var(--rule); padding-bottom: var(--s-3); }
+
+.nav-group__head {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3);
+  margin-bottom: var(--s-2);
+  border-left: 3px solid var(--domain-tint, var(--rule));
+  cursor: pointer;
+  list-style: none;
+}
+.nav-group__head::-webkit-details-marker { display: none; }
+.nav-group__head:hover { background: var(--paper-raise); }
+
+.nav-group__top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2); }
+.nav-group__name { font-weight: 600; font-size: var(--t-sm); }
+.nav-group__weight { font-size: var(--t-xs); color: var(--ink-faint); white-space: nowrap; }
+
+.nav-group__name::after {
+  content: "\203A";
+  display: inline-block;
+  margin-left: var(--s-2);
+  color: var(--ink-faint);
+  transition: transform 140ms ease-out;
+}
+.nav-group[open] .nav-group__name::after { transform: rotate(90deg); }
+
+.nav-group__bar { height: 3px; background: var(--rule); border-radius: 99px; overflow: hidden; }
+.nav-group__fill {
+  display: block; height: 100%; width: 0%;
+  background: var(--domain-tint, var(--brass));
+  border-radius: 99px;
+  transition: width 220ms ease-out;
+}
+.nav-group__head[data-complete="true"] .nav-group__fill { background: var(--cost-none); }
+
+/* A checkmark reads faster than a strikethrough. */
+.nav-link[data-done="true"] .nav-link__title { color: var(--ink-faint); text-decoration: none; }
+.nav-link[data-done="true"] .nav-link__title::after {
+  content: " \2713";
+  color: var(--cost-none);
+  font-weight: 700;
+}
+.nav-link[aria-current="page"] {
+  background: var(--paper-raise);
+  color: var(--ink);
+  box-shadow: inset 3px 0 0 var(--brass);
+  font-weight: 600;
+}
+
+/* ======================================================================
+   Diagrams (Mermaid, when vendored)
+   ====================================================================== */
+
+.diagram {
+  margin: 0 0 var(--s-5);
+  padding: var(--s-4);
+  background: var(--paper-raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  text-align: center;
+}
+.diagram svg { max-width: 100%; height: auto; }
+.diagram[data-failed="true"] { font-family: var(--face-mono); font-size: var(--t-sm); text-align: left; white-space: pre; }
+
+pre[data-diagram="unrendered"] { border-style: dashed; }
+pre[data-diagram="unrendered"]::after {
+  content: "diagram source — vendor mermaid.min.js to render";
+  position: absolute;
+  bottom: var(--s-2); right: var(--s-2);
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  color: var(--ink-faint);
+}
+
+/* ======================================================================
+   Theme toggle
+   ====================================================================== */
+
+#theme-toggle {
+  font-family: var(--face-ui);
+  font-size: var(--t-xs);
+  padding: var(--s-1) var(--s-3);
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  border-radius: 99px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#theme-toggle:hover { color: var(--brass); border-color: var(--brass); }
+
+/* Sans headings want more weight and tighter tracking than the serif did. */
+.content h1 { font-family: var(--face-display); font-weight: var(--w-heading); letter-spacing: -0.02em; }
+.content h2 { font-family: var(--face-display); font-weight: var(--w-heading); letter-spacing: -0.01em; }
+.content h3 { font-weight: 600; }
+.content p, .content li { font-size: var(--t-base); }

@@ -227,6 +227,45 @@
     return n;
   }
 
+  /* One line per module inside an expanded domain: the first drilldown level.
+     Each chip is both a state indicator and a link, so the row is navigable
+     rather than decorative. */
+  function moduleLine(m) {
+    var line = node('div', 'drill__row');
+
+    var id = node('a', 'drill__id', m.id);
+    id.href = '#/module/' + m.id;
+    line.appendChild(id);
+
+    var title = node('a', 'drill__title', m.title);
+    title.href = '#/module/' + m.id;
+    line.appendChild(title);
+
+    var chips = node('div', 'chips');
+
+    var modChip = node('a', 'chip', 'Module');
+    modChip.href = '#/module/' + m.id;
+    modChip.dataset.on = isComplete('module', m.id) ? 'true' : 'false';
+    chips.appendChild(modChip);
+
+    if (m.lab) {
+      var st = pageStats({ kind: 'lab', moduleId: m.id });
+      var labChip = node('a', 'chip', st.total ? 'Lab ' + st.done + '/' + st.total : 'Lab');
+      labChip.href = '#/lab/' + m.id;
+      labChip.dataset.on = isComplete('lab', m.id) ? 'true' : 'false';
+      chips.appendChild(labChip);
+    }
+
+    var q = load().quiz['module:' + m.id];
+    var qChip = node('a', 'chip', q ? 'Quiz ' + q.pct + '%' : 'Quiz');
+    qChip.href = '#/module/' + m.id;
+    qChip.dataset.on = (q && q.pct >= 80) ? 'true' : 'false';
+    chips.appendChild(qChip);
+
+    line.appendChild(chips);
+    return line;
+  }
+
   function mountDashboard(root, manifest) {
     var totalPages = 0, totalDone = 0;
 
@@ -242,7 +281,8 @@
     var dash = node('div', 'dash');
 
     /* Row width encodes the exam weight; fill encodes your completion. Study
-       time should follow exam weight, so both facts share one shape. */
+       time should follow exam weight, so both facts share one shape. Opening a
+       row drills into its modules. */
     var maxWeight = 0;
     manifest.domains.forEach(function (d) { maxWeight = Math.max(maxWeight, weightMid(d.weight)); });
 
@@ -251,8 +291,11 @@
       totalPages += st.pages;
       totalDone += st.done;
 
-      var row = node('div', 'dash__row');
+      var row = node('details', 'dash__row');
       row.style.setProperty('--domain-tint', 'var(--domain-' + d.id + ')');
+
+      var sum = document.createElement('summary');
+      sum.className = 'dash__summary';
 
       var lab = node('div', 'dash__label');
       lab.appendChild(node('span', null, d.name));
@@ -260,7 +303,7 @@
         (d.weight && d.weight !== 'n/a' ? d.weight + ' of the exam · ' : 'Prerequisite · ') +
         st.done + '/' + st.pages + ' pages');
       lab.appendChild(w);
-      row.appendChild(lab);
+      sum.appendChild(lab);
 
       var track = node('div', 'dash__track');
       var weightBar = node('div', 'dash__weightbar');
@@ -271,7 +314,13 @@
       fill.style.width = st.pct + '%';
       weightBar.appendChild(fill);
       track.appendChild(weightBar);
-      row.appendChild(track);
+      sum.appendChild(track);
+
+      row.appendChild(sum);
+
+      var body = node('div', 'drill');
+      d.modules.forEach(function (m) { body.appendChild(moduleLine(m)); });
+      row.appendChild(body);
 
       dash.appendChild(row);
     });
@@ -283,6 +332,10 @@
     oFill.style.width = pct + '%';
     oBar.setAttribute('role', 'progressbar');
     oBar.setAttribute('aria-valuenow', String(pct));
+
+    /* The second drilldown: coverage across the 87 sub-objectives. Optional -
+       the dashboard still works if objectives.js is absent. */
+    if (global.SC500Objectives) global.SC500Objectives.mount(root, manifest);
 
     root.appendChild(controls(manifest));
   }
@@ -369,6 +422,7 @@
     mountDashboard: mountDashboard,
     isComplete: isComplete,
     pagePercent: pagePercent,
+    pageStats: pageStats,
     recordQuiz: recordQuiz,
     readQuiz: readQuiz
   };

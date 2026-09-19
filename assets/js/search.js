@@ -14,6 +14,7 @@
   var manifest = null;
   var shallow = [];      // always available
   var deep = null;       // Map: moduleId+kind -> extra searchable text
+  var body = {};         // Map: moduleId+kind -> raw prose, for context lines
   var deepState = 'idle';
   var input, panel;
 
@@ -80,6 +81,11 @@
           if (heads) bits.push(heads.join(' '));
 
           deep[entry.kind + ':' + entry.id] = bits.join(' ').toLowerCase();
+
+          /* Keep the prose too, so a hit can show the line it matched on.
+             Headings alone tell you a module is relevant; the line tells you
+             why, which is the difference between a list and a search result. */
+          body[entry.kind + ':' + entry.id] = parsed.body;
         })
         .catch(function () { /* one unreadable file should not break search */ });
     });
@@ -121,6 +127,51 @@
     open(hits, q);
   }
 
+  /* Find the most informative line containing the term: prefer a sentence in
+     prose over a heading, and never return a code fence or a table row. */
+  function context(entry, terms) {
+    var text = body[entry.kind + ':' + entry.id];
+    if (!text) return null;
+
+    var lines = text.split(/\n/);
+    var best = null, bestScore = -1;
+    for (var i = 0; i < lines.length; i++) {
+      var raw = lines[i].trim();
+      if (raw.length < 40 || raw.length > 320) continue;
+      if (/^[#>|`\-*\d]/.test(raw)) continue;          // headings, tables, code, lists
+      var low = raw.toLowerCase();
+      var score = 0;
+      for (var t = 0; t < terms.length; t++) if (low.indexOf(terms[t]) !== -1) score += 10;
+      if (!score) continue;
+      score -= Math.abs(raw.length - 150) / 60;        // prefer a readable length
+      if (score > bestScore) { bestScore = score; best = raw; }
+    }
+    if (!best) return null;
+
+    /* Trim to a window around the first hit rather than always the line start. */
+    var at = best.toLowerCase().indexOf(terms[0]);
+    if (at > 90) best = '…' + best.slice(at - 60);
+    if (best.length > 200) best = best.slice(0, 200) + '…';
+    return best.replace(/[*_`\[\]]/g, '');
+  }
+
+  function mark(container, text, terms) {
+    var low = text.toLowerCase(), i = 0;
+    while (i < text.length) {
+      var next = -1, term = null;
+      for (var t = 0; t < terms.length; t++) {
+        var at = low.indexOf(terms[t], i);
+        if (at !== -1 && (next === -1 || at < next)) { next = at; term = terms[t]; }
+      }
+      if (next === -1) { container.appendChild(document.createTextNode(text.slice(i))); break; }
+      container.appendChild(document.createTextNode(text.slice(i, next)));
+      var em = document.createElement('mark');
+      em.textContent = text.slice(next, next + term.length);
+      container.appendChild(em);
+      i = next + term.length;
+    }
+  }
+
   function open(hits, q) {
     panel.textContent = '';
     panel.hidden = false;
@@ -145,6 +196,13 @@
       var t = node('span', 'nav-link__title');
       t.appendChild(document.createTextNode(h.e.title));
       t.appendChild(node('span', 'nav-sub', h.e.domain + (h.e.weight && h.e.weight !== 'n/a' ? ' · ' + h.e.weight : '')));
+
+      var snippet = context(h.e, q.split(/\s+/).filter(Boolean));
+      if (snippet) {
+        var ctx = node('span', 'search-ctx');
+        mark(ctx, snippet, q.split(/\s+/).filter(Boolean));
+        t.appendChild(ctx);
+      }
       a.appendChild(t);
       a.addEventListener('click', close);
       li.appendChild(a);

@@ -15,7 +15,7 @@ product_docs:
   - "https://learn.microsoft.com/azure/firewall/rule-processing"
   - "https://learn.microsoft.com/azure/private-link/secure-private-link"
   - "https://learn.microsoft.com/en-us/entra/global-secure-access/how-to-configure-quick-access"
-  - "https://learn.microsoft.com/is-is/entra/global-secure-access/quickstart-per-app-access"
+  - "https://learn.microsoft.com/entra/global-secure-access/quickstart-per-app-access"
   - "https://learn.microsoft.com/azure/network-watcher/nsg-flow-logs-migrate"
 last_verified: "2026-09-17"
 portal: "Azure portal > Firewalls / Private Link / Network Watcher; Entra admin center > Global Secure Access"
@@ -334,5 +334,5 @@ See [02-04 lab](../../labs/02-storage-databases-networking/02-04-lab.md).
 - Azure Firewall rule processing logic: <https://learn.microsoft.com/azure/firewall/rule-processing>
 - Secure your Azure Private Link deployment: <https://learn.microsoft.com/azure/private-link/secure-private-link>
 - Configure Quick Access for Microsoft Entra Private Access: <https://learn.microsoft.com/en-us/entra/global-secure-access/how-to-configure-quick-access>
-- Quickstart: per-app access to private resources: <https://learn.microsoft.com/is-is/entra/global-secure-access/quickstart-per-app-access>
+- Quickstart: per-app access to private resources: <https://learn.microsoft.com/entra/global-secure-access/quickstart-per-app-access>
 - Migrate to virtual network flow logs: <https://learn.microsoft.com/azure/network-watcher/nsg-flow-logs-migrate>

@@ -1,118 +1,170 @@
 /* tokens.css - SC-500 guide
    Design tokens. Nothing here paints anything; layout.css and components.css do.
 
-   Palette rationale: green-black ink on cool pale paper, brass accent. Strong
-   colour is reserved for encoding lab cost, because spend risk is the thing this
-   guide most needs to signal at a glance. Everything else stays quiet.
+   DARK IS THE DEFAULT. This is read in long sessions, often late, by people who
+   spend their day in a terminal and a Defender portal. :root carries the dark
+   values; light is opt-in via [data-theme="light"], and [data-theme="system"]
+   follows the OS.
 
-   No web fonts. The site must work from file:// on a plane, so every family is
-   one the reader already has. */
+   Typography follows the Microsoft ecosystem so the guide feels continuous with
+   the portals it teaches: Segoe UI first, then a modern sans fallback chain. No
+   web fonts - the site must work from a folder on a plane.
+
+   Strong colour is reserved for encoding lab cost and destructive commands. */
 
 :root {
-  /* --- base palette ------------------------------------------------------ */
-  --ink:        #14211e;   /* green-black, body text and headings */
-  --ink-soft:   #46564f;   /* secondary text, captions */
-  --ink-faint:  #7c8a83;   /* tertiary, disabled */
-  --paper:      #f2f4f2;   /* page background: cool, faintly green */
-  --paper-raise:#fbfcfb;   /* cards, code blocks, meta rail */
-  --rule:       #d3dad5;   /* hairlines, borders */
-  --brass:      #b4813a;   /* the one accent: links, focus, active nav */
-  --brass-deep: #8a6229;   /* accent on hover / visited */
+  /* --- base palette: DARK (default) ------------------------------------- */
+  --ink:        #e6ebe8;
+  --ink-soft:   #a8b5ae;
+  --ink-faint:  #8a978f;
+  --paper:      #0f1614;
+  --paper-raise:#171f1d;
+  --paper-sink: #0a100f;
+  --rule:       #2b3733;
+  --brass:      #d6a15b;
+  --brass-deep: #e8b877;
 
-  /* --- cost signals ------------------------------------------------------
-     These map to the lab_cost_estimate front-matter values. They are the only
-     saturated colours on the page, and they always mean money. */
-  --cost-none:  #2e7d62;   /* $0 */
-  --cost-low:   #4c7f6e;   /* Low */
-  --cost-mid:   #b4813a;   /* Medium */
-  --cost-high:  #a63a2b;   /* HIGH */
-  --cost-max:   #7d2318;   /* HIGHEST */
+  --cost-none:  #5fb894;
+  --cost-low:   #74ab97;
+  --cost-mid:   #d6a15b;
+  --cost-high:  #e07a66;
+  --cost-max:   #f09182;
 
-  /* --- status ------------------------------------------------------------ */
   --status-ga:      var(--ink-soft);
   --status-preview: var(--brass);
 
-  /* --- domain accents ----------------------------------------------------
-     Muted, used only as a 3px spine on nav groups and dashboard rows so the
-     four domains stay distinguishable without becoming a colour wheel. */
-  --domain-00: #7c8a83;
-  --domain-01: #3f6f7a;
-  --domain-02: #4a6a91;
-  --domain-03: #6b5a8e;
-  --domain-04: #3f7a63;
+  --domain-00: #8a978f;
+  --domain-01: #6aa3b0;
+  --domain-02: #7d9cc4;
+  --domain-03: #9c8cc0;
+  --domain-04: #6fae93;
+
+  /* Syntax: raised contrast over the first pass, but still muted by design.
+     The one exception is --syn-danger, which must stay the loudest thing in
+     any code block. */
+  --syn-comment:  #7f8d86;
+  --syn-string:   #9ec2e8;
+  --syn-keyword:  #c4b0e8;
+  --syn-fn:       #86d3e0;
+  --syn-variable: #e8b877;
+  --syn-param:    #b6c2bb;
+  --syn-number:   #8ad8b4;
+  --syn-danger:   #ff8a73;
+
+  /* --- callouts ---------------------------------------------------------- */
+  --call-exam:     #7d9cc4;   /* heavily tested */
+  --call-warn:     #e07a66;   /* misconfiguration, cost, irreversible */
+  --call-tactical: #6fae93;   /* how it lands in an investigation */
+  --call-note:     #8a978f;
 
   /* --- type -------------------------------------------------------------- */
-  --face-body: Charter, "Bitstream Charter", "Iowan Old Style", "Palatino Linotype",
-               Georgia, "Times New Roman", serif;
-  --face-ui:   ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-               Roboto, "Helvetica Neue", Arial, sans-serif;
-  --face-mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono",
-               "Roboto Mono", Menlo, Consolas, monospace;
+  --face-ui:   "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui,
+               Inter, Roboto, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --face-body: var(--face-ui);
+  --face-display: "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui,
+               Inter, Roboto, -apple-system, sans-serif;
+  --face-serif: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, serif;
+  --face-mono: ui-monospace, "Cascadia Mono", "Cascadia Code", "SF Mono",
+               SFMono-Regular, Consolas, "Roboto Mono", Menlo, monospace;
 
-  /* Type scale, ~1.25 ratio off a 17px base. Serif body gets generous leading. */
   --t-xs:   0.75rem;
   --t-sm:   0.875rem;
-  --t-base: 1.0625rem;
-  --t-md:   1.25rem;
-  --t-lg:   1.5rem;
-  --t-xl:   1.9rem;
-  --t-2xl:  2.4rem;
+  --t-base: 1rem;
+  --t-md:   1.1875rem;
+  --t-lg:   1.4375rem;
+  --t-xl:   1.75rem;
+  --t-2xl:  2.25rem;
 
-  --lh-tight: 1.2;
-  --lh-body:  1.65;   /* serif wants more than a sans would */
+  --lh-tight: 1.15;
+  --lh-body:  1.6;
 
-  --measure: 68ch;    /* body line length */
+  --w-heading: 700;
+  --measure: 72ch;
 
   /* --- spacing ----------------------------------------------------------- */
-  --s-1: 0.25rem;
-  --s-2: 0.5rem;
-  --s-3: 0.75rem;
-  --s-4: 1rem;
-  --s-5: 1.5rem;
-  --s-6: 2rem;
-  --s-7: 3rem;
-  --s-8: 4.5rem;
+  --s-1: 0.25rem;  --s-2: 0.5rem;   --s-3: 0.75rem;  --s-4: 1rem;
+  --s-5: 1.5rem;   --s-6: 2rem;     --s-7: 3rem;     --s-8: 4.5rem;
 
-  /* --- shell geometry ---------------------------------------------------- */
   --w-sidebar: 19rem;
   --w-meta:    17rem;
   --h-topbar:  3.25rem;
 
-  --radius:    3px;    /* almost square; this is a document, not an app */
-  --radius-lg: 5px;
+  --radius:    4px;
+  --radius-lg: 8px;
 
   --focus: 2px solid var(--brass);
+
+  color-scheme: dark;
 }
 
-/* Dark mode. Not an inversion - a separate, warmer-black reading surface, since
-   most of this guide gets read late. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink:        #e4e9e5;
-    --ink-soft:   #a3b0a9;
-    --ink-faint:  #6f7d76;
-    --paper:      #111917;
-    --paper-raise:#18221f;
-    --rule:       #2b3733;
-    --brass:      #d6a15b;
-    --brass-deep: #e8b877;
+/* --- light, opt-in -------------------------------------------------------- */
+:root[data-theme="light"] {
+  --ink:        #14211e;
+  --ink-soft:   #46564f;
+  --ink-faint:  #5f6d66;
+  --paper:      #f4f6f4;
+  --paper-raise:#ffffff;
+  --paper-sink: #e9edea;
+  --rule:       #d3dad5;
+  --brass:      #96661f;
+  --brass-deep: #7a5218;
 
-    --cost-none:  #5fb894;
-    --cost-low:   #74ab97;
-    --cost-mid:   #d6a15b;
-    --cost-high:  #e07a66;
-    --cost-max:   #f09182;
+  --cost-none:  #216b51;
+  --cost-low:   #3d6f5f;
+  --cost-mid:   #96661f;
+  --cost-high:  #a63a2b;
+  --cost-max:   #7d2318;
 
-    --domain-00: #7c8a83;
-    --domain-01: #6aa3b0;
-    --domain-02: #7d9cc4;
-    --domain-03: #9c8cc0;
-    --domain-04: #6fae93;
+  --domain-00: #5f6d66;
+  --domain-01: #2f6b78;
+  --domain-02: #3a5a81;
+  --domain-03: #5b4a7e;
+  --domain-04: #2f6a53;
+
+  --syn-comment:  #5f6d66;
+  --syn-string:   #2f5480;
+  --syn-keyword:  #5b4a7e;
+  --syn-fn:       #1f5f6b;
+  --syn-variable: #8a5e18;
+  --syn-param:    #46564f;
+  --syn-number:   #216b51;
+  --syn-danger:   #a1261a;
+
+  --call-exam:     #3a5a81;
+  --call-warn:     #a63a2b;
+  --call-tactical: #2f6a53;
+  --call-note:     #5f6d66;
+
+  color-scheme: light;
+}
+
+/* --- follow the OS, if the reader asks for that --------------------------- */
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    --ink:        #14211e;
+    --ink-soft:   #46564f;
+    --ink-faint:  #5f6d66;
+    --paper:      #f4f6f4;
+    --paper-raise:#ffffff;
+    --paper-sink: #e9edea;
+    --rule:       #d3dad5;
+    --brass:      #96661f;
+    --brass-deep: #7a5218;
+    --cost-none:  #216b51;
+    --cost-low:   #3d6f5f;
+    --cost-mid:   #96661f;
+    --cost-high:  #a63a2b;
+    --cost-max:   #7d2318;
+    --domain-00: #5f6d66; --domain-01: #2f6b78; --domain-02: #3a5a81;
+    --domain-03: #5b4a7e; --domain-04: #2f6a53;
+    --syn-comment: #5f6d66; --syn-string: #2f5480; --syn-keyword: #5b4a7e;
+    --syn-fn: #1f5f6b; --syn-variable: #8a5e18; --syn-param: #46564f;
+    --syn-number: #216b51; --syn-danger: #a1261a;
+    --call-exam: #3a5a81; --call-warn: #a63a2b; --call-tactical: #2f6a53; --call-note: #5f6d66;
+    color-scheme: light;
   }
 }
 
-/* Honour the reader's motion preference. The only motion in this site answers a
-   click; even that goes away here. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

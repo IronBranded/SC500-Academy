@@ -91,16 +91,33 @@
     return { data: data, body: text.slice(m[0].length), hasFrontMatter: true };
   }
 
-  /* Map lab_cost_estimate prose to a signal level. The front matter is written
-     for humans first, so this reads it the way a human would. */
+  /* Map lab_cost_estimate prose to a signal level.
+
+     Read the LEADING token only. The estimates are written for humans and
+     routinely mention later that something is set "back to Free in teardown" -
+     scanning the whole string would let that word downgrade a paid lab to $0,
+     which is the one direction a cost signal must never fail in. */
   function costLevel(estimate) {
     var s = String(estimate || '').toLowerCase();
     if (!s) return 'low';
+
+    /* Everything before the first dash, em dash or full stop: by convention the
+       estimate opens with its level. See docs/STYLE-GUIDE.md section 6. */
+    var head = s.split(/\s[-\u2013\u2014]\s|\.\s/)[0].slice(0, 40);
+
+    if (head.indexOf('highest') !== -1) return 'max';
+    if (head.indexOf('high') !== -1) return 'high';      // includes "medium-high"
+    if (head.indexOf('medium') !== -1) return 'mid';
+    if (head.indexOf('low') !== -1) return 'low';
+    if (head.indexOf('$0') !== -1 || head.indexOf('free') !== -1) return 'none';
+
+    /* Nothing recognisable at the front - fall back to the whole string, but
+       keep 'low' ahead of '$0' for the same reason as above. */
     if (s.indexOf('highest') !== -1) return 'max';
-    if (s.indexOf('high') !== -1) return 'high';       // includes "medium-high"
+    if (s.indexOf('high') !== -1) return 'high';
     if (s.indexOf('medium') !== -1) return 'mid';
-    if (s.indexOf('$0') !== -1 || s.indexOf('free') !== -1) return 'none';
     if (s.indexOf('low') !== -1) return 'low';
+    if (s.indexOf('$0') !== -1) return 'none';
     return 'low';
   }
 

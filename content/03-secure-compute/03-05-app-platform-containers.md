@@ -14,7 +14,7 @@ product_docs:
   - "https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-introduction"
   - "https://learn.microsoft.com/azure/defender-for-cloud/container-security"
   - "https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-usage"
-  - "https://learn.microsoft.com/en-us/Azure/AKS/local-accounts"
+  - "https://learn.microsoft.com/azure/aks/local-accounts"
 last_verified: "2026-09-17"
 portal: "Azure portal > Kubernetes services / Container registries; Defender for Cloud > Environment settings"
 powershell_module: "Az.Aks, Az.ContainerRegistry, Az.Security"
@@ -304,4 +304,4 @@ See [03-05 lab](../../labs/03-secure-compute/03-05-lab.md).
 - Overview of Defender for Containers: <https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-introduction>
 - Container security in Defender for Cloud: <https://learn.microsoft.com/azure/defender-for-cloud/container-security>
 - Vulnerability assessment usage in Defender for Containers: <https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-usage>
-- Manage local accounts with Microsoft Entra integration (AKS): <https://learn.microsoft.com/en-us/Azure/AKS/local-accounts>
+- Manage local accounts with Microsoft Entra integration (AKS): <https://learn.microsoft.com/azure/aks/local-accounts>

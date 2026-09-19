@@ -92,6 +92,15 @@
     var pres = root.querySelectorAll('pre');
     for (var i = 0; i < pres.length; i++) {
       (function (pre) {
+        /* The labs mix PowerShell, bash, KQL, Bicep, XML and JSON, often in one
+           page. Naming the language is the cheapest way to stop someone pasting
+           a Bicep block into a PowerShell prompt. */
+        var codeEl = pre.querySelector('code[class*="language-"]');
+        if (codeEl) {
+          var m = /language-([\w-]+)/.exec(codeEl.className);
+          if (m) codeEl.dataset.lang = m[1];
+        }
+
         var btn = node('button', 'copy-btn', 'Copy');
         btn.type = 'button';
         btn.addEventListener('click', function () {
@@ -107,6 +116,71 @@
         });
         pre.appendChild(btn);
       })(pres[i]);
+    }
+  }
+
+  /* forensic_relevance has been in the front matter of all 27 files since the
+     first module and has never been shown anywhere. It is the one field that
+     separates this guide from a cram sheet, so it gets a callout of its own,
+     directly under the title. */
+  function tacticalCallout(root, data) {
+    if (!data || !data.forensic_relevance) return;
+    var q = document.createElement('blockquote');
+    q.dataset.callout = 'tactical';
+    q.dataset.label = 'In an investigation';
+    var p = document.createElement('p');
+    p.textContent = String(data.forensic_relevance);
+    q.appendChild(p);
+
+    var anchor = root.querySelector('h1');
+    var after = anchor ? anchor.nextSibling : root.firstChild;
+    /* Sit below the progress strip if one is already there. */
+    var strip = root.querySelector('.progress-strip');
+    if (strip && strip.nextSibling) after = strip.nextSibling;
+    root.insertBefore(q, after);
+  }
+
+  /* Mermaid is optional. Vendor assets/js/vendor/mermaid.min.js and diagrams
+     render; leave it out and a ```mermaid fence stays a readable code block.
+     Progressive enhancement rather than a hard dependency, because offline
+     capability is a stated constraint of this project. */
+  function renderDiagrams(root) {
+    var fences = root.querySelectorAll('pre > code.language-mermaid');
+    if (!fences.length) return;
+
+    if (!global.mermaid) {
+      for (var i = 0; i < fences.length; i++) {
+        var pre = fences[i].parentNode;
+        pre.dataset.diagram = 'unrendered';
+        pre.title = 'Vendor assets/js/vendor/mermaid.min.js to render this as a diagram';
+      }
+      return;
+    }
+
+    var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+    try {
+      global.mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: dark ? 'dark' : 'neutral',
+        fontFamily: getComputedStyle(document.body).getPropertyValue('--face-ui')
+      });
+    } catch (e) { return; }
+
+    for (var j = 0; j < fences.length; j++) {
+      (function (code, n) {
+        var host = document.createElement('div');
+        host.className = 'diagram';
+        code.parentNode.replaceWith(host);
+        try {
+          global.mermaid.render('mmd-' + n + '-' + Date.now(), code.textContent)
+            .then(function (out) { host.innerHTML = out.svg; })
+            .catch(function () { host.textContent = code.textContent; host.dataset.failed = 'true'; });
+        } catch (e) {
+          host.textContent = code.textContent;
+          host.dataset.failed = 'true';
+        }
+      })(fences[j], j);
     }
   }
 
@@ -159,9 +233,24 @@
     }
 
     if (data.lab_cost_estimate) {
+      var level = FM.costLevel(data.lab_cost_estimate);
+      var wrap = document.createDocumentFragment();
+
       var chip = node('span', 'cost', FM.costLabel(data.lab_cost_estimate));
-      chip.dataset.level = FM.costLevel(data.lab_cost_estimate);
-      fieldRow(card, 'Cost', chip);
+      chip.dataset.level = level;
+      wrap.appendChild(chip);
+
+      /* Five steps, so HIGHEST reads as the top of a scale rather than as one
+         more word. Cost is the only thing in this guide that compounds while
+         you are not looking at it. */
+      var meter = node('span', 'meter');
+      meter.dataset.level = level;
+      meter.setAttribute('role', 'img');
+      meter.setAttribute('aria-label', 'Cost level: ' + FM.costLabel(data.lab_cost_estimate) + ' of 5');
+      for (var s = 0; s < 5; s++) meter.appendChild(node('span', 'meter__step'));
+      wrap.appendChild(meter);
+
+      fieldRow(card, 'Cost', wrap);
     }
 
     if (data.licensing) fieldRow(card, 'Licensing', String(data.licensing));
@@ -232,6 +321,8 @@
     if (!parts.length) return { kind: 'dashboard' };
     if (parts[0] === 'module' || parts[0] === 'lab') return { kind: parts[0], moduleId: parts[1] };
     if (parts[0] === 'appendix') return { kind: 'appendix', idx: parseInt(parts[1], 10) };
+    if (parts[0] === 'cost') return { kind: 'cost' };
+    if (parts[0] === 'readiness') return { kind: 'readiness' };
     return { kind: 'dashboard' };
   }
 
@@ -272,7 +363,12 @@
       /* Optional layers. Each is absent until its own file is written, and the
          page must not break in the meantime. */
       if (global.SC500Tabs && global.SC500Tabs.mount) global.SC500Tabs.mount(contentEl);
+      if (global.SC500Sections && global.SC500Sections.mount) global.SC500Sections.mount(contentEl);
+      if (global.SC500Highlight && global.SC500Highlight.mount) global.SC500Highlight.mount(contentEl);
       if (global.SC500Progress && global.SC500Progress.mountPage) global.SC500Progress.mountPage(contentEl, route);
+      renderDiagrams(contentEl);
+      tacticalCallout(contentEl, parsed.data);
+      if (global.SC500Outline && global.SC500Outline.mount) global.SC500Outline.mount(contentEl, metaEl);
       if (global.SC500Quiz && global.SC500Quiz.mount) global.SC500Quiz.mount(contentEl, route);
 
       if (global.SC500Nav) {
@@ -316,9 +412,23 @@
     document.title = 'SC500 Academy';
   }
 
+  function showView(kind) {
+    contentEl.textContent = '';
+    metaEl.textContent = '';
+    if (!global.SC500Views || !global.SC500Views[kind]) {
+      return fail('That view is unavailable.',
+        'assets/js/views.js did not load. Check the script tag in index.html.');
+    }
+    global.SC500Views[kind](contentEl, manifest);
+    if (global.SC500Nav) global.SC500Nav.setCurrent(kind);
+    document.title = (kind === 'cost' ? 'Cost planner' : 'Readiness') + ' · SC500 Academy';
+    window.scrollTo(0, 0);
+  }
+
   function route() {
     var r = parseRoute();
     if (r.kind === 'dashboard') showDashboard();
+    else if (r.kind === 'cost' || r.kind === 'readiness') showView(r.kind);
     else showPage(r);
   }
 
@@ -334,6 +444,7 @@
       buildIndex();
       if (global.SC500Nav) global.SC500Nav.mount(manifest);
       if (global.SC500Search && global.SC500Search.mount) global.SC500Search.mount(manifest);
+      if (global.SC500Palette && global.SC500Palette.mount) global.SC500Palette.mount(manifest);
       window.addEventListener('hashchange', route);
       route();
     }).catch(function (err) {
