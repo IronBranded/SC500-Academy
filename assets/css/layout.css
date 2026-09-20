@@ -228,3 +228,10 @@ body {
 
   @page { margin: 18mm 16mm; }
 }
+
+/* The hidden attribute must win.
+   A component that sets `display` in an author stylesheet silently overrides the
+   browser's own [hidden] { display: none } rule, because author styles beat the
+   user-agent stylesheet. That made the command palette paint from page load and
+   made Escape look broken - it fired, set hidden, and nothing moved. */
+[hidden] { display: none !important; }

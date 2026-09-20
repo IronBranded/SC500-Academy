@@ -1078,3 +1078,7 @@ pre[data-diagram="unrendered"]::after {
 .nav-group__fill, h3.bucket::before { }
 .bar__fill, .dash__fill, .nav-group__fill { background: var(--accent-fill, var(--accent)); }
 .cov__cell[data-level="practised"] { background: var(--accent-fill, var(--accent)); }
+
+/* Belt and braces for the two overlays that set their own display value. */
+.pal[hidden] { display: none; }
+#search-results[hidden] { display: none; }
