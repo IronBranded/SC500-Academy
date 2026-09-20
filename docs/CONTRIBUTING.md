@@ -85,11 +85,40 @@ path.**
 
 ---
 
-## Known validator gaps
+## What the validator checks
 
-Things `Test-GuideContent.ps1` does not currently catch. Each is a real defect
-class found while writing the content, not a hypothetical. Patching these is the
-highest-value improvement to the tooling.
+All eight gaps previously logged here are now closed. `tools/Test-GuideContent.ps1`
+requires **PowerShell 7** and is cross-platform. Each check below was
+negative-tested - broken on purpose, confirmed to fire, then restored.
+
+| Check | Catches |
+| --- | --- |
+| Front-matter schema | Any of the 18 keys missing; bad `domain_weight` or `status`; malformed or stale `last_verified` |
+| Required sections | A content file missing any of the nine required `##` sections |
+| Lab schema | A lab missing `## Prerequisites`, `## Validation` or `## Teardown`, or with no numbered parts |
+| Outline diff | A bullet in `SKILLS-MEASURED-SNAPSHOT.md` that no module covers, or a `sub_objective` not in the captured outline |
+| Front matter vs body | `sub_objectives` disagreeing with the `## Sub-objectives covered` list |
+| Duplicate ownership | The same sub-objective claimed by two modules |
+| Cost parity | A module's `lab_cost_estimate` level disagreeing with its lab's `**Estimated cost:**` header |
+| Quizzes | Malformed JSON, an `answer` index out of range, a `sub_skill` that is not a verbatim sub-objective, duplicate options or ids, fewer than three options, a missing explanation |
+| Manifest | Module *and appendix* paths that do not resolve; a module with no lab or no quiz |
+| Orphans | Markdown on disk that no manifest entry references |
+| Links | Unresolved relative links; with `-CheckExternalLinks`, every `learn.microsoft.com` URL |
+
+Module 0 is exempt from the exam-module rules, since `domain_weight: n/a` marks it
+as lab safety rather than an exam domain: it needs no `sub_objectives`, no lab on
+every file, and no knowledge check.
+
+```powershell
+.\tools\Test-GuideContent.ps1                       # per commit
+.\tools\Test-GuideContent.ps1 -CheckExternalLinks   # weekly
+.\tools\Test-GuideContent.ps1 -FailOn Warning       # CI
+```
+
+Exit code is 0 on pass, 1 on failure, so it drops straight into a pre-commit hook
+or a workflow step.
+
+### Previously logged gaps, for the record
 
 | Gap | Why it matters |
 | --- | --- |

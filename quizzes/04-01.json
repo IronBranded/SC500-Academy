@@ -1,0 +1,98 @@
+{
+  "module": "04-01",
+  "title": "Security Posture with Defender for Cloud",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "04-01-q1",
+      "sub_skill": "Identify security risks by using Defender CSPM",
+      "prompt": "Your organisation enables Defender CSPM. Two weeks later, attack path analysis shows nothing and cloud security explorer returns resources but no vulnerabilities. Most likely cause?",
+      "options": [
+        "The security graph takes 30 days to populate",
+        "The plan was enabled by someone without Subscription Owner, so agentless scanning never started — and without it, attack paths and the explorer do not populate with vulnerabilities",
+        "Foundational CSPM must be disabled before Defender CSPM can build the graph",
+        "Attack path analysis requires a Defender for Servers Plan 2 subscription"
+      ],
+      "answer": 1,
+      "explanation": "Agentless scanning requires the Subscription Owner to enable the plan. Someone with lower authorisation can enable it successfully — the scanner simply never turns on, the plan reads as enabled, and empty attack paths look identical to a clean environment."
+    },
+    {
+      "id": "04-01-q2",
+      "sub_skill": "Identify security risks by using Defender CSPM",
+      "prompt": "Distinguish a recommendation from an attack path, using one virtual machine as the example.",
+      "options": [
+        "An attack path is a recommendation with a higher severity score",
+        "A recommendation is one finding; an attack path is a chain — internet exposure plus a vulnerability plus an identity plus permissions on something sensitive — assembled from the security graph",
+        "A recommendation applies to a resource; an attack path applies to a subscription",
+        "An attack path is a recommendation that has been open for more than 30 days"
+      ],
+      "answer": 1,
+      "explanation": "Three separate, individually unremarkable findings become one urgent item when the graph connects them. That assembly is what turns a four-thousand-item list into a priority, and it is the conceptual core of Domain 4."
+    },
+    {
+      "id": "04-01-q3",
+      "sub_skill": "Evaluate compliance against security frameworks by using Defender for Cloud",
+      "prompt": "Your secure score is 82%, and an internet-facing VM with a critical CVE holds a managed identity with Contributor at subscription scope. What is secure score actually measuring?",
+      "options": [
+        "Risk-weighted exposure across the estate",
+        "Compliance against the Microsoft cloud security benchmark — not risk, which is why an unaddressed attack path can coexist with a high score",
+        "The proportion of resources covered by workload protection plans",
+        "The ratio of resolved to open recommendations"
+      ],
+      "answer": 1,
+      "explanation": "Secure score is computed from MCSB-based controls. It measures what is assessed, not what is dangerous. A high score with an unaddressed attack path is worse than the reverse, which is the argument for risk prioritisation."
+    },
+    {
+      "id": "04-01-q4",
+      "sub_skill": "Enable and configure Defender for Cloud workload protection plans",
+      "prompt": "A workload protection plan must apply to subscriptions your organisation creates next year, not just the ones that exist today. How?",
+      "options": [
+        "Enable the plan at the tenant root management group in Defender for Cloud",
+        "Assign the built-in Azure Policy that configures the plan, at management group scope",
+        "Enable the plan on each subscription and turn on inheritance",
+        "Plans apply to new subscriptions automatically once enabled anywhere"
+      ],
+      "answer": 1,
+      "explanation": "Plans are enabled at subscription scope and manual enablement covers only what exists. Assigning the policy is the governance pattern from 01-03 applied to workload protection — and note that a policy will re-enable a plan you turn off, so remove the assignment first when tearing down."
+    },
+    {
+      "id": "04-01-q5",
+      "sub_skill": "Connect hybrid cloud and multicloud environments to Defender for Cloud, including Amazon Web Services (AWS) and Google Cloud Platform (GCP)",
+      "prompt": "You create an AWS security connector but decline Azure Arc auto-provisioning for the discovered EC2 instances. What do you lose?",
+      "options": [
+        "Nothing — the connector covers all capabilities natively",
+        "Defender for Servers coverage on those machines; they appear in inventory with configuration assessments but no server workload protection",
+        "The ability to see them in the same secure score",
+        "Cross-cloud attack paths, which require Arc on both sides"
+      ],
+      "answer": 1,
+      "explanation": "The connector establishes read access, discovers resources and applies the equivalent assessments. Arc is what gives each machine an ARM resource ID so that Defender for Servers, Azure Policy and Machine Configuration can reach it."
+    },
+    {
+      "id": "04-01-q6",
+      "sub_skill": "Configure Microsoft Defender Vulnerability Management settings for Azure VMs",
+      "prompt": "A requirement says vulnerability findings for Azure VMs must be produced without installing anything on the machines. Which configuration satisfies it?",
+      "options": [
+        "Microsoft Defender Vulnerability Management via the Defender for Endpoint extension",
+        "Agentless scanning through disk snapshots, available with Defender for Servers Plan 2 or Defender CSPM",
+        "Azure Machine Configuration with a guest assignment",
+        "Network Watcher connection troubleshoot"
+      ],
+      "answer": 1,
+      "explanation": "MDVM reaches Azure VMs two ways: with the Defender for Endpoint extension, which is an agent, and agentlessly through disk snapshot scanning. Only the second satisfies 'without installing anything', and its findings feed the security graph."
+    },
+    {
+      "id": "04-01-q7",
+      "sub_skill": "Discover unprotected assets and vulnerabilities by using Microsoft Defender External Attack Surface Management (EASM)",
+      "prompt": "Your internal inventory is complete and your secure score is 90%. What class of asset does Defender EASM find that neither can?",
+      "options": [
+        "Resources in subscriptions you do not own",
+        "Internet-facing assets nobody in the organisation remembers owning — a marketing microsite, a forgotten test environment, a subsidiary's infrastructure",
+        "Assets missing a workload protection plan",
+        "Machines whose agents have stopped reporting"
+      ],
+      "answer": 1,
+      "explanation": "EASM works outward from seeds — domains, IP blocks, hosts, ASNs, WHOIS organisations — and builds an inventory of what an attacker sees. That is shadow IT, which is the category most likely to be unpatched, unmonitored and unowned. Note it is billed per asset in inventory, so seed narrowly."
+    }
+  ]
+}

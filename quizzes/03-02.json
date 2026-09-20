@@ -1,0 +1,72 @@
+{
+  "module": "03-02",
+  "title": "AI Agent Identity and Governance",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "03-02-q1",
+      "sub_skill": "Implement conditional access for Microsoft Entra Agent ID",
+      "prompt": "Your tenant requires MFA for All users. You deploy your first autonomous agent and it fails to acquire a token. What is the cause and the fix?",
+      "options": [
+        "The agent's blueprint lacks a client secret; issue one",
+        "Agents cannot satisfy interactive controls such as MFA — exclude agent identities from the broad policy and write dedicated agent policies using identity filters, risk and named locations",
+        "Conditional Access does not apply to agents at all; the failure is unrelated",
+        "The agent needs a Global Secure Access licence before it can acquire tokens"
+      ],
+      "answer": 1,
+      "explanation": "There is no human to complete an MFA challenge. Microsoft's guidance is to audit broad policies for agent impact, exclude agents, and build dedicated policies from controls agents can actually satisfy. Conditional Access does apply to agent identities requesting tokens for a resource."
+    },
+    {
+      "id": "03-02-q2",
+      "sub_skill": "Analyze blast radius for security risks related to Entra Agent ID by using Defender XDR",
+      "prompt": "Two agents have identical tools and grounding sources. One runs on-behalf-of a signed-in user; the other is autonomous. How do their blast radii compare?",
+      "options": [
+        "Identical, because the tools are identical",
+        "The autonomous agent's is larger in every case",
+        "The on-behalf-of agent's varies with whoever is talking to it, because it acts with that user's permissions; the autonomous agent's is fixed at whatever its own identity holds",
+        "Neither has a blast radius until a credential is compromised"
+      ],
+      "answer": 2,
+      "explanation": "An on-behalf-of agent acts with the signed-in user's identity and permissions, so its reach changes per user. An autonomous agent has no user context, so its own assignments are the whole of its reach. Blast radius here is about subversion of instructions, not credential theft."
+    },
+    {
+      "id": "03-02-q3",
+      "sub_skill": "Enable and configure real-time protection for Microsoft Copilot Studio agents",
+      "prompt": "You enable advanced real-time protection in the Microsoft Defender portal. Agents remain unprotected. What is missing, and what would have told you?",
+      "options": [
+        "A Copilot Studio licence; the agent would show as Unlicensed",
+        "The corresponding Power Platform administrator step; a protected agent shows as Connected in the Security for AI settings",
+        "An Entra Agent ID blueprint; the agent would not appear in the inventory",
+        "A Defender for Cloud Apps connector; the agent would show as Discovered"
+      ],
+      "answer": 1,
+      "explanation": "Advanced real-time protection is a two-sided configuration. The Defender portal step and the Power Platform step are both required, and the indicator that protection is live is the agent showing as Connected in the Security for AI settings."
+    },
+    {
+      "id": "03-02-q4",
+      "sub_skill": "Manage Entra Agent ID access",
+      "prompt": "An agent created eight months ago by a departed employee still runs nightly with nobody accountable. Which mechanisms should have prevented this?",
+      "options": [
+        "A Conditional Access policy blocking high-risk agent identities",
+        "An entitlement management access package with an expiry, plus a sponsorship lifecycle workflow that transfers sponsorship when a sponsor leaves",
+        "Advanced real-time protection on the agent's runtime",
+        "Assigning the agent to a dedicated Security Copilot workspace"
+      ],
+      "answer": 1,
+      "explanation": "Access packages make an agent's access expire unless someone re-confirms it, and lifecycle workflow templates for sponsorship transfer exist specifically to prevent orphaned agents. Conditional Access governs how an agent gets tokens, not who is accountable for it."
+    },
+    {
+      "id": "03-02-q5",
+      "sub_skill": "Manage agents in Microsoft 365 admin center",
+      "prompt": "Any licensed user in your tenant can build a Copilot Studio agent. Where do you take a tenant-wide inventory and block ones you do not want?",
+      "options": [
+        "Entra admin center, under Agent ID blueprints",
+        "Microsoft 365 admin center agent management",
+        "Defender portal, under Security for AI agents",
+        "Power Platform admin center environments only"
+      ],
+      "answer": 1,
+      "explanation": "The Microsoft 365 admin center provides the tenant-wide agent inventory with ownership, risk indicators, and the ability to block or disable. Shadow agents are the governance problem here, and you cannot govern an inventory you have not taken."
+    }
+  ]
+}

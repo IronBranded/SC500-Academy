@@ -242,6 +242,8 @@
     input.addEventListener('focus', buildDeep);
 
     input.addEventListener('keydown', function (e) {
+      /* Escape also handled globally at capture phase in palette.js, so it
+         works when focus has moved into the results panel. */
       if (e.key === 'Escape') { input.value = ''; close(); input.blur(); }
       if (e.key === 'Enter') {
         var first = panel.querySelector('.nav-link');

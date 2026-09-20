@@ -48,6 +48,7 @@ forensic_relevance: "Third-party prep sites currently contradict each other and 
 | Scheduling | **Pearson VUE** |
 | Price | Varies by the country or region in which the exam is proctored |
 | Retakes | 24 hours after the first attempt; **for subsequent retakes the interval varies** - see the retake policy |
+| **Passing score** | **700 of 1000**, scaled |
 | Practice Assessment | **Not currently available.** Microsoft notes these usually appear within 8 weeks of an exam going out of beta and generally available |
 | Certification page last updated | 2026-07-24 |
 
@@ -178,10 +179,10 @@ passing score**, and neither does the exam duration and experience page. What is
   the number varies by exam and is subject to change
 - Scoring is scaled, and the score report you receive shows performance by skill area
 
-The commonly cited **700 out of 1000** figure for role-based exams is the standard Microsoft
-scoring model rather than something stated on the SC-500 page itself. Treat it as the working
-assumption and confirm on Microsoft's scoring documentation - and be sceptical of any site that
-quotes a **pass rate percentage**, which Microsoft does not publish at all.
+**A score of 700 or greater is required to pass.** The SC-500 study guide states this directly,
+in its Useful links table, alongside a link to Microsoft's exam scoring and score reports page.
+Be sceptical of any site quoting a **pass rate percentage**, though - Microsoft does not publish
+one.
 
 **What the scaled score means in practice:** questions are not worth equal marks, so a domain's
 weight is a better guide to study effort than a question count would be.

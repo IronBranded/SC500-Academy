@@ -40,7 +40,7 @@ forensic_relevance: "Azure Firewall logs are the closest thing Azure has to a pe
 ## Sub-objectives covered
 
 - Implement and configure Microsoft Entra Private Access
-- Configure Azure private endpoints to secure access to Azure PaaS resources
+- Configure Azure private endpoints to secure access to Azure platform as a service (PaaS) resources
 - Configure Azure Private Link services to secure access to network resources
 - Implement and configure Azure Firewall
 - Evaluate effective security rules by using Azure Network Watcher diagnostics

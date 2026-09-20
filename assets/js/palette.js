@@ -172,7 +172,10 @@
     location.hash = e.href;
   }
 
+  var restoreFocus = null;
+
   function open() {
+    restoreFocus = document.activeElement;
     el.hidden = false;
     input.value = '';
     render('');
@@ -180,7 +183,14 @@
     loadObjectives().then(function () { if (!el.hidden) render(input.value); });
   }
 
-  function close() { el.hidden = true; input.blur(); }
+  function close() {
+    if (el.hidden) return;
+    el.hidden = true;
+    input.blur();
+    /* Put the reader back where they were, rather than on <body>. */
+    if (restoreFocus && restoreFocus.focus) { try { restoreFocus.focus(); } catch (e) {} }
+    restoreFocus = null;
+  }
 
   function build() {
     el = node('div', 'pal');
@@ -214,7 +224,7 @@
       if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
       else if (e.key === 'Enter') { e.preventDefault(); if (results[active]) go(results[active]); }
-      else if (e.key === 'Escape') { e.preventDefault(); close(); }
+      /* Escape is handled globally at capture phase - see mount(). */
     });
   }
 
@@ -222,6 +232,40 @@
     manifest = m;
     entries = baseEntries();
     build();
+
+    /* Escape is handled first, at capture phase, so it works regardless of
+       where focus currently sits and cannot be swallowed by a child handler.
+       It closes whatever is open, in the order a reader would expect. */
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' && e.key !== 'Esc') return;
+
+      if (!el.hidden) { e.preventDefault(); e.stopPropagation(); close(); return; }
+
+      var results = document.getElementById('search-results');
+      if (results && !results.hidden) {
+        e.preventDefault();
+        results.hidden = true;
+        results.textContent = '';
+        var box = document.getElementById('search');
+        if (box) { box.value = ''; box.blur(); }
+        return;
+      }
+
+      var drawer = document.getElementById('sidebar');
+      if (drawer && drawer.dataset.open === 'true') {
+        e.preventDefault();
+        drawer.dataset.open = 'false';
+        var toggle = document.getElementById('nav-toggle');
+        if (toggle) { toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); }
+        return;
+      }
+
+      /* Nothing open: drop focus out of the search box if that is where it is. */
+      if (document.activeElement && document.activeElement.id === 'search') {
+        document.activeElement.value = '';
+        document.activeElement.blur();
+      }
+    }, true);
 
     document.addEventListener('keydown', function (e) {
       var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);

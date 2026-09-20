@@ -1,0 +1,91 @@
+{
+  "module": "03-05",
+  "title": "Container Platform Security",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "03-05-q1",
+      "sub_skill": "Detect misconfigurations and runtime risks in container workloads by using Defender for Containers",
+      "prompt": "Why is binary drift a stronger signal inside a container than the equivalent would be on a virtual machine?",
+      "options": [
+        "Containers write far fewer files, so any write is anomalous",
+        "A container is supposed to be exactly its image and nothing else, so a process that did not come from the image is close to definitional evidence of compromise; on a VM, administrators legitimately install things",
+        "The Defender sensor cannot see process activity on VMs",
+        "Containers cannot be patched in place, so binaries never change legitimately"
+      ],
+      "answer": 1,
+      "explanation": "The detection works because the platform's constraints are tighter. Drift detection alerts on unauthorised external processes running inside a container; drift blocking stops them, and the two are separate settings."
+    },
+    {
+      "id": "03-05-q2",
+      "sub_skill": "Detect misconfigurations and runtime risks in container workloads by using Defender for Containers",
+      "prompt": "Defender for Containers reports no vulnerabilities for a running workload, and the registry shows its source image as clean. Why might the running container still be vulnerable?",
+      "options": [
+        "Registry scanning covers images at rest; assessing running images additionally requires agentless machine scanning plus either K8s API access or the Defender sensor",
+        "The image may have been pulled from a registry you do not scan",
+        "Language-package vulnerabilities are never reported, only OS packages",
+        "Running containers are assessed only once, at admission"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Two things are true. The prerequisites for assessing running images differ from those for registry images, and a cluster can pull from anywhere — a clean registry does not mean a clean cluster. Microsoft Defender Vulnerability Management covers OS and language packages."
+    },
+    {
+      "id": "03-05-q3",
+      "sub_skill": "Implement and configure security controls for Azure Kubernetes Service (AKS)",
+      "prompt": "A cluster has Microsoft Entra integration and Kubernetes RBAC enabled. An engineer who left the company last month still runs kubectl successfully. Give the two most likely explanations.",
+      "options": [
+        "Local accounts are still enabled, so the --admin path works and is not auditable",
+        "Permissions were defined in cluster manifests rather than as Azure role assignments, so they did not disappear when the account left the directory",
+        "The cluster's API server has no authorised IP ranges",
+        "The kubelet identity retains AcrPull"
+      ],
+      "answer": [
+        0,
+        1
+      ],
+      "explanation": "Local accounts are enabled by default and --admin remains a non-auditable backdoor even with Entra integration and RBAC. Separately, Kubernetes RBAC bindings live in the cluster and outlive the employee; Azure RBAC for Kubernetes puts them under Entra. Note that disabling local accounts on an existing cluster also requires rotating the cluster certificates."
+    },
+    {
+      "id": "03-05-q4",
+      "sub_skill": "Implement and configure security controls for Azure Container Registry",
+      "prompt": "A pipeline authenticates to Azure Container Registry with the admin account. What is wrong, and what replaces it?",
+      "options": [
+        "Nothing — the admin account is the supported automation path",
+        "It is a single shared credential with push rights and no identity behind it; disable it and use Entra with AcrPush for the pipeline and AcrPull on the cluster's kubelet identity",
+        "It is fine for pipelines but must be disabled for clusters",
+        "It should be replaced with an anonymous pull token"
+      ],
+      "answer": 1,
+      "explanation": "The admin account is the storage account key problem from 02-01 in a different costume. Entra authentication with AcrPull and AcrPush role assignments removes the shared credential, and attaching the registry to AKS grants AcrPull to the kubelet identity so no registry credential exists anywhere."
+    },
+    {
+      "id": "03-05-q5",
+      "sub_skill": "Implement and configure security controls for Azure Kubernetes Service (AKS)",
+      "prompt": "You want to guarantee that no privileged container can ever be created in a cluster, regardless of what a developer submits. Describe the mechanism.",
+      "options": [
+        "A network policy denying pod-to-pod traffic",
+        "The Azure Policy for Kubernetes add-on, evaluating every request to the API server at admission before it is persisted, with the effect set to deny rather than audit",
+        "The Defender sensor, blocking the container at runtime",
+        "An admission webhook configured in the container registry"
+      ],
+      "answer": 1,
+      "explanation": "Admission control is the only place to stop a privileged pod being created at all. With the add-on installed, every API server request is evaluated against your policies before it is persisted — and the audit-versus-deny choice is what decides whether you report or prevent."
+    },
+    {
+      "id": "03-05-q6",
+      "sub_skill": "Implement and configure security controls for Azure Container Instances and Azure Container Apps",
+      "prompt": "A container app must pull from your registry and reach a key vault, with no credential stored anywhere, and must not be reachable from the internet. Which configuration?",
+      "options": [
+        "External ingress with an IP allow-list, and a registry username and password in app settings",
+        "Internal ingress, a managed identity used for both the registry pull and the key vault, and secrets referenced from Key Vault rather than set as environment variables",
+        "External ingress with client certificate authentication, and the ACR admin account",
+        "Internal ingress and the ACR admin account, since the app is not public"
+      ],
+      "answer": 1,
+      "explanation": "Internal ingress removes public reachability; the managed identity removes the registry credential and the key vault credential. Secrets in environment variables in the deployment definition are readable by anyone who can read the definition."
+    }
+  ]
+}

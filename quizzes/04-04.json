@@ -1,0 +1,72 @@
+{
+  "module": "04-04",
+  "title": "Sentinel Automation, Retention, and Purview Audit",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "04-04-q1",
+      "sub_skill": "Implement automation rules and playbooks in Microsoft Sentinel",
+      "prompt": "An automation rule is configured to run a playbook on incident creation. Incidents are created, the playbook never runs, and the rule reports no error. Most likely cause?",
+      "options": [
+        "The playbook's trigger type is incident rather than alert",
+        "Sentinel lacks the Microsoft Sentinel Automation Contributor role on the playbook's resource group",
+        "The playbook's managed identity lacks Responder on the workspace",
+        "The automation rule's order places it after a closing rule"
+      ],
+      "answer": 1,
+      "explanation": "This is the silent failure the role exists to prevent — the rule looks correct and does nothing, with no error where you would look for one. It is also the reason Automation Contributor is assigned to the Sentinel service rather than to a person."
+    },
+    {
+      "id": "04-04-q2",
+      "sub_skill": "Implement automation rules and playbooks in Microsoft Sentinel",
+      "prompt": "Name one task only an automation rule can do, and one only a playbook can do.",
+      "options": [
+        "Only a rule can add a comment; only a playbook can change severity",
+        "Only a rule can suppress incidents with an expiration date; only a playbook can reach an external system such as a ticketing tool",
+        "Only a rule can call an external API; only a playbook can assign an owner",
+        "Only a rule can run on a schedule; only a playbook can close an incident"
+      ],
+      "answer": 1,
+      "explanation": "Automation rules are the routing layer — trigger, conditions, order, status and severity changes, suppression with an expiry. Playbooks are the action layer and can reach anything Logic Apps can reach."
+    },
+    {
+      "id": "04-04-q3",
+      "sub_skill": "Implement data retention in Microsoft Sentinel data stores",
+      "prompt": "Your workspace has 90-day interactive retention and two-year total retention. An investigation needs data from 14 months ago. What do you do?",
+      "options": [
+        "Query it directly — total retention means it is queryable",
+        "Run a search job, which queries long-term data and writes results into a new table, or restore a time range into interactive tier; both take time and both carry charges, typically with minimums",
+        "Re-ingest the data from the original source",
+        "Raise interactive retention to 24 months, which applies retroactively"
+      ],
+      "answer": 1,
+      "explanation": "Archived data is retained, not queryable. 'We have two years of data' and 'we can query two years of data' are different claims with different price tags — and a search job leaves a new table behind that counts against retention."
+    },
+    {
+      "id": "04-04-q4",
+      "sub_skill": "Query Microsoft Purview Audit in Defender XDR",
+      "prompt": "An account is compromised and you need to know which emails were accessed. What determines whether you can answer?",
+      "options": [
+        "Whether Sentinel's OfficeActivity connector was enabled",
+        "Whether the user held an Audit (Premium) licence, since MailItemsAccessed is generated only for licensed users",
+        "Whether mailbox auditing was enabled on the tenant",
+        "Whether the mailbox was placed on litigation hold"
+      ],
+      "answer": 1,
+      "explanation": "MailItemsAccessed fires when mail data is accessed by a protocol or client, even with no explicit signal that messages were read, and records the access type. It is per-user licensed, so the answer to 'what did the attacker read' was decided months before the incident."
+    },
+    {
+      "id": "04-04-q5",
+      "sub_skill": "Query Microsoft Purview Audit in Defender XDR",
+      "prompt": "Audit search returns nothing at all, for every query, across every workload. What do you check first?",
+      "options": [
+        "The audit retention policy, which may have expired the records",
+        "Whether unified audit log ingestion is enabled — it can be turned off tenant-wide, and an attacker who does so has blinded the whole organisation",
+        "Whether your account holds the Audit Reader role",
+        "Whether the Defender portal has finished indexing"
+      ],
+      "answer": 1,
+      "explanation": "Get-AdminAuditLogConfig reports UnifiedAuditLogIngestionEnabled. Nothing across everything is a very different symptom from nothing for one workload, and in a real tenant a disabled audit log is a finding in its own right."
+    }
+  ]
+}

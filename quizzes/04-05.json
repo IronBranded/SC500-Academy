@@ -1,0 +1,72 @@
+{
+  "module": "04-05",
+  "title": "Microsoft Security Copilot",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "04-05-q1",
+      "sub_skill": "Manage permissions and roles in Security Copilot",
+      "prompt": "Your organisation onboards Security Copilot. A finance user discovers they can open the portal. Why?",
+      "options": [
+        "Their Entra role inherits Copilot owner",
+        "Copilot contributor is granted to every user in the Microsoft Entra tenant by default; restricting it is a deliberate act",
+        "Security Copilot is licensed per tenant, so all users are entitled",
+        "The workspace was created without role assignments"
+      ],
+      "answer": 1,
+      "explanation": "Onboarding opens the platform to the directory rather than to the SOC. Note what restricting it does and does not change: it governs who can use the platform, not what they can see once inside."
+    },
+    {
+      "id": "04-05-q2",
+      "sub_skill": "Enable and configure plugins",
+      "prompt": "An analyst holding Compliance Administrator reports that Copilot answers Microsoft Purview questions well but returns nothing for Sentinel. Explain.",
+      "options": [
+        "The Sentinel plugin is in preview and unavailable to non-owners",
+        "Copilot inherits the signed-in user's existing permissions; their Purview role grants Purview data access, and reaching Sentinel data needs its own role assignment",
+        "Plugins can only be enabled one at a time per workspace",
+        "Sentinel data requires a separate SCU allocation"
+      ],
+      "answer": 1,
+      "explanation": "A Copilot role grants no access to underlying security data. Two analysts running the same prompt legitimately get different answers, and an empty result means no data or no access — a permissions question, not a prompt question."
+    },
+    {
+      "id": "04-05-q3",
+      "sub_skill": "Configure workspaces for Security Copilot",
+      "prompt": "Provisioning capacity fails for an administrator who holds Global Administrator in the tenant. Most likely cause?",
+      "options": [
+        "Global Administrator cannot provision capacity; only Security Administrator can",
+        "They lack Azure Contributor or Owner on the subscription or resource group — capacity is an Azure resource, and both permissions are required",
+        "The tenant has no Security Copilot licence assigned to that user",
+        "Capacity must be provisioned from the Azure portal, not the Copilot portal"
+      ],
+      "answer": 1,
+      "explanation": "Provisioning needs Azure Contributor or Owner on the subscription or resource group, plus Security Administrator or higher in the tenant. Neither alone is sufficient, and discovering that after a failed attempt wastes session time you are paying for."
+    },
+    {
+      "id": "04-05-q4",
+      "sub_skill": "Enable and configure Microsoft agents and Security Store agents",
+      "prompt": "Your SCU bill has tripled and analyst usage is unchanged. What do you check first?",
+      "options": [
+        "The number of plugins enabled per workspace",
+        "Scheduled agents, which consume capacity continuously whether or not anyone reads their output",
+        "The workspace's geo, which affects unit pricing",
+        "Whether custom plugins are calling external APIs"
+      ],
+      "answer": 1,
+      "explanation": "Agents run defined security work on a schedule and draw from the capacity of the workspace they are assigned to. An agent enabled and forgotten is a recurring charge with nobody watching the output — check agents before people."
+    },
+    {
+      "id": "04-05-q5",
+      "sub_skill": "Configure workspaces for Security Copilot",
+      "prompt": "Different teams need different capacity budgets, different plugin sets, and data stored in different regions for compliance. What is the unit of segmentation?",
+      "options": [
+        "One tenant per team, linked by Azure Lighthouse",
+        "Workspaces — each holds its own capacity, plugin configuration, role assignments and data storage geo, chosen at creation",
+        "Plugin scopes, applied per user group",
+        "Separate SCU allocations against a single workspace"
+      ],
+      "answer": 1,
+      "explanation": "A workspace is the unit of segmentation, and the geo selection is a data residency decision made at creation rather than a performance setting. Capacity can be moved between workspaces afterwards; the geo cannot."
+    }
+  ]
+}

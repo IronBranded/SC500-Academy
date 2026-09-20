@@ -1,0 +1,85 @@
+{
+  "module": "03-04",
+  "title": "Server and Virtual Machine Security",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "03-04-q1",
+      "sub_skill": "Implement and configure disk encryption",
+      "prompt": "A VM already has server-side encryption with a platform-managed key. Defender for Cloud still recommends enabling encryption at host. What does it add, and what must you do to the VM?",
+      "options": [
+        "It encrypts the OS disk for the first time; no change to the VM is required",
+        "It also covers temp disks and host caches, and the VM must be deallocated to enable it on an existing VM",
+        "It moves the key into Key Vault, and the VM must be restarted",
+        "It enables BitLocker inside the guest, and the VM must be re-imaged"
+      ],
+      "answer": 1,
+      "explanation": "Encryption at host runs on the host before data reaches storage and covers temp disks and host caches, which server-side encryption alone does not. Enabling it on an existing VM requires deallocation — the constraint scenario questions hang on."
+    },
+    {
+      "id": "03-04-q2",
+      "sub_skill": "Configure security features on a VM, including secure boot, virtual Trusted Platform Module (vTPM), integrity monitoring, and security type",
+      "prompt": "A VM fails to boot after a patch. Which component would have told you the boot chain was tampered with, as opposed to preventing the boot?",
+      "options": [
+        "Secure Boot, because it blocks unsigned components",
+        "The vTPM, because it stores the keys",
+        "Boot integrity monitoring, because it attests the vTPM measurements remotely and raises a Defender for Cloud alert on failure",
+        "Azure Machine Configuration, because it audits the OS baseline"
+      ],
+      "answer": 2,
+      "explanation": "Secure Boot prevents unsigned boot components loading. The vTPM measures the chain. Integrity monitoring attests those measurements and reports. A question asking how you would detect boot-level tampering wants the third."
+    },
+    {
+      "id": "03-04-q3",
+      "sub_skill": "Configure Defender for Servers settings, including vulnerability scanning, and endpoint detection and response (EDR)",
+      "prompt": "You enable Defender for Servers Plan 2. Three days later an auditor asks for a record of changes to a file on a Linux VM. Can you produce one?",
+      "options": [
+        "Yes — file integrity monitoring is enabled automatically with Plan 2",
+        "Only if file integrity monitoring was switched on after enabling the plan; it is the one Plan 2 feature not enabled by default",
+        "No — file integrity monitoring requires Plan 1 and the Log Analytics agent",
+        "Yes, but only for Windows machines"
+      ],
+      "answer": 1,
+      "explanation": "Endpoint protection, vulnerability assessment and agentless scanning are on by default with the plan. File integrity monitoring is not, and it now runs on Defender for Endpoint rather than the retired Log Analytics or Azure Monitor agent paths."
+    },
+    {
+      "id": "03-04-q4",
+      "sub_skill": "Enable and enforce use of just-in-time (JIT) VM access",
+      "prompt": "Your organisation deploys Bastion and mandates its use. An engineer reports they can still RDP directly to a VM from home. What is wrong?",
+      "options": [
+        "Bastion is deployed in the wrong subnet",
+        "The VMs still have public IPs and open management ports; Bastion adds a secure path without removing the insecure one, and JIT is what keeps the port closed",
+        "Bastion requires the Premium SKU to block direct RDP",
+        "The engineer holds Owner, which bypasses Bastion"
+      ],
+      "answer": 1,
+      "explanation": "Bastion removes the need for a public IP; it does not remove one that already exists. Bastion and just-in-time VM access are complementary — one removes the public IP, the other ensures the port is shut when nobody is using it."
+    },
+    {
+      "id": "03-04-q5",
+      "sub_skill": "Implement and manage agentless scanning for VMs in Defender for Servers",
+      "prompt": "State the trade-off between agentless scanning and the Defender for Endpoint agent.",
+      "options": [
+        "Agentless is strictly better: same data, no installation",
+        "Agentless snapshots the disk with no agent, no connectivity and no performance cost, but provides no real-time behavioural signal; the agent provides EDR",
+        "The agent is required for vulnerability assessment; agentless covers only malware",
+        "They are alternatives and enabling both is unsupported"
+      ],
+      "answer": 1,
+      "explanation": "They are complementary, not alternatives. Agentless gives software inventory, vulnerability assessment, secrets and malware detection out of band. A machine with only agentless coverage has no EDR."
+    },
+    {
+      "id": "03-04-q6",
+      "sub_skill": "Enforce security configuration of Azure-managed servers by using Azure Machine Configuration",
+      "prompt": "An Arc-enabled on-premises server appears in Defender for Cloud but produces no OS configuration assessment results. What would you check first?",
+      "options": [
+        "Whether the server has a public IP",
+        "Whether the Azure Machine Configuration extension and a managed identity are present on the machine",
+        "Whether the server is in the same region as the workspace",
+        "Whether agentless scanning is enabled on the subscription"
+      ],
+      "answer": 1,
+      "explanation": "OS configuration assessment against the Microsoft cloud security benchmark baselines requires the Azure Machine Configuration extension, which in turn needs a managed identity on the machine. Silence is not a clean result."
+    }
+  ]
+}

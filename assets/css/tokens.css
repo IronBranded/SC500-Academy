@@ -1,63 +1,79 @@
 /* tokens.css - SC-500 guide
    Design tokens. Nothing here paints anything; layout.css and components.css do.
 
-   DARK IS THE DEFAULT. This is read in long sessions, often late, by people who
-   spend their day in a terminal and a Defender portal. :root carries the dark
-   values; light is opt-in via [data-theme="light"], and [data-theme="system"]
-   follows the OS.
+   PALETTE: Microsoft Fluent 2 / Azure portal values, not invented brand hexes.
+   Neutrals follow the Azure portal's own dark and light surfaces so the guide
+   sits continuously beside the portals it teaches.
 
-   Typography follows the Microsoft ecosystem so the guide feels continuous with
-   the portals it teaches: Segoe UI first, then a modern sans fallback chain. No
-   web fonts - the site must work from a folder on a plane.
+   DOMAIN TINTS MAP TO PRODUCT FAMILIES, which is the point of using this palette
+   at all - the colour tells you which part of the stack you are in:
 
-   Strong colour is reserved for encoding lab cost and destructive commands. */
+     00  neutral          lab safety, not an exam domain
+     01  Entra cyan       identity, access, governance
+     02  Azure blue       storage, databases, networking
+     03  Copilot purple   secure compute and AI
+     04  Defender indigo  posture, Sentinel, Security Copilot
+
+   DARK IS THE DEFAULT. Light is opt-in via [data-theme="light"];
+   [data-theme="system"] follows the OS.
+
+   Strong colour is still reserved for cost and destructive commands. Azure blue
+   is the interface accent; it never signals risk. */
 
 :root {
-  /* --- base palette: DARK (default) ------------------------------------- */
-  --ink:        #e6ebe8;
-  --ink-soft:   #a8b5ae;
-  --ink-faint:  #8a978f;
-  --paper:      #0f1614;
-  --paper-raise:#171f1d;
-  --paper-sink: #0a100f;
-  --rule:       #2b3733;
-  --brass:      #d6a15b;
-  --brass-deep: #e8b877;
+  /* --- neutrals: Azure portal dark ---------------------------------------- */
+  --ink:        #f3f2f1;   /* Fluent neutral foreground on dark */
+  --ink-soft:   #c8c6c4;
+  --ink-faint:  #a19f9d;
+  --paper:      #1b1a19;   /* Azure portal dark body */
+  --paper-raise:#252423;   /* cards, code, rails */
+  --paper-sink: #141313;
+  --rule:       #3b3a39;
 
-  --cost-none:  #5fb894;
-  --cost-low:   #74ab97;
-  --cost-mid:   #d6a15b;
-  --cost-high:  #e07a66;
-  --cost-max:   #f09182;
+  /* --- accent: Azure / Fluent communication blue -------------------------- */
+  --accent:      #4ca8f7;  /* blue tint for dark surfaces (AA on --paper) */
+  --accent-deep: #83c6fb;
+  --accent-fill: #4ca8f7;
+  --brass:      var(--accent);        /* legacy alias - components.css uses it */
+  --brass-deep: var(--accent-deep);
+
+  /* --- cost signals: Fluent semantic colours ------------------------------ */
+  --cost-none:  #54b054;   /* Fluent success, lightened for dark */
+  --cost-low:   #3a96dd;   /* informational */
+  --cost-high:  #f1707b;   /* Fluent danger, lightened */
+  --cost-mid:   #fce100;   /* Fluent warning yellow is illegible as a chip... */
+  --cost-mid:   #f7a23b;   /* ...so warning orange carries "Medium" instead */
+  --cost-max:   #ff8c8c;
 
   --status-ga:      var(--ink-soft);
-  --status-preview: var(--brass);
+  --status-preview: #f7a23b;   /* preview reads as a caution, not an accent */
 
-  --domain-00: #8a978f;
-  --domain-01: #6aa3b0;
-  --domain-02: #7d9cc4;
-  --domain-03: #9c8cc0;
-  --domain-04: #6fae93;
+  /* --- domain tints: the product families --------------------------------- */
+  --domain-00: #a19f9d;   /* neutral */
+  --domain-01: #4fc3dc;   /* Microsoft Entra */
+  --domain-02: #4ca8f7;   /* Azure core services */
+  --domain-03: #b4a0e8;   /* Copilot / AI */
+  --domain-04: #a78bda;   /* Defender / Sentinel */
 
-  /* Syntax: raised contrast over the first pass, but still muted by design.
-     The one exception is --syn-danger, which must stay the loudest thing in
-     any code block. */
-  --syn-comment:  #7f8d86;
-  --syn-string:   #9ec2e8;
-  --syn-keyword:  #c4b0e8;
-  --syn-fn:       #86d3e0;
-  --syn-variable: #e8b877;
-  --syn-param:    #b6c2bb;
-  --syn-number:   #8ad8b4;
-  --syn-danger:   #ff8a73;
+  /* --- syntax --------------------------------------------------------------
+     Tuned against the Azure portal's own code surfaces. Muted by design, with
+     one exception: --syn-danger must remain the loudest thing in any block. */
+  --syn-comment:  #8a8886;
+  --syn-string:   #9cdcfe;   /* VS Code dark+ string blue */
+  --syn-keyword:  #c5a3e8;
+  --syn-fn:       #6ed0d8;
+  --syn-variable: #f7a23b;
+  --syn-param:    #c8c6c4;
+  --syn-number:   #7fd18c;
+  --syn-danger:   #ff8c8c;
 
-  /* --- callouts ---------------------------------------------------------- */
-  --call-exam:     #7d9cc4;   /* heavily tested */
-  --call-warn:     #e07a66;   /* misconfiguration, cost, irreversible */
-  --call-tactical: #6fae93;   /* how it lands in an investigation */
-  --call-note:     #8a978f;
+  /* --- callouts ------------------------------------------------------------ */
+  --call-exam:     #4ca8f7;   /* Azure blue: heavily tested */
+  --call-warn:     #f1707b;   /* Fluent danger: misconfiguration, cost, irreversible */
+  --call-tactical: #54b054;   /* Fluent success: how it lands in an investigation */
+  --call-note:     #a19f9d;
 
-  /* --- type -------------------------------------------------------------- */
+  /* --- type ---------------------------------------------------------------- */
   --face-ui:   "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui,
                Inter, Roboto, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --face-body: var(--face-ui);
@@ -77,11 +93,9 @@
 
   --lh-tight: 1.15;
   --lh-body:  1.6;
-
   --w-heading: 700;
   --measure: 72ch;
 
-  /* --- spacing ----------------------------------------------------------- */
   --s-1: 0.25rem;  --s-2: 0.5rem;   --s-3: 0.75rem;  --s-4: 1rem;
   --s-5: 1.5rem;   --s-6: 2rem;     --s-7: 3rem;     --s-8: 4.5rem;
 
@@ -89,51 +103,57 @@
   --w-meta:    17rem;
   --h-topbar:  3.25rem;
 
-  --radius:    4px;
+  --radius:    4px;    /* Fluent 2 corner radius */
   --radius-lg: 8px;
 
-  --focus: 2px solid var(--brass);
+  --focus: 2px solid var(--accent);
 
   color-scheme: dark;
 }
 
-/* --- light, opt-in -------------------------------------------------------- */
+/* --- light: Azure portal light ------------------------------------------- */
 :root[data-theme="light"] {
-  --ink:        #14211e;
-  --ink-soft:   #46564f;
-  --ink-faint:  #5f6d66;
-  --paper:      #f4f6f4;
+  --ink:        #201f1e;
+  --ink-soft:   #484644;
+  --ink-faint:  #605e5c;   /* Fluent neutral secondary, AA on --paper */
+  --paper:      #faf9f8;
   --paper-raise:#ffffff;
-  --paper-sink: #e9edea;
-  --rule:       #d3dad5;
-  --brass:      #96661f;
-  --brass-deep: #7a5218;
+  --paper-sink: #f3f2f1;
+  --rule:       #e1dfdd;
 
-  --cost-none:  #216b51;
-  --cost-low:   #3d6f5f;
-  --cost-mid:   #96661f;
-  --cost-high:  #a63a2b;
-  --cost-max:   #7d2318;
+  --accent:      #005a9e;  /* Azure blue, dark shade: #0078d4 measures 4.31:1 on
+                              --paper and fails AA for text. The brand hex is
+                              kept for fills via --accent-fill. */
+  --accent-deep: #004578;
+  --accent-fill: #0078d4;
 
-  --domain-00: #5f6d66;
-  --domain-01: #2f6b78;
-  --domain-02: #3a5a81;
-  --domain-03: #5b4a7e;
-  --domain-04: #2f6a53;
+  --cost-none:  #107c10;   /* Fluent success */
+  --cost-low:   #0078d4;
+  --cost-mid:   #8e4600;   /* Fluent warning, darkened to clear AA (was #c26200, 3.96:1) */
+  --cost-high:  #c50f1f;   /* Fluent danger */
+  --cost-max:   #8a0b16;
 
-  --syn-comment:  #5f6d66;
-  --syn-string:   #2f5480;
-  --syn-keyword:  #5b4a7e;
-  --syn-fn:       #1f5f6b;
-  --syn-variable: #8a5e18;
-  --syn-param:    #46564f;
-  --syn-number:   #216b51;
-  --syn-danger:   #a1261a;
+  --status-preview: #c26200;
 
-  --call-exam:     #3a5a81;
-  --call-warn:     #a63a2b;
-  --call-tactical: #2f6a53;
-  --call-note:     #5f6d66;
+  --domain-00: #605e5c;
+  --domain-01: #0099bc;    /* Entra */
+  --domain-02: #0078d4;    /* Azure */
+  --domain-03: #8764b8;    /* Copilot / AI */
+  --domain-04: #5c2e91;    /* Defender / Sentinel */
+
+  --syn-comment:  #6e6e6e;
+  --syn-string:   #0451a5;
+  --syn-keyword:  #5c2e91;
+  --syn-fn:       #0f6b73;
+  --syn-variable: #a4501b;
+  --syn-param:    #484644;
+  --syn-number:   #107c10;
+  --syn-danger:   #c50f1f;
+
+  --call-exam:     #0078d4;
+  --call-warn:     #c50f1f;
+  --call-tactical: #107c10;
+  --call-note:     #605e5c;
 
   color-scheme: light;
 }
@@ -141,26 +161,18 @@
 /* --- follow the OS, if the reader asks for that --------------------------- */
 @media (prefers-color-scheme: light) {
   :root[data-theme="system"] {
-    --ink:        #14211e;
-    --ink-soft:   #46564f;
-    --ink-faint:  #5f6d66;
-    --paper:      #f4f6f4;
-    --paper-raise:#ffffff;
-    --paper-sink: #e9edea;
-    --rule:       #d3dad5;
-    --brass:      #96661f;
-    --brass-deep: #7a5218;
-    --cost-none:  #216b51;
-    --cost-low:   #3d6f5f;
-    --cost-mid:   #96661f;
-    --cost-high:  #a63a2b;
-    --cost-max:   #7d2318;
-    --domain-00: #5f6d66; --domain-01: #2f6b78; --domain-02: #3a5a81;
-    --domain-03: #5b4a7e; --domain-04: #2f6a53;
-    --syn-comment: #5f6d66; --syn-string: #2f5480; --syn-keyword: #5b4a7e;
-    --syn-fn: #1f5f6b; --syn-variable: #8a5e18; --syn-param: #46564f;
-    --syn-number: #216b51; --syn-danger: #a1261a;
-    --call-exam: #3a5a81; --call-warn: #a63a2b; --call-tactical: #2f6a53; --call-note: #5f6d66;
+    --ink: #201f1e; --ink-soft: #484644; --ink-faint: #605e5c;
+    --paper: #faf9f8; --paper-raise: #ffffff; --paper-sink: #f3f2f1; --rule: #e1dfdd;
+    --accent: #005a9e; --accent-deep: #004578; --accent-fill: #0078d4;
+    --cost-none: #107c10; --cost-low: #0078d4; --cost-mid: #8e4600;
+    --cost-high: #c50f1f; --cost-max: #8a0b16;
+    --status-preview: #c26200;
+    --domain-00: #605e5c; --domain-01: #0099bc; --domain-02: #0078d4;
+    --domain-03: #8764b8; --domain-04: #5c2e91;
+    --syn-comment: #6e6e6e; --syn-string: #0451a5; --syn-keyword: #5c2e91;
+    --syn-fn: #0f6b73; --syn-variable: #a4501b; --syn-param: #484644;
+    --syn-number: #107c10; --syn-danger: #c50f1f;
+    --call-exam: #0078d4; --call-warn: #c50f1f; --call-tactical: #107c10; --call-note: #605e5c;
     color-scheme: light;
   }
 }

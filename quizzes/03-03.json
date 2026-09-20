@@ -1,0 +1,72 @@
+{
+  "module": "03-03",
+  "title": "AI Platform and Workload Protection",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "03-03-q1",
+      "sub_skill": "Configure and deploy AI Gateway in Azure API Management for Microsoft Foundry",
+      "prompt": "One application's runaway loop starves every other consumer of your Foundry deployment. Token metrics show a single consumer at its limit. What is most likely misconfigured?",
+      "options": [
+        "The token limit is set per minute rather than per day",
+        "The llm-token-limit counter key is a constant rather than the subscription, so all consumers share one counter",
+        "Semantic caching is disabled",
+        "The backend pool has no circuit breaker"
+      ],
+      "answer": 1,
+      "explanation": "Limiting by a key every consumer shares reproduces the problem you were solving. A per-consumer counter key — the subscription ID — means one application hitting its limit leaves the others working."
+    },
+    {
+      "id": "03-03-q2",
+      "sub_skill": "Configure and deploy AI Gateway in Azure API Management for Microsoft Foundry",
+      "prompt": "A requirement says oversized prompts must be rejected before they reach the model, so no backend cost is incurred. Which setting?",
+      "options": [
+        "Semantic caching with a low similarity threshold",
+        "estimate-prompt-tokens on the llm-token-limit policy",
+        "A backend circuit breaker",
+        "An llm-emit-token-metric dimension on prompt length"
+      ],
+      "answer": 1,
+      "explanation": "The token limit policy can precalculate prompt tokens at the gateway, so a request that already exceeds the limit never reaches the backend at all."
+    },
+    {
+      "id": "03-03-q3",
+      "sub_skill": "Enable Defender for AI Service in Cloud Workload Protection in Defender for Cloud",
+      "prompt": "Your team enables content filters on a Foundry deployment and considers indirect prompt injection handled. Why is it not?",
+      "options": [
+        "Content filters apply only to completions, never to prompts",
+        "Content filters govern harm categories in content; detecting instructions hidden in retrieved material is what Prompt Shields does",
+        "Content filters are disabled whenever groundedness detection is enabled",
+        "Indirect injection can only be addressed at the API Management gateway"
+      ],
+      "answer": 1,
+      "explanation": "Prompt Shields detects the attack — direct and indirect injection attempts. Content filters govern the content. An injection carried in a retrieved document is not a harm-category problem, and treating it as one is how organisations conclude they have handled something they have not."
+    },
+    {
+      "id": "03-03-q4",
+      "sub_skill": "Configure guardrails for agent security in Foundry",
+      "prompt": "Defender for Cloud raises a prompt injection alert on a Foundry workload. The SOC asks what the prompt said. Under what configuration can you answer?",
+      "options": [
+        "Always — alerts include the full prompt by default",
+        "Only if the suspicious prompt evidence extension was enabled; otherwise the alert exists and the content does not",
+        "Only if Microsoft Purview is connected to the subscription",
+        "Only if the workload uses API Management with request logging"
+      ],
+      "answer": 1,
+      "explanation": "Suspicious prompt evidence is an optional extension of the AI workloads plan, off by default. With it on, short redacted snippets of the triggering prompts surface in Defender XDR. Without it, the alert fires and the evidence was never captured."
+    },
+    {
+      "id": "03-03-q5",
+      "sub_skill": "Monitor AI security by using the Data and AI security dashboard in Defender for Cloud",
+      "prompt": "A Foundry project sits in a subscription where the AI workloads plan has never been enabled. What does Defender for Cloud know about it?",
+      "options": [
+        "Everything — discovery is automatic once Defender for Cloud is enabled",
+        "Nothing; discovery of AI services is a consequence of enabling the plan, so the workload does not appear in the Data and AI security dashboard",
+        "Its configuration but not its runtime behaviour",
+        "Only its attack paths, from the cloud security graph"
+      ],
+      "answer": 1,
+      "explanation": "Enabling the plan is what triggers discovery of Microsoft Foundry, Azure OpenAI and Azure Machine Learning resources, with results appearing in the Data and AI security dashboard within minutes. Without it, the workload is entirely unmonitored."
+    }
+  ]
+}

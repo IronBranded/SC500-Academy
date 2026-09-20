@@ -1,0 +1,88 @@
+{
+  "module": "04-03",
+  "title": "Sentinel Data Connectors and Event Collection",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "04-03-q1",
+      "sub_skill": "Configure and use Microsoft data connectors for Azure resources",
+      "prompt": "You enable the Microsoft Defender XDR connector and leave the individual Defender product connectors enabled. What happens?",
+      "options": [
+        "Sentinel deduplicates automatically; there is no effect",
+        "The same events are ingested twice, billed twice, and every count in every query you write afterwards is wrong",
+        "The XDR connector takes precedence and the product connectors become inert",
+        "Ingestion fails with a schema conflict"
+      ],
+      "answer": 1,
+      "explanation": "The unified connector supersedes the individual ones. Leaving both on is the most common avoidable Sentinel cost, and the duplicate rows quietly corrupt every aggregation."
+    },
+    {
+      "id": "04-03-q2",
+      "sub_skill": "Implement and configure syslog and Common Event Format (CEF) event collections",
+      "prompt": "A firewall vendor asks how to send logs to Sentinel. Describe the architecture and the destination table.",
+      "options": [
+        "Install the Azure Monitor Agent on the appliance; events land in Syslog",
+        "Send syslog to a Linux forwarder running the Azure Monitor Agent, configured by the CEF via AMA connector; structured events land in CommonSecurityLog",
+        "Use a data collection endpoint and the Logs Ingestion API; events land in a custom table",
+        "Enable diagnostic settings on the appliance; events land in AzureDiagnostics"
+      ],
+      "answer": 1,
+      "explanation": "Appliances do not run agents, so the forwarder pattern is mandatory rather than stylistic. CEF is a structured key-value extension of syslog, which is why it lands parsed in CommonSecurityLog rather than as raw text in Syslog."
+    },
+    {
+      "id": "04-03-q3",
+      "sub_skill": "Implement and configure collection of Windows Security events by using data collection rules, including Windows Event Forwarding (WEF)",
+      "prompt": "A requirement says to collect only specific Windows event IDs, and nothing else. Which option?",
+      "options": [
+        "The Minimal predefined event set",
+        "A custom XPath query in the Windows Security Events data collection rule",
+        "A KQL transformation on the DCR",
+        "The Common predefined event set with an exclusion list"
+      ],
+      "answer": 1,
+      "explanation": "All events, Common and Minimal are the predefined sets. 'Collect only these event IDs' is an XPath question. A transformation reshapes data after collection is defined; XPath decides what is collected at all."
+    },
+    {
+      "id": "04-03-q4",
+      "sub_skill": "Implement and configure collection of Windows Security events by using data collection rules, including Windows Event Forwarding (WEF)",
+      "prompt": "Your analytics rule for suspicious logons has returned nothing for three weeks. The rule is enabled and its query is correct. What would you check on the collection side?",
+      "options": [
+        "Whether an XPath filter or predefined event set removed the event IDs the rule queries",
+        "Whether both the Security log connector and WEF collection are enabled on the same collector",
+        "Whether the daily cap has been dropping data",
+        "Whether the workspace region matches the rule"
+      ],
+      "answer": [
+        0,
+        2
+      ],
+      "explanation": "Two collection-side causes produce silence. A filter chosen to save money can remove the exact event IDs a detection depends on, and a daily cap drops data once reached. Enabling both the Security log connector and WEF would produce duplicates, not silence."
+    },
+    {
+      "id": "04-03-q5",
+      "sub_skill": "Create custom log tables in the workspace to store ingested data",
+      "prompt": "An application has no connector. You must retain twelve months of its verbose logs for compliance and run detections against a small subset. Describe the design.",
+      "options": [
+        "One custom table on the Analytics plan, with twelve-month interactive retention",
+        "A custom table plus a DCR with a data collection endpoint; detection-relevant data on the Analytics plan, verbose telemetry on a cheaper tier, with long-term retention for the rest",
+        "Ingest everything to Syslog via a forwarder and filter at query time",
+        "Store the logs in a storage account and query them with a search job"
+      ],
+      "answer": 1,
+      "explanation": "Custom tables are DCR-based and need a data collection endpoint — ingestion fails quietly without one. Everything on the Analytics plan because it is the default is the most common cost mistake after over-collection."
+    },
+    {
+      "id": "04-03-q6",
+      "sub_skill": "Create custom log tables in the workspace to store ingested data",
+      "prompt": "What does a KQL transformation in a data collection rule do, and what is the risk?",
+      "options": [
+        "It filters at query time, so nothing is lost and cost is unchanged",
+        "It reshapes data before it is stored, so you pay for what you keep — and what it drops is gone, not hidden",
+        "It converts custom tables to the Analytics plan automatically",
+        "It applies only to Windows Security events"
+      ],
+      "answer": 1,
+      "explanation": "Transformations drop columns, filter rows and normalise fields at ingestion. That is the cost lever, and it carries the same asymmetry as every other collection decision: a transformation written and never reviewed removes a field a future detection needs, invisibly."
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "module": "04-02",
+  "title": "Sentinel Workspace, Roles, and Content Hub",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "04-02-q1",
+      "sub_skill": "Create and connect workspaces in Microsoft Sentinel",
+      "prompt": "Your organisation has 12 subscriptions in one tenant, all in one country, with one SOC. A colleague proposes one workspace per subscription for isolation. The case against?",
+      "options": [
+        "Sentinel supports a maximum of four workspaces per tenant",
+        "Every cross-subscription investigation then needs cross-workspace queries, and analytics rules must be duplicated and maintained in each workspace",
+        "Workspaces cannot be queried together at all",
+        "Costs scale per workspace rather than per gigabyte"
+      ],
+      "answer": 1,
+      "explanation": "Correlation is easy inside a workspace and awkward across them. The legitimate drivers for multiple workspaces are regulatory, organisational or contractual — none of which apply here."
+    },
+    {
+      "id": "04-02-q2",
+      "sub_skill": "Assign roles in Microsoft Sentinel",
+      "prompt": "An analyst reports they cannot close an incident. They hold Microsoft Sentinel Reader. Which role do they need, and which would you avoid giving them?",
+      "options": [
+        "Contributor; avoid Responder, which cannot triage",
+        "Responder, which adds incident management; avoid Contributor, which would let them edit and delete detection logic",
+        "Playbook Operator; avoid Reader, which is redundant",
+        "Automation Contributor; avoid Responder, which is for engineers"
+      ],
+      "answer": 1,
+      "explanation": "Responder is the analyst role: everything Reader can do, plus assigning, reclassifying and closing incidents. Contributor is for the people who write detections. Automation Contributor is assigned to the Sentinel service, not to people."
+    },
+    {
+      "id": "04-02-q3",
+      "sub_skill": "Assign roles in Microsoft Sentinel",
+      "prompt": "Someone needs to build playbooks. Which permission does that require?",
+      "options": [
+        "Microsoft Sentinel Playbook Operator",
+        "Logic App permissions — playbooks are Logic Apps, and no Sentinel role grants authoring",
+        "Microsoft Sentinel Contributor at workspace scope",
+        "Microsoft Sentinel Automation Contributor on the workspace resource group"
+      ],
+      "answer": 1,
+      "explanation": "Playbook Operator lets someone list, view and manually run playbooks. Creating and editing them is governed by Logic App permissions, because that is what a playbook is."
+    },
+    {
+      "id": "04-02-q4",
+      "sub_skill": "Implement and use content hub solutions",
+      "prompt": "A team installs 40 content hub solutions in an afternoon and reports that Sentinel is deployed. What is missing?",
+      "options": [
+        "Data connectors, which install separately from solutions",
+        "Active analytics rules — installing a solution delivers rule templates, and nothing detects anything until you create rules from them",
+        "A commitment tier, without which rules cannot run",
+        "Workspace manager, which distributes the solutions"
+      ],
+      "answer": 1,
+      "explanation": "Installing puts templates in the workspace. A tenant with forty solutions installed and no active rules has a full catalogue and no detections. Creating a rule from a template is also where you tune the threshold rather than accepting it."
+    },
+    {
+      "id": "04-02-q5",
+      "sub_skill": "Create and connect workspaces in Microsoft Sentinel",
+      "prompt": "You set a commitment tier too high in week one. What can you do about it, and when?",
+      "options": [
+        "Reduce it immediately; commitment tiers are evaluated daily",
+        "You can increase at any time — which restarts the 31-day commitment period — but to decrease or return to pay-as-you-go you must wait out the 31 days",
+        "Nothing; commitment tiers are fixed for 12 months",
+        "Switch to pay-as-you-go immediately, then re-commit at the lower tier"
+      ],
+      "answer": 1,
+      "explanation": "The asymmetry is the point: increases are easy and restart the clock, decreases wait. Commit cautiously on guessed volume, especially in a new deployment."
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "module": "03-01",
+  "title": "AI Data Exposure and Purview DSPM",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "03-01-q1",
+      "sub_skill": "Identify overexposure of data in SharePoint",
+      "prompt": "A confidential acquisition folder was shared five years ago with Everyone Except External Users. Legal says nobody outside the deal team should find it through Copilot, and the deal team must not be disrupted today. Which control, and what risk remains?",
+      "options": [
+        "Restricted Access Control — access is revoked for everyone outside the deal team",
+        "Restricted Content Discovery — the site stops surfacing in Copilot and org-wide search, but everyone who could open the files still can",
+        "Remove the Everyone Except External Users claim from the people picker — existing shares are revoked",
+        "A sensitivity label with encryption — Copilot can no longer summarise the files"
+      ],
+      "answer": 1,
+      "explanation": "RCD reduces reachability and changes no permission, which is exactly what 'do not disrupt the deal team' requires. RAC would revoke access. Hiding the EEEU claim only affects future sharing. A label would work on labelled files but is a content-level control, not a site-level one."
+    },
+    {
+      "id": "03-01-q2",
+      "sub_skill": "Identify overexposure of data in SharePoint",
+      "prompt": "Same site, but Legal now says unauthorised users must lose access entirely. Which control, and what breaks?",
+      "options": [
+        "Restricted Content Discovery — nothing breaks, the content is simply hidden",
+        "Restricted Access Control — it overrides existing permissions and sharing links, so anyone outside the named group loses access",
+        "Restricted SharePoint Search — the site is removed from the tenant allow-list",
+        "A DAG activity report — sharing is revoked when the report is run"
+      ],
+      "answer": 1,
+      "explanation": "RAC limits the site to members of specified Entra or Microsoft 365 groups and overrides existing permissions and sharing links. That is its purpose and it will break things for anyone outside the group. Restricted SharePoint Search is retiring and new enablement has been blocked since 31 July 2026."
+    },
+    {
+      "id": "03-01-q3",
+      "sub_skill": "Identify overexposure of data in SharePoint",
+      "prompt": "Your tenant has Microsoft 365 E5 and no Copilot licences. You open Data access governance in the SharePoint admin center. What can you run?",
+      "options": [
+        "Both activity reports and permission-state snapshot reports",
+        "Activity reports only, capped at 10,000 sites, and only once data collection has been enabled",
+        "Nothing — DAG requires SharePoint Advanced Management in all cases",
+        "Snapshot reports only; activity reports require Copilot"
+      ],
+      "answer": 1,
+      "explanation": "E5 provides activity reports, capped at 10,000 sites, with data collection enabled first. Snapshot and permission-state reports need SharePoint Advanced Management — which is unlocked automatically if anyone in the tenant holds a Microsoft 365 Copilot licence."
+    },
+    {
+      "id": "03-01-q4",
+      "sub_skill": "Identify risks related to Microsoft Copilot and AI apps by using Microsoft Purview Data Security Posture Management (DSPM)",
+      "prompt": "DSPM for AI shows 400 Copilot interactions last week. Incident response asks what a specific user asked on Tuesday. Under what configuration can you answer?",
+      "options": [
+        "Always — DSPM records prompts and responses by default",
+        "Only if a collection policy was in place at the time; otherwise the interactions happened and the content was never stored",
+        "Only if the user holds an Audit (Premium) licence",
+        "Only if Insider Risk Management flagged the session as risky"
+      ],
+      "answer": 1,
+      "explanation": "Prompt and response content is captured only when a collection policy exists — in practice the one-click policy 'DSPM for AI - Capture interactions for Copilot experiences'. Without it you have activity counts and nothing else, and the gap is unrecoverable."
+    },
+    {
+      "id": "03-01-q5",
+      "sub_skill": "Identify risks related to Microsoft Copilot and AI apps by using Microsoft Purview Data Security Posture Management (DSPM)",
+      "prompt": "A document carries a sensitivity label with encryption. A user can open it, but Copilot refuses to summarise it. What explains this?",
+      "options": [
+        "The label applies a DLP policy that blocks Copilot for all users",
+        "The user holds VIEW but not EXTRACT usage rights, and Copilot needs both to summarise labelled content",
+        "Copilot cannot read any encrypted content under any configuration",
+        "Restricted Content Discovery is enabled on the site"
+      ],
+      "answer": 1,
+      "explanation": "Copilot honours sensitivity labels with encryption. Summarisation requires the user to hold both the EXTRACT and VIEW usage rights granted by the label; VIEW alone lets them open the file but not have Copilot extract from it."
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "module": "03-06",
+  "title": "Serverless, Web, and API Security",
+  "schema": 1,
+  "questions": [
+    {
+      "id": "03-06-q1",
+      "sub_skill": "Implement and configure security controls for Azure App Service",
+      "prompt": "An App Service has access restrictions allowing only your office range, and HTTPS-only is on. A penetration tester reaches a deployment console from a coffee shop. Explain.",
+      "options": [
+        "The rules take up to 24 hours to apply",
+        "The SCM/Kudu advanced tools site has its own rule set; restricting the main site does not restrict it",
+        "Access restrictions do not apply when HTTPS-only is enabled",
+        "The tester used the app's managed identity"
+      ],
+      "answer": 1,
+      "explanation": "There are two sites to protect. The SCM site carries deployment and console access and is the more dangerous of the two. It has its own rules, with an option to inherit the main site's."
+    },
+    {
+      "id": "03-06-q2",
+      "sub_skill": "Implement and configure Azure Web Application Firewall",
+      "prompt": "A WAF has been in place for three months with a current managed rule set, and the application was successfully exploited by SQL injection that the WAF logged. Most likely cause?",
+      "options": [
+        "The rule set version is too old to include SQL injection rules",
+        "The policy is still in Detection mode, which logs and blocks nothing",
+        "The injection arrived over HTTP/2, which the WAF does not inspect",
+        "An exclusion was applied to the whole rule set"
+      ],
+      "answer": 1,
+      "explanation": "Policies start in Detection mode. It fully evaluates and logs what it would have done and blocks nothing — Microsoft's own wording is that detection mode provides no protection. 'Configured but attacks still succeed' is usually this."
+    },
+    {
+      "id": "03-06-q3",
+      "sub_skill": "Implement and configure Azure Web Application Firewall",
+      "prompt": "Your WAF blocks legitimate requests carrying an authentication token in a header. Which tuning option, and what should you know about rule set upgrades?",
+      "options": [
+        "Disable the rule; upgrades preserve disabled rules",
+        "Add an exclusion for that request attribute; changing rule set version resets every enabled and disabled rule customisation to the new version's defaults",
+        "Add a custom rule allowing all requests with that header; exclusions do not survive upgrades",
+        "Switch to Detection mode until the vendor fixes the rule"
+      ],
+      "answer": 1,
+      "explanation": "An exclusion omits one request attribute from evaluation and leaves the rule protecting everything else; disabling stops it protecting anything. And a rule set version change resets enabled/disabled customisations, so upgrading is a re-tuning exercise rather than a version bump."
+    },
+    {
+      "id": "03-06-q4",
+      "sub_skill": "Implement and configure security controls for Azure Functions, including authentication and network access",
+      "prompt": "A Function uses the function authorization level, and the key is embedded in a partner's integration URL. What is wrong with this?",
+      "options": [
+        "Nothing, provided the URL is sent over HTTPS",
+        "The key is a bearer credential with no identity, no expiry, and no per-caller revocation — the SAS token problem in a new place; use platform authentication or API Management instead",
+        "Function keys expire after 90 days and will break the integration",
+        "Function keys cannot be used by external partners"
+      ],
+      "answer": 1,
+      "explanation": "You cannot say which caller made a request, cannot revoke one partner without breaking the others, and the key lives in a URL, in logs and in browser history. Where the caller can hold an Entra identity, use Easy Auth or a gateway in front."
+    },
+    {
+      "id": "03-06-q5",
+      "sub_skill": "Implement and configure security controls for Azure Logic Apps",
+      "prompt": "A Logic App request trigger's callback URL was circulated in a ticket. What is the exposure, and what mitigations exist?",
+      "options": [
+        "None — the URL is only an address and the workflow still authenticates the caller",
+        "The URL contains a shared access signature, so anyone holding it can run the workflow; mitigate with trigger IP restrictions, Microsoft Entra OAuth validation, or a gateway in front",
+        "The exposure is limited to read access on the run history",
+        "The workflow will reject the call unless the caller holds the Logic App Contributor role"
+      ],
+      "answer": 1,
+      "explanation": "The callback URL is a credential, not an address. Mitigations in increasing strength are IP restrictions on the trigger, Entra OAuth validation on the request trigger, and putting API Management in front so the callback URL is never the public entry point."
+    },
+    {
+      "id": "03-06-q6",
+      "sub_skill": "Implement security policies for back-end API protection by using API Management",
+      "prompt": "You apply validate-jwt, rate limiting and IP filtering in API Management. What makes those policies real rather than advisory?",
+      "options": [
+        "Enabling the Premium tier of API Management",
+        "Restricting the backend so it accepts traffic only from API Management, via access restrictions or a private endpoint",
+        "Applying the policies at the product scope rather than the API scope",
+        "Requiring a subscription key in addition to the token"
+      ],
+      "answer": 1,
+      "explanation": "If the backend is directly reachable, every gateway policy is optional from an attacker's point of view. The gateway must be the only path — the same argument as the AI gateway in 03-03."
+    }
+  ]
+}

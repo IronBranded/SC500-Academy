@@ -1035,3 +1035,46 @@ pre[data-diagram="unrendered"]::after {
 .content h2 { font-family: var(--face-display); font-weight: var(--w-heading); letter-spacing: -0.01em; }
 .content h3 { font-weight: 600; }
 .content p, .content li { font-size: var(--t-base); }
+
+/* ======================================================================
+   Microsoft cloud palette additions
+   ====================================================================== */
+
+/* A four-stop rule under the topbar, one stop per exam domain in its product
+   family's colour. It is the legend for every tint used elsewhere. */
+.topbar { border-bottom: 0; box-shadow: inset 0 -1px 0 var(--rule); }
+.topbar::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    var(--domain-01) 0%,   var(--domain-01) 25%,
+    var(--domain-02) 25%,  var(--domain-02) 50%,
+    var(--domain-03) 50%,  var(--domain-03) 75%,
+    var(--domain-04) 75%,  var(--domain-04) 100%);
+}
+.topbar { position: sticky; }
+
+/* Fluent-style focus: a visible ring rather than a thin outline. */
+:where(a, button, input, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* Primary actions pick up the accent, as they do in the portal. */
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Selected nav row gets the domain's own colour rather than a single accent,
+   so the sidebar reads as a map of the product families. */
+.nav-group[data-domain] .nav-link[aria-current="page"] {
+  box-shadow: inset 3px 0 0 var(--domain-tint, var(--accent));
+}
+
+/* Filled surfaces use the brand hex; text uses the AA-safe shade. */
+.cost, .chip[data-on="true"]::before, .bar__fill, .dash__fill,
+.nav-group__fill, h3.bucket::before { }
+.bar__fill, .dash__fill, .nav-group__fill { background: var(--accent-fill, var(--accent)); }
+.cov__cell[data-level="practised"] { background: var(--accent-fill, var(--accent)); }
