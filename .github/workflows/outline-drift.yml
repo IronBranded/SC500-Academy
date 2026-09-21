@@ -1,0 +1,159 @@
+name: Outline drift
+
+# The one check this whole project is organised around, and the only one that
+# currently depends on someone remembering to run it.
+#
+# Two polls, one weekly job, one issue:
+#
+#   1. The skills-measured outline, diffed against docs/SKILLS-MEASURED-SNAPSHOT.md.
+#      Only the "## Skills measured" section is compared - the snapshot's front
+#      matter carries git_commit_id, updated_at, word_count and a content hash,
+#      all of which change when Microsoft edits anything on the page, including
+#      a link in the study-resources table. Diffing the whole file produces
+#      alerts that are not skills changes, and an alert you learn to ignore is
+#      worse than no alert.
+#
+#   2. The certification page's practice-assessment sentence, because appendix A4
+#      states it is unavailable and that is a dated claim with an expiry nobody
+#      controls.
+
+on:
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare the live outline against the snapshot
+        id: check
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $guideUrl = 'https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500?accept=text/markdown'
+          $certUrl  = 'https://learn.microsoft.com/en-us/credentials/certifications/cloud-and-ai-security-engineer-associate/'
+          $headers  = @{ 'User-Agent' = 'sc500-academy-outline-drift-check' }
+
+          function Get-SkillsSection {
+              param([string] $Text)
+
+              $lines = $Text -split "`r?`n"
+              $start = ($lines | Select-String -SimpleMatch '## Skills measured' | Select-Object -First 1).LineNumber
+              $end   = ($lines | Select-String -SimpleMatch '## Study resources' | Select-Object -First 1).LineNumber
+
+              if (-not $start) {
+                  throw 'Could not locate "## Skills measured". The page shape changed, which is itself drift worth looking at.'
+              }
+              if (-not $end -or $end -le $start) { $end = $lines.Count + 1 }
+
+              # Trim and drop blank lines so reflowed whitespace is not reported
+              # as a change. Bullet text is what matters.
+              return @($lines[($start - 1)..($end - 2)] |
+                       ForEach-Object { $_.TrimEnd() } |
+                       Where-Object { $_ -ne '' })
+          }
+
+          $live     = (Invoke-WebRequest -Uri $guideUrl -UseBasicParsing -Headers $headers).Content
+          $snapshot = Get-Content -LiteralPath './docs/SKILLS-MEASURED-SNAPSHOT.md' -Raw
+
+          $a = Get-SkillsSection -Text $snapshot
+          $b = Get-SkillsSection -Text $live
+
+          $delta   = Compare-Object -ReferenceObject $a -DifferenceObject $b
+          $changed = $false
+          $report  = [System.Collections.Generic.List[string]]::new()
+
+          if ($delta) {
+              $changed = $true
+              $report.Add('## The skills-measured outline has changed')
+              $report.Add('')
+              $report.Add('`- snapshot` is what the repository believes. `+ live` is what Microsoft publishes now.')
+              $report.Add('')
+              $report.Add('```diff')
+              foreach ($d in $delta) {
+                  $mark = if ($d.SideIndicator -eq '=>') { '+ live    ' } else { '- snapshot' }
+                  $report.Add("$mark $($d.InputObject)")
+              }
+              $report.Add('```')
+              $report.Add('')
+              $report.Add('### What to update, in one commit')
+              $report.Add('')
+              $report.Add('1. The affected module''s `sub_objectives` in its front matter, **and** its `## Sub-objectives covered` list.')
+              $report.Add('2. `content/manifest.json`, if a module''s scope changed.')
+              $report.Add('3. `docs/SYLLABUS.md`.')
+              $report.Add('4. `docs/SKILLS-MEASURED-SNAPSHOT.md` itself.')
+              $report.Add('5. A quiz question for any genuinely new bullet - the coverage check will flag it otherwise.')
+              $report.Add('')
+              $report.Add('Then bump `last_verified` on every module you touched.')
+              $report.Add('')
+          }
+          else {
+              Write-Host 'Skills-measured section: no change.'
+          }
+
+          # --- second poll: the practice assessment ---------------------------
+
+          $cert   = (Invoke-WebRequest -Uri $certUrl -UseBasicParsing -Headers $headers).Content
+          $absent = $cert -match 'Practice Assessment for this exam is not currently available'
+
+          if (-not $absent) {
+              $changed = $true
+              $report.Add('## The practice-assessment sentence has gone from the certification page')
+              $report.Add('')
+              $report.Add('Appendix A4 states the practice assessment is not currently available. That sentence is no longer on the page, so either it has been published or the wording changed.')
+              $report.Add('')
+              $report.Add("Check <$certUrl> and update `content/appendix/a4-exam-logistics-and-scoring.md`.")
+              $report.Add('')
+              $report.Add('While you are there: the **Prepare for the exam** section was empty as of 2026-09-20, meaning Microsoft had published no learning path for SC-500. If it now lists courses, that changes what this guide is positioned against and belongs in A4 too.')
+              $report.Add('')
+          }
+          else {
+              Write-Host 'Practice assessment: still listed as unavailable.'
+          }
+
+          if ($changed) {
+              $report.Add('---')
+              $report.Add('')
+              $report.Add("_Raised automatically by ``.github/workflows/outline-drift.yml`` on $(Get-Date -Format 'yyyy-MM-dd')._")
+              $report -join "`n" | Set-Content -Path 'drift-report.md' -Encoding utf8
+          }
+
+          "changed=$($changed.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Open or update the drift issue
+        if: steps.check.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('drift-report.md', 'utf8');
+            const { owner, repo } = context.repo;
+
+            // One open issue at a time. A second change while the first is
+            // unresolved becomes a comment, so the history stays in one place.
+            const open = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'outline-drift'
+            });
+
+            if (open.data.length > 0) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: open.data[0].number, body
+              });
+              core.notice(`Commented on existing issue #${open.data[0].number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner, repo,
+                title: 'SC-500 certification surface has changed',
+                body,
+                labels: ['outline-drift']
+              });
+              core.notice(`Opened issue #${created.data.number}.`);
+            }

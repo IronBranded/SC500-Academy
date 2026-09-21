@@ -1,0 +1,152 @@
+/* practice.css - SC-500 guide
+   Styles for #/exam, #/cards and #/review. Everything is scoped under .pr so it
+   cannot affect a page that was rendering correctly before this file existed.
+   Tokens come from tokens.css; each var carries a fallback so a missing token
+   degrades to something readable rather than to nothing. */
+
+.pr { display: grid; gap: var(--s-5, 1.25rem); margin: var(--s-5, 1.25rem) 0; max-width: none; }
+
+.pr__list { margin: var(--s-2, .5rem) 0 0; padding-left: 1.1rem; }
+.pr__list li { margin-bottom: var(--s-2, .5rem); line-height: 1.55; }
+
+.pr__count {
+  font-family: var(--face-ui, system-ui);
+  font-size: var(--t-sm, .9rem);
+  color: var(--ink-soft, #5a5a5a);
+}
+
+/* ---------------------------------------------------------------- tables - */
+
+.pr__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--face-ui, system-ui);
+  font-size: var(--t-sm, .9rem);
+}
+.pr__table th,
+.pr__table td {
+  text-align: left;
+  padding: var(--s-2, .5rem) var(--s-3, .75rem);
+  border-bottom: 1px solid var(--rule, #ddd);
+  vertical-align: top;
+}
+.pr__table th {
+  font-size: var(--t-xs, .78rem);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ink-faint, #777);
+  font-weight: 600;
+}
+.pr__table tr[data-weak="true"] td { background: color-mix(in srgb, var(--cost-high, #a33) 10%, transparent); }
+.pr__table tr[data-rank="0"] td:last-child { color: var(--cost-high, #a33); font-weight: 600; }
+.pr__table tr[data-rank="1"] td:last-child { color: var(--cost-high, #a33); }
+.pr__table tr[data-rank="2"] td:last-child { color: var(--brass, #a8791f); }
+.pr__table tr[data-rank="3"] td:last-child { color: var(--ink-faint, #777); }
+
+.pr__ref { font-variant-numeric: tabular-nums; font-weight: 600; text-decoration: none; }
+.pr__ref:hover { text-decoration: underline; }
+.pr__status { white-space: nowrap; }
+
+/* ------------------------------------------------------------ exam chrome - */
+
+.pr__bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3, .75rem);
+  font-family: var(--face-ui, system-ui);
+  font-size: var(--t-sm, .9rem);
+}
+.pr__pos { color: var(--ink-soft, #5a5a5a); }
+.pr__clock {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint, #777);
+}
+.pr__clock[data-low="true"] { color: var(--cost-high, #a33); font-weight: 700; }
+
+.pr__q {
+  border: 1px solid var(--rule, #ddd);
+  border-radius: var(--radius-lg, 10px);
+  padding: var(--s-4, 1rem);
+  background: var(--paper-raise, #fafafa);
+}
+.pr__q[data-marked="true"] { border-color: var(--brass, #a8791f); }
+
+.pr__meta {
+  margin: 0 0 var(--s-2, .5rem);
+  font-family: var(--face-ui, system-ui);
+  font-size: var(--t-xs, .78rem);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--ink-faint, #777);
+}
+.pr__prompt { margin: 0 0 var(--s-3, .75rem); line-height: 1.6; }
+
+.pr__opts { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2, .5rem); }
+.pr__opts li {
+  display: flex;
+  gap: var(--s-2, .5rem);
+  align-items: flex-start;
+  padding: var(--s-2, .5rem);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg, 10px);
+}
+.pr__opts li:hover { border-color: var(--rule, #ddd); }
+.pr__opts input { margin-top: .35em; flex: none; }
+.pr__opts label { line-height: 1.55; cursor: pointer; }
+
+/* ------------------------------------------------------- review grid ----- */
+
+.pr__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr));
+  gap: var(--s-2, .5rem);
+}
+.pr__cell {
+  font-variant-numeric: tabular-nums;
+  padding: var(--s-2, .5rem) 0;
+  text-align: center;
+}
+.pr__cell[data-state="blank"] { opacity: .55; }
+.pr__cell[data-state="marked"] { border-color: var(--brass, #a8791f); color: var(--brass, #a8791f); }
+.pr__cell[data-state="answered"] { border-color: var(--cost-none, #2e7d4f); }
+
+/* ---------------------------------------------------------- flashcards --- */
+
+.pr__card {
+  border: 1px solid var(--rule, #ddd);
+  border-radius: var(--radius-lg, 10px);
+  padding: var(--s-6, 1.75rem) var(--s-5, 1.25rem);
+  background: var(--paper-raise, #fafafa);
+  min-height: 9rem;
+  display: grid;
+  align-content: center;
+  gap: var(--s-4, 1rem);
+}
+.pr__front { margin: 0; font-size: 1.15rem; line-height: 1.5; font-weight: 600; }
+.pr__back {
+  margin: 0;
+  line-height: 1.6;
+  border-top: 1px solid var(--rule, #ddd);
+  padding-top: var(--s-4, 1rem);
+  color: var(--ink-soft, #5a5a5a);
+}
+
+/* An "on" filter button, reusing the existing .btn shape. */
+.pr .btn[data-variant="on"] {
+  border-color: var(--brass, #a8791f);
+  color: var(--brass, #a8791f);
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  .pr__bar { flex-wrap: wrap; }
+  .pr__table { font-size: var(--t-xs, .78rem); }
+  .pr__table th:nth-child(2),
+  .pr__table td:nth-child(2) { display: none; }
+}
+
+@media print {
+  .pr__bar, .pr__grid, .pr .btn, .pr .field__links { display: none !important; }
+  .pr__back { display: block !important; }
+}

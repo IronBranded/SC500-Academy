@@ -1,0 +1,51 @@
+name: Validate
+
+# The repository's only gate, made automatic. tools/Test-GuideContent.ps1 already
+# exits 0 on pass and 1 on failure and is cross-platform PowerShell 7, so this
+# workflow is a thin wrapper around the command you already run by hand.
+#
+# GitHub Pages deploys from this repository, so without this a broken manifest
+# ships live.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Mondays, early. The weekly run adds -CheckExternalLinks, which HEADs
+    # roughly 120 Microsoft Learn URLs - too slow for every commit.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      check_external_links:
+        description: Also HEAD every learn.microsoft.com URL
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the guide validator
+        shell: pwsh
+        env:
+          # Link checking on the weekly run, or on demand from the Actions tab.
+          LINK_CHECK: >-
+            ${{ github.event_name == 'schedule'
+                || inputs.check_external_links == true }}
+        run: |
+          $params = @{}
+          if ($env:LINK_CHECK -eq 'true') {
+              Write-Host 'Including external link checks - this takes a few minutes.'
+              $params['CheckExternalLinks'] = $true
+          }
+          ./tools/Test-GuideContent.ps1 @params
