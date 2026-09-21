@@ -172,41 +172,6 @@ export it before switching machines.
 
 ---
 
-## Local preview
-
-The site fetches Markdown at runtime, so `file://` will not work. Serve it:
-
-```
-python -m http.server 8080
-```
-
-Then open <http://localhost:8080>.
-
-A service worker caches the whole guide on first load, so it works offline afterwards.
-During development that also means a stale copy can be served after you edit a file -
-tick **Update on reload** in DevTools → Application → Service Workers, or unregister:
-
-```js
-navigator.serviceWorker.getRegistrations().then(r => r.forEach(x => x.unregister()));
-```
-
-## Validate before committing
-
-```powershell
-.\tools\Test-GuideContent.ps1
-```
-
-Weekly, or before a release:
-
-```powershell
-.\tools\Test-GuideContent.ps1 -CheckExternalLinks
-```
-
-Both also run in CI on every push and pull request, and a second workflow diffs the
-live skills-measured outline weekly and opens an issue when it moves.
-`docs/CONTRIBUTING.md` lists every check; `docs/STYLE-GUIDE.md` lists the conventions;
-`docs/BUILD-PROMPT.md` is the standing brief for adding to any of it.
-
 ## Licence
 
 MIT for code (scripts, tooling, site) / CC BY 4.0 for prose and labs
