@@ -110,6 +110,25 @@ storage account in Azure.
    **application rules rather than network rules** for this, so flow symmetry is
    maintained with SNAT.
 
+The two mechanisms side by side, with the DNS step that makes a private endpoint work
+and the public endpoint that neither of them closes.
+
+```mermaid
+flowchart LR
+  accTitle: Service endpoint compared with private endpoint
+  accDescr: With a service endpoint, a VM in the subnet still reaches the service's public IP; the traffic carries the subnet's identity and the service firewall allows that subnet, for the whole service in the region. With a private endpoint, a client in a linked virtual network resolves the name through a privatelink CNAME and a private DNS zone to a private IP on a network interface in your subnet, which maps to one specific resource. Resolving from outside the virtual network still returns the public endpoint, which stays reachable until public network access is disabled.
+  subgraph SE["Service endpoint"]
+    V1["VM in the subnet"]:::d02 -- "to the service's PUBLIC IP,<br/>carrying the subnet's identity" --> S1["Service firewall<br/>allows that subnet"]
+    S1 --> T1["The whole service<br/>in the region"]
+  end
+  subgraph PE["Private endpoint"]
+    V2["Client in a linked VNet"]:::d02 -- "resolves the name" --> D["DNS: CNAME to privatelink.<br/>A record in the private DNS zone"]
+    D -- "your private IP" --> N["NIC in your subnet"]:::d02
+    N --> T2["One specific resource"]
+  end
+  X["Client outside the VNet"] -. "same name resolves to<br/>the public endpoint" .-> PUB["Public endpoint<br/>open until public network<br/>access is disabled"]
+```
+
 ### Private Link service - the provider side
 
 Private endpoints consume a service privately. **Private Link service** is how you
@@ -156,6 +175,28 @@ not simply "by priority":
 So the firewall iterates the whole policy three times, once per rule type. A network
 rule at priority 65,000 in a low-priority child group still beats an application rule
 at priority 100 in the parent, because type order outranks everything.
+
+The same order as a flow. Every box restates one of the five steps above.
+
+```mermaid
+flowchart TD
+  accTitle: Azure Firewall rule processing order
+  accDescr: Threat intelligence filtering runs first and can deny traffic before any rule. The firewall then passes over the whole policy three times, always in this order regardless of rule collection group priority or policy inheritance - DNAT rules, then network rules, then application rules. A network rule match stops processing, so application rules never run for that flow. Application rules apply only to HTTP, HTTPS and MSSQL. If no application rule matches, the infrastructure rule collection is evaluated, which allows platform FQDNs by default. If nothing matches, the packet is denied.
+  P["Packet"] --> TI{"Threat intelligence<br/>filtering - runs first"}:::d02
+  TI -- "can deny before<br/>any rule you wrote" --> X1["Denied"]
+  TI -- "otherwise" --> DN["Pass 1: DNAT rules"]:::d02
+  DN -- "then" --> NW{"Pass 2: network rules"}:::d02
+  NW -- "match" --> NM["The rule's action applies.<br/>Processing STOPS -<br/>application rules never run"]
+  NW -- "no match" --> AP{"Pass 3: application rules<br/>HTTP, HTTPS and MSSQL only"}:::d02
+  AP -- "match" --> AM["The rule's action applies"]
+  AP -- "no match" --> IR{"Infrastructure rule collection<br/>platform FQDNs"}
+  IR -- "match" --> OK["Allowed by default"]
+  IR -- "no match" --> X2["Denied"]
+```
+
+Within every pass: parent policy before child policy, then rule collection groups, then
+rule collections, each in priority order (100 first). IDPS, on Premium, runs alongside
+rule processing and is not part of this order.
 
 Three consequences that produce real outages:
 

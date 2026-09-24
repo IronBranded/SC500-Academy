@@ -14,7 +14,13 @@
         "The attacker's device was compliant; tighten the device filter"
       ],
       "answer": 1,
-      "explanation": "SQL logins live inside the database engine and predate Entra entirely. Nothing from Domain 1 - MFA, PIM, Conditional Access - can see them. Setting the Entra admin is step one of two; Entra-only authentication is what disables SQL logins, including the original admin."
+      "explanation": "SQL logins live inside the database engine and predate Entra entirely. Nothing from Domain 1 - MFA, PIM, Conditional Access - can see them. Setting the Entra admin is step one of two; Entra-only authentication is what disables SQL logins, including the original admin.",
+      "why_not": [
+        "The Entra admin assignment worked. It simply does not disable SQL authentication; that takes Entra-only authentication.",
+        null,
+        "The problem is the login type, not the network path. Conditional Access never sees a SQL login, whatever route the connection takes.",
+        "Device compliance is irrelevant. A SQL login never passes through Microsoft Entra, so no Conditional Access policy evaluates it."
+      ]
     },
     {
       "id": "02-02-q2",
@@ -27,7 +33,13 @@
         "DDM is disabled whenever auditing is enabled"
       ],
       "answer": 1,
-      "explanation": "DDM is a presentation-layer control. It prevents casual exposure in an application and does nothing against someone who can run queries. Where the requirement is to protect data from the database administrator, the answer is Always Encrypted, where keys never reach the server."
+      "explanation": "DDM is a presentation-layer control. It prevents casual exposure in an application and does nothing against someone who can run queries. Where the requirement is to protect data from the database administrator, the answer is Always Encrypted, where keys never reach the server.",
+      "why_not": [
+        "DDM is not encryption at all. It masks what a result set displays.",
+        null,
+        "DDM is not limited to one column type. Its weakness is that masked data stays fully queryable.",
+        "DDM and auditing are independent features; enabling one does not disable the other."
+      ]
     },
     {
       "id": "02-02-q3",
@@ -40,7 +52,13 @@
         "Log Analytics deduplicates the records automatically"
       ],
       "answer": 1,
-      "explanation": "Server and database policies run side by side. You get duplicate records, duplicate ingestion cost, and duplicate rows in every query. A server-level policy already covers every database including ones created later, so enable database-level auditing only for a requirement the server policy genuinely cannot meet."
+      "explanation": "Server and database policies run side by side. You get duplicate records, duplicate ingestion cost, and duplicate rows in every query. A server-level policy already covers every database including ones created later, so enable database-level auditing only for a requirement the server policy genuinely cannot meet.",
+      "why_not": [
+        "Neither policy overrides the other. They run side by side.",
+        null,
+        "Database-level auditing is not ignored. It runs alongside the server policy, which is how the duplicates arise.",
+        "Nothing deduplicates the records. You pay to ingest both copies."
+      ]
     },
     {
       "id": "02-02-q4",
@@ -53,7 +71,13 @@
         "All three, but vulnerability assessment covers only the Azure SQL database"
       ],
       "answer": 1,
-      "explanation": "Defender for Databases has independent sub-plans: Azure SQL databases, SQL servers on machines, open-source relational databases, and Azure Cosmos DB. Each is toggled separately, so 'protect all database services' is several switches rather than one."
+      "explanation": "Defender for Databases has independent sub-plans: Azure SQL databases, SQL servers on machines, open-source relational databases, and Azure Cosmos DB. Each is toggled separately, so 'protect all database services' is several switches rather than one.",
+      "why_not": [
+        "Defender for Databases is a set of independently toggled sub-plans, not a single plan.",
+        null,
+        "SQL Server on a VM is covered by the separate SQL servers on machines sub-plan, which was not enabled.",
+        "The Cosmos DB account and SQL Server on the VM are not protected at all without their own sub-plans."
+      ]
     },
     {
       "id": "02-02-q5",
@@ -66,7 +90,13 @@
         "The scan results exceed the 1 MB per-rule limit"
       ],
       "answer": 1,
-      "explanation": "Express configuration requires no storage account and is enabled automatically when the plan is turned on. If the pane asks for one, you are on the legacy classic path - and reverting to classic from express requires disabling the plan and reconfiguring through PowerShell."
+      "explanation": "Express configuration requires no storage account and is enabled automatically when the plan is turned on. If the pane asks for one, you are on the legacy classic path - and reverting to classic from express requires disabling the plan and reconfiguring through PowerShell.",
+      "why_not": [
+        "Express configuration needs no storage account. Being asked for one means you are not on express.",
+        null,
+        "Being asked for a storage account identifies the classic configuration specifically. Express, which enabling the plan sets up automatically, never asks for one.",
+        "A storage account prompt identifies the configuration mode, not a limit on the size of results."
+      ]
     }
   ]
 }

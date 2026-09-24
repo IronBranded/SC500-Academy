@@ -14,7 +14,13 @@
         "A sensitivity label with encryption — Copilot can no longer summarise the files"
       ],
       "answer": 1,
-      "explanation": "RCD reduces reachability and changes no permission, which is exactly what 'do not disrupt the deal team' requires. RAC would revoke access. Hiding the EEEU claim only affects future sharing. A label would work on labelled files but is a content-level control, not a site-level one."
+      "explanation": "RCD reduces reachability and changes no permission, which is exactly what 'do not disrupt the deal team' requires. RAC would revoke access. Hiding the EEEU claim only affects future sharing. A label would work on labelled files but is a content-level control, not a site-level one.",
+      "why_not": [
+        "RAC overrides existing permissions and sharing links. Legal asked for the folder to stop being found, not for anyone's access to be removed.",
+        null,
+        "Hiding the Everyone Except External Users claim only affects future sharing. Existing shares stay in place.",
+        "A sensitivity label with encryption is a content-level control that works only on files it is applied to. The requirement is about the site's reachability."
+      ]
     },
     {
       "id": "03-01-q2",
@@ -27,7 +33,13 @@
         "A DAG activity report — sharing is revoked when the report is run"
       ],
       "answer": 1,
-      "explanation": "RAC limits the site to members of specified Entra or Microsoft 365 groups and overrides existing permissions and sharing links. That is its purpose and it will break things for anyone outside the group. Restricted SharePoint Search is retiring and new enablement has been blocked since 31 July 2026."
+      "explanation": "RAC limits the site to members of specified Entra or Microsoft 365 groups and overrides existing permissions and sharing links. That is its purpose and it will break things for anyone outside the group. Restricted SharePoint Search is retiring and new enablement has been blocked since 31 July 2026.",
+      "why_not": [
+        "RCD hides the site from Copilot and org-wide search but changes no permission, so unauthorised users keep their access.",
+        null,
+        "Restricted SharePoint Search is retiring, and new enablement has been blocked since 31 July 2026. It never removed anyone's access in any case.",
+        "A DAG activity report only reports. Running it changes no sharing."
+      ]
     },
     {
       "id": "03-01-q3",
@@ -40,7 +52,13 @@
         "Snapshot reports only; activity reports require Copilot"
       ],
       "answer": 1,
-      "explanation": "E5 provides activity reports, capped at 10,000 sites, with data collection enabled first. Snapshot and permission-state reports need SharePoint Advanced Management — which is unlocked automatically if anyone in the tenant holds a Microsoft 365 Copilot licence."
+      "explanation": "E5 provides activity reports, capped at 10,000 sites, with data collection enabled first. Snapshot and permission-state reports need SharePoint Advanced Management — which is unlocked automatically if anyone in the tenant holds a Microsoft 365 Copilot licence.",
+      "why_not": [
+        "Snapshot and permission-state reports need SharePoint Advanced Management, which E5 alone does not provide in a tenant with no Copilot licences.",
+        null,
+        "Activity reports are available with E5 alone. SharePoint Advanced Management is needed only for the snapshot and permission-state reports.",
+        "It is the other way round: activity reports come with E5, and snapshot reports need SharePoint Advanced Management."
+      ]
     },
     {
       "id": "03-01-q4",
@@ -53,7 +71,13 @@
         "Only if Insider Risk Management flagged the session as risky"
       ],
       "answer": 1,
-      "explanation": "Prompt and response content is captured only when a collection policy exists — in practice the one-click policy 'DSPM for AI - Capture interactions for Copilot experiences'. Without it you have activity counts and nothing else, and the gap is unrecoverable."
+      "explanation": "Prompt and response content is captured only when a collection policy exists — in practice the one-click policy 'DSPM for AI - Capture interactions for Copilot experiences'. Without it you have activity counts and nothing else, and the gap is unrecoverable.",
+      "why_not": [
+        "Prompt and response content is captured only when a collection policy exists. Without one you have activity counts and nothing else.",
+        null,
+        "No licence recovers content that was never captured. Without a collection policy in place at the time, the content was never stored.",
+        "A flag raised later does not make content exist. Without a collection policy in place at the time, the content was never stored."
+      ]
     },
     {
       "id": "03-01-q5",
@@ -66,7 +90,13 @@
         "Restricted Content Discovery is enabled on the site"
       ],
       "answer": 1,
-      "explanation": "Copilot honours sensitivity labels with encryption. Summarisation requires the user to hold both the EXTRACT and VIEW usage rights granted by the label; VIEW alone lets them open the file but not have Copilot extract from it."
+      "explanation": "Copilot honours sensitivity labels with encryption. Summarisation requires the user to hold both the EXTRACT and VIEW usage rights granted by the label; VIEW alone lets them open the file but not have Copilot extract from it.",
+      "why_not": [
+        "Nothing here involves a DLP policy. The user opens the file, and the refusal follows from the label's usage rights.",
+        null,
+        "Copilot does honour labels with encryption. It can summarise such content when the user holds both EXTRACT and VIEW.",
+        "RCD changes whether a site surfaces in Copilot and org-wide search. The refusal here follows the label's usage rights on this specific file."
+      ]
     }
   ]
 }

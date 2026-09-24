@@ -10,11 +10,17 @@
       "options": [
         "The vault access policy model, with the administrator omitted from all policies",
         "The Azure RBAC permission model",
-        "The vault access policy model, with a resource lock applied to the vault",
+        "The vault access policy model, with a CanNotDelete lock applied to the vault",
         "Either model, provided the vault firewall denies the administrator's address"
       ],
       "answer": 1,
-      "explanation": "Under the access policy model, anyone holding Microsoft.KeyVault/vaults/write can add a policy granting themselves data-plane access, so omitting them from today's policies changes nothing. Azure RBAC makes data-plane permissions role assignments, creatable only by Owner or User Access Administrator. A firewall does not help: the control plane is not filtered by it."
+      "explanation": "Under the access policy model, anyone holding Microsoft.KeyVault/vaults/write can add a policy granting themselves data-plane access, so omitting them from today's policies changes nothing. Azure RBAC makes data-plane permissions role assignments, creatable only by Owner or User Access Administrator. A firewall does not help: the control plane is not filtered by it.",
+      "why_not": [
+        "Under the access policy model, Contributor includes Microsoft.KeyVault/vaults/write, which can add a policy granting themselves access. Omitting them from today's policies changes nothing.",
+        null,
+        "CanNotDelete blocks deletion only. Adding an access policy is a write, so the administrator can still grant themselves access.",
+        "The vault firewall filters only the data plane. Adding an access policy is a control-plane operation through Azure Resource Manager, which the firewall does not see."
+      ]
     },
     {
       "id": "01-02-q2",
@@ -27,7 +33,13 @@
         "Adding a new access policy to the vault"
       ],
       "answer": [0, 3],
-      "explanation": "The vault firewall filters the data plane at <vault>.vault.azure.net only. Control-plane operations go to Azure Resource Manager and are governed by Azure RBAC, so reading properties, changing the SKU, and adding access policies all still work. Reading or listing secrets is data plane and is blocked."
+      "explanation": "The vault firewall filters the data plane at <vault>.vault.azure.net only. Control-plane operations go to Azure Resource Manager and are governed by Azure RBAC, so reading properties, changing the SKU, and adding access policies all still work. Reading or listing secrets is data plane and is blocked.",
+      "why_not": [
+        null,
+        "Retrieving a secret value is a data-plane operation on <vault>.vault.azure.net, which the firewall blocks.",
+        "Listing secret names is also data plane, so the firewall blocks it too.",
+        null
+      ]
     },
     {
       "id": "01-02-q3",
@@ -40,7 +52,13 @@
         "The permission model, because RBAC vaults release their names immediately"
       ],
       "answer": 1,
-      "explanation": "Soft delete is always on and cannot be disabled, and it reserves the name for the retention period. With purge protection off you can purge the deleted vault and reclaim the name; with it on, nobody can, at any privilege level, until retention expires."
+      "explanation": "Soft delete is always on and cannot be disabled, and it reserves the name for the retention period. With purge protection off you can purge the deleted vault and reclaim the name; with it on, nobody can, at any privilege level, until retention expires.",
+      "why_not": [
+        "The SKU has no bearing on soft delete or purge. A deleted vault of either SKU keeps its name reserved for the retention period.",
+        null,
+        "Soft delete is always on and cannot be turned off, at creation or later.",
+        "The permission model has no bearing on deletion. A soft-deleted vault reserves its name whichever model it used."
+      ]
     },
     {
       "id": "01-02-q4",
@@ -53,7 +71,13 @@
         "Both find exposed credentials, one at rest and one in transit"
       ],
       "answer": 1,
-      "explanation": "They face opposite directions. Defender for Key Vault is a workload protection plan watching the vault's data plane for unusual principals, locations and volume. Secret scanning is agentless discovery of credentials that never made it into a vault, which is usually how lateral movement was possible."
+      "explanation": "They face opposite directions. Defender for Key Vault is a workload protection plan watching the vault's data plane for unusual principals, locations and volume. Secret scanning is agentless discovery of credentials that never made it into a vault, which is usually how lateral movement was possible.",
+      "why_not": [
+        "This is the reverse. Defender for Key Vault watches the vault's own data plane; secret scanning looks outside it.",
+        null,
+        "Secret scanning does not watch access at all. It discovers credentials sitting outside the vault.",
+        "Defender for Key Vault does not look for exposed credentials. It alerts on unusual access to the vault."
+      ]
     },
     {
       "id": "01-02-q5",
@@ -66,7 +90,79 @@
         "Key Vault Secrets Officer scoped to the individual secret"
       ],
       "answer": 2,
-      "explanation": "RBAC assignments can be scoped to an individual secret, key or certificate, and that is the least-privilege answer people forget exists. Key Vault Reader sees that a secret exists but not its value; Secrets User at vault scope reads every secret; Secrets Officer can also delete."
+      "explanation": "RBAC assignments can be scoped to an individual secret, key or certificate, and that is the least-privilege answer people forget exists. Key Vault Reader sees that a secret exists but not its value; Secrets User at vault scope reads every secret; Secrets Officer can also delete.",
+      "why_not": [
+        "Key Vault Reader sees that the secret exists but cannot read its value.",
+        "Secrets User at vault scope can read every secret in the vault, not just this one.",
+        null,
+        "Secrets Officer can also manage and delete the secret, which is more than reading it."
+      ]
+    },
+    {
+      "id": "01-02-q6",
+      "sub_skill": "Deploy Key Vault",
+      "prompt": "You are deploying a new key vault to hold customer-managed keys. Requirements: keys must be protected by hardware security modules; no one, including a compromised subscription Owner, may permanently delete the vault before its retention period ends; and data-plane access must be grantable on an individual key and managed alongside other Azure role assignments. Which configuration meets every requirement?",
+      "options": [
+        "Standard SKU, soft-delete retention of 90 days, access policy permission model",
+        "Premium SKU, soft-delete retention of 90 days, access policy permission model",
+        "Standard SKU, purge protection enabled, Azure RBAC permission model",
+        "Premium SKU, purge protection enabled, Azure RBAC permission model"
+      ],
+      "answer": 3,
+      "explanation": "The Premium SKU backs keys with hardware security modules; Standard SKU keys are software-protected. Soft delete is always on, but only purge protection stops a privileged principal purging the vault before retention expires, and it cannot be turned off once enabled. Azure RBAC is the permission model that can be scoped to a single key and is managed as ordinary role assignments; access policies are vault-wide lists.",
+      "why_not": [
+        "Fails all three: Standard SKU keys are software-protected, soft delete alone still allows a purge, and access policies cannot be scoped below the vault.",
+        "Meets the HSM requirement, but soft delete alone still lets a sufficiently privileged principal purge the vault, and access policies are vault-wide.",
+        "Purge protection and Azure RBAC are right, but Standard SKU keys are software-protected, not HSM-backed.",
+        null
+      ],
+      "difficulty": "applied",
+      "concept": "SKU, purge protection and permission model at deployment",
+      "misconception": "Soft delete alone protects a vault from a malicious administrator"
+    },
+    {
+      "id": "01-02-q7",
+      "sub_skill": "Manage keys, secrets, and certificates",
+      "prompt": "An application reads a database password from Key Vault using the secret's URI with no version identifier. The password has just been rotated in the database. The application must use the new password without a configuration change, and the old password must no longer be readable from the vault - but must stay restorable in case the rotation has to be rolled back. What should you do?",
+      "options": [
+        "Set the new value on the existing secret, which creates a new version, then disable the previous version",
+        "Create a secret with a different name holding the new value, then delete the old secret",
+        "Delete the secret, then immediately create a secret with the same name holding the new value",
+        "Set the new value on the existing secret, then purge the previous version"
+      ],
+      "answer": 0,
+      "explanation": "Writing a new value creates a new version, and a URI without a version resolves to the current one, so the application picks up the new password with no configuration change. Disabling the previous version stops it being returned, while leaving it available to re-enable if the rotation is rolled back.",
+      "why_not": [
+        null,
+        "The application references the secret by name, so a new name means a configuration change. Deleting the old secret also removes all of its versions at once.",
+        "A deleted secret stays in the soft-deleted state for the retention period, and a new object cannot be created in the vault with the name of an object in the deleted state - so the create fails until the secret is purged or recovered.",
+        "Purge applies to a secret that has already been deleted, not to a single version of a live secret - and a purge would also remove the rollback path the requirement asks for."
+      ],
+      "difficulty": "scenario",
+      "concept": "Secret versioning and rotation",
+      "misconception": "Rotating a secret means replacing the secret object"
+    },
+    {
+      "id": "01-02-q8",
+      "sub_skill": "Scan for secrets by using Defender Cloud Security Posture Management (Defender CSPM)",
+      "prompt": "Defender for Key Vault is enabled on your subscription. The security team now wants to find storage account connection strings left in plaintext on the disks of Azure VMs and of AWS EC2 instances already connected to Defender for Cloud, without installing anything on the machines. Which two plans each provide this capability? Each correct answer is a complete solution.",
+      "options": [
+        "Defender CSPM",
+        "Defender for Servers Plan 1",
+        "Defender for Servers Plan 2",
+        "Defender for Key Vault, which is already enabled"
+      ],
+      "answer": [0, 2],
+      "explanation": "Machine secrets scanning is part of agentless machine scanning, which reads a disk snapshot through cloud APIs and needs no agent and no inbound connectivity. It is available with either the Defender CSPM plan or Defender for Servers Plan 2, for Azure VMs and for AWS and GCP instances connected to Defender for Cloud.",
+      "why_not": [
+        null,
+        "Plan 1 provides Defender for Endpoint integration and agent-based vulnerability management, but not agentless scanning - which is where machine secrets scanning comes from.",
+        null,
+        "Defender for Key Vault watches access to the vault itself. A secret sitting on a VM disk is outside the vault, which is exactly why it is a finding."
+      ],
+      "difficulty": "applied",
+      "concept": "Agentless machine secrets scanning",
+      "misconception": "Protecting the vault also finds secrets that never reached it"
     }
   ]
 }

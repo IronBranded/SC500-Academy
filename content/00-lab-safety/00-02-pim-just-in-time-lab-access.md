@@ -106,6 +106,23 @@ conditions, and it is where most of the exam-relevant configuration lives:
 Setting a role to eligible with a policy that requires nothing is theatre. The
 policy is the security control; the eligibility is just the roster.
 
+The whole path in one picture. Nothing in it goes beyond the two sections above.
+
+```mermaid
+flowchart TD
+  accTitle: PIM activation path
+  accDescr: An eligible user is permitted to hold the role but their token contains nothing. Activation is a selfActivate request that PIM evaluates against the role management policy - maximum duration, MFA, justification, ticket information, approval, Conditional Access authentication context. If the policy is satisfied, activation mints a new active assignment for a bounded window and the token contains the role. When the window ends, or on a selfDeactivate request, that assignment ends. The eligibility itself is never changed. Every request leaves an audit record with its justification.
+  E["Eligible<br/>permitted to hold the role -<br/>the token contains nothing"]:::d01
+  E -- "selfActivate request" --> POL{"Role management policy<br/>max duration · MFA · justification ·<br/>ticket · approval · auth context"}:::d01
+  POL -- "requirements met" --> A["Active: a NEW assignment<br/>for a bounded window -<br/>the token contains the role"]:::d01
+  POL -- "not met" --> N["Not granted<br/>still eligible only"]
+  A -- "window ends, or<br/>selfDeactivate request" --> E
+  POL -. "every request" .-> AU["Audit record,<br/>justification attached"]
+```
+
+The return arrow is to the same eligibility: activation created a separate assignment
+and never changed it.
+
 ## Configuration surface
 
 ### Roles to make yourself eligible for

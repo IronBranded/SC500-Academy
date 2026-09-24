@@ -14,7 +14,13 @@
         "Costs scale per workspace rather than per gigabyte"
       ],
       "answer": 1,
-      "explanation": "Correlation is easy inside a workspace and awkward across them. The legitimate drivers for multiple workspaces are regulatory, organisational or contractual — none of which apply here."
+      "explanation": "Correlation is easy inside a workspace and awkward across them. The legitimate drivers for multiple workspaces are regulatory, organisational or contractual — none of which apply here.",
+      "why_not": [
+        "The case against is not a workspace limit. It is the cost of correlating and maintaining detections across workspaces.",
+        null,
+        "Workspaces can be queried together. It is awkward, and that awkwardness is the cost the design imposes.",
+        "The argument against is operational - awkward cross-workspace correlation and duplicated rules - not a per-workspace price."
+      ]
     },
     {
       "id": "04-02-q2",
@@ -27,7 +33,13 @@
         "Automation Contributor; avoid Responder, which is for engineers"
       ],
       "answer": 1,
-      "explanation": "Responder is the analyst role: everything Reader can do, plus assigning, reclassifying and closing incidents. Contributor is for the people who write detections. Automation Contributor is assigned to the Sentinel service, not to people."
+      "explanation": "Responder is the analyst role: everything Reader can do, plus assigning, reclassifying and closing incidents. Contributor is for the people who write detections. Automation Contributor is assigned to the Sentinel service, not to people.",
+      "why_not": [
+        "Contributor would let them edit and delete detection logic, and Responder can triage - it is the analyst role.",
+        null,
+        "Playbook Operator lists, views and runs playbooks. It does not grant incident management.",
+        "Automation Contributor is assigned to the Sentinel service, not to people, and Responder is the analyst role."
+      ]
     },
     {
       "id": "04-02-q3",
@@ -40,7 +52,13 @@
         "Microsoft Sentinel Automation Contributor on the workspace resource group"
       ],
       "answer": 1,
-      "explanation": "Playbook Operator lets someone list, view and manually run playbooks. Creating and editing them is governed by Logic App permissions, because that is what a playbook is."
+      "explanation": "Playbook Operator lets someone list, view and manually run playbooks. Creating and editing them is governed by Logic App permissions, because that is what a playbook is.",
+      "why_not": [
+        "Playbook Operator lets someone list, view and manually run playbooks, not create or edit them.",
+        null,
+        "No Sentinel role grants playbook authoring. That is governed by Logic App permissions.",
+        "Automation Contributor is for the Sentinel service to run playbooks, not for people authoring them."
+      ]
     },
     {
       "id": "04-02-q4",
@@ -53,7 +71,13 @@
         "Workspace manager, which distributes the solutions"
       ],
       "answer": 1,
-      "explanation": "Installing puts templates in the workspace. A tenant with forty solutions installed and no active rules has a full catalogue and no detections. Creating a rule from a template is also where you tune the threshold rather than accepting it."
+      "explanation": "Installing puts templates in the workspace. A tenant with forty solutions installed and no active rules has a full catalogue and no detections. Creating a rule from a template is also where you tune the threshold rather than accepting it.",
+      "why_not": [
+        "Even with data flowing, templates detect nothing. Rules have to be created from them.",
+        null,
+        "Analytics rules do not depend on a commitment tier. What is missing is the rules themselves.",
+        "Workspace manager distributes content across workspaces. It is not needed to activate detections in one."
+      ]
     },
     {
       "id": "04-02-q5",
@@ -66,7 +90,13 @@
         "Switch to pay-as-you-go immediately, then re-commit at the lower tier"
       ],
       "answer": 1,
-      "explanation": "The asymmetry is the point: increases are easy and restart the clock, decreases wait. Commit cautiously on guessed volume, especially in a new deployment."
+      "explanation": "The asymmetry is the point: increases are easy and restart the clock, decreases wait. Commit cautiously on guessed volume, especially in a new deployment.",
+      "why_not": [
+        "A commitment tier cannot be reduced immediately. Decreases wait out the 31-day commitment period.",
+        null,
+        "The commitment period is 31 days, not 12 months.",
+        "Returning to pay-as-you-go is also a decrease, so it waits out the 31 days as well."
+      ]
     }
   ]
 }

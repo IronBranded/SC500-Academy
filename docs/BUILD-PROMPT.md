@@ -150,9 +150,11 @@ Before writing, and again before an exam sitting:
 2. Re-read the product docs for the module being touched.
 3. Check the certification page for the **practice assessment** and for the
    **"Prepare for the exam"** section. As of 2026-09-20 the practice assessment
-   is still unavailable and Microsoft has published **no learning path** for
-   SC-500. Both will change, and the second one changes this guide's
-   positioning.
+   was listed as unavailable. Correction (2026-09-22): Microsoft *had* published
+   Course SC-500T00-A with self-paced learning paths - its page was updated
+   2026-07-30 - so the earlier "no learning path" statement was wrong. The
+   outline-drift workflow watches the certification page, not the training
+   catalogue, which is how it was missed.
 4. Bump `last_verified` when you re-checked the documentation, not when you
    edited prose.
 

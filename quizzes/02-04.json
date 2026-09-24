@@ -14,7 +14,13 @@
         "Threat intelligence allowed the traffic because the destination is not known-malicious"
       ],
       "answer": 1,
-      "explanation": "Azure Firewall processes DNAT, then network, then application rules - always in that order, regardless of rule collection group priority or policy inheritance. A network rule match ends processing, so a broad network allow silently disables FQDN filtering even when the application rule is perfectly correct."
+      "explanation": "Azure Firewall processes DNAT, then network, then application rules - always in that order, regardless of rule collection group priority or policy inheritance. A network rule match ends processing, so a broad network allow silently disables FQDN filtering even when the application rule is perfectly correct.",
+      "why_not": [
+        "Application rules handle HTTPS as well as HTTP. The problem is that they were never reached.",
+        null,
+        "Rule collection group priority does not change the rule-type order. Network rules are processed before application rules, whatever the group priority.",
+        "Threat intelligence did not allow anything. The network rule matched and ended processing."
+      ]
     },
     {
       "id": "02-04-q2",
@@ -27,7 +33,13 @@
         "Convert the private endpoint to a service endpoint"
       ],
       "answer": 1,
-      "explanation": "Creating a private endpoint does not close the public door. The service's public endpoint stays reachable until you separately set that service's network rules. A private endpoint alongside an open public endpoint is a more expensive version of no change."
+      "explanation": "Creating a private endpoint does not close the public door. The service's public endpoint stays reachable until you separately set that service's network rules. A private endpoint alongside an open public endpoint is a more expensive version of no change.",
+      "why_not": [
+        "DNS is already working: the VM resolves the private address. The public endpoint stays open until you close it.",
+        null,
+        "A private DNS zone has no per-client exclusions. It answers queries from linked virtual networks, and the colleague at home never queries it.",
+        "A service endpoint does not remove the public endpoint either. The fix is the account's own network settings."
+      ]
     },
     {
       "id": "02-04-q3",
@@ -40,7 +52,13 @@
         "The storage firewall must allow the on-premises public egress address"
       ],
       "answer": 1,
-      "explanation": "Resolving the name from outside the virtual network returns the public endpoint by design. DNS is the whole implementation of a private endpoint, and making it work for on-premises clients is a separate piece of hybrid DNS forwarding work."
+      "explanation": "Resolving the name from outside the virtual network returns the public endpoint by design. DNS is the whole implementation of a private endpoint, and making it work for on-premises clients is a separate piece of hybrid DNS forwarding work.",
+      "why_not": [
+        "Private endpoints are reachable from on-premises over ExpressRoute. The endpoint is fine; name resolution is not.",
+        null,
+        "Service endpoints do not apply to traffic from on-premises, and the failure here is DNS returning the public address.",
+        "Allowing the public address would make the connection work over the internet, which bypasses the private endpoint rather than fixing it."
+      ]
     },
     {
       "id": "02-04-q4",
@@ -53,7 +71,13 @@
         "The Private Access traffic forwarding profile, which carries the policy"
       ],
       "answer": 2,
-      "explanation": "Both Quick Access and per-app access publish the resource as an enterprise application. Because it is an enterprise app, users and groups are assigned to it and Conditional Access governs it - which is precisely what a VPN gateway cannot do, since it authenticates once at the tunnel and then routes."
+      "explanation": "Both Quick Access and per-app access publish the resource as an enterprise application. Because it is an enterprise app, users and groups are assigned to it and Conditional Access governs it - which is precisely what a VPN gateway cannot do, since it authenticates once at the tunnel and then routes.",
+      "why_not": [
+        "The client captures traffic and forwards it to Global Secure Access. What Conditional Access policy is assigned to is the enterprise application.",
+        "The connector brokers traffic into the private network. It is not where users are authenticated or where policy is assigned.",
+        null,
+        "The forwarding profile controls which traffic the client sends through Global Secure Access. Policy on this application comes from publishing it as an enterprise application."
+      ]
     },
     {
       "id": "02-04-q5",
@@ -66,7 +90,35 @@
         "Connection troubleshoot - a failure at the DNS stage"
       ],
       "answer": 1,
-      "explanation": "Next hop answers where a packet actually goes. If it returns Internet instead of VirtualAppliance with the firewall's private address, the route table is not associated with the subnet and every firewall rule is decorative. IP flow verify evaluates NSGs and admin rules, not firewall policy - knowing which tool answers which question is the skill being tested."
+      "explanation": "Next hop answers where a packet actually goes. If it returns Internet instead of VirtualAppliance with the firewall's private address, the route table is not associated with the subnet and every firewall rule is decorative. IP flow verify evaluates NSGs and admin rules, not firewall policy - knowing which tool answers which question is the skill being tested.",
+      "why_not": [
+        "IP flow verify evaluates NSGs and security admin rules, not firewall policy, so it cannot name one.",
+        null,
+        "Effective security rules shows the NSG rules applied to a NIC. It knows nothing about firewall application rules - and the firewall rules are correct anyway.",
+        "The symptom is traffic not reaching the firewall, which is a routing question. Next hop answers it directly."
+      ]
+    },
+    {
+      "id": "02-04-q6",
+      "sub_skill": "Configure Azure Private Link services to secure access to network resources",
+      "prompt": "An internal API runs on VMs behind a Standard Load Balancer in your virtual network. A partner in another Microsoft Entra tenant must reach it privately. Their address space overlaps yours, you will not peer the networks or expose a public IP, and you must decide which partner connections are allowed. What should you configure?",
+      "options": [
+        "A private endpoint for the load balancer in your own virtual network, shared with the partner",
+        "A Private Link service on the Standard Load Balancer; the partner creates a private endpoint to its alias, and you approve the connection request",
+        "Virtual network peering across the two tenants, restricted by NSG rules to the partner's address range",
+        "A service endpoint on the API subnet, with the partner's subnet added to the allow list"
+      ],
+      "answer": 1,
+      "explanation": "Private Link service publishes your own service behind a Standard Load Balancer. The consumer references its alias from a private endpoint in their own network, the connection arrives as a request you approve or reject, and NAT on the provider side means overlapping address space does not matter.",
+      "why_not": [
+        "A private endpoint is the consumer side: it gives a network a private IP for someone else's service. The partner needs the endpoint in their network, pointing at a service you publish.",
+        null,
+        "Peering is ruled out by the requirement, and virtual networks with overlapping address spaces cannot be peered in any case.",
+        "Service endpoints extend a subnet's identity to Azure platform services such as Storage or SQL Database. They cannot publish your own application to another tenant's network."
+      ],
+      "difficulty": "scenario",
+      "concept": "Private Link service (provider side) versus private endpoint (consumer side)",
+      "misconception": "The provider creates the private endpoint"
     }
   ]
 }

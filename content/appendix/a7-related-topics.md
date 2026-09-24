@@ -30,7 +30,7 @@ forensic_relevance: "The gap between 'what the outline enumerates' and 'what the
 # Related Topics With No Skills-Measured Bullet
 
 > **Read the coverage rule first.** This guide's contract is the **87 verbatim sub-objectives**,
-> each owned by exactly one module and checked by the validator. **Nothing in this appendix counts
+> each owned by exactly one exam module and checked by the validator. **Nothing in this appendix counts
 > toward that contract, and nothing here may be cited as covering an objective.** It exists
 > because of one sentence Microsoft puts on the study guide itself:
 >

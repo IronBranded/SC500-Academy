@@ -194,7 +194,8 @@ it, it is granted. The one exception is a **deny assignment**, which does take
 precedence, and which you cannot create directly; deny assignments come from Azure
 managed applications and similar platform features.
 
-`NotActions` being a subtraction rather than a deny is the classic trap. A custom
+`NotActions` being a subtraction rather than a deny is the classic trap, and
+`NotDataActions` behaves the same way for data actions. A custom
 role with `NotActions: Microsoft.Compute/virtualMachines/delete` does not prevent the
 user deleting VMs if they also hold Contributor somewhere above.
 
@@ -380,9 +381,11 @@ See [01-03 lab](../../labs/01-identity-access-governance/01-03-lab.md).
 2. A `ReadOnly` lock is applied to a storage account "to be safe." An application
    that only reads blobs breaks anyway. Give the mechanism, and name the plane each
    failing operation is on.
-3. A custom role has `Actions: */read` and `NotActions:
-   Microsoft.KeyVault/vaults/secrets/read`. A user with this role reads a secret
-   successfully. Give two distinct explanations.
+3. A custom role has `DataActions: Microsoft.KeyVault/vaults/secrets/*` and
+   `NotDataActions: Microsoft.KeyVault/vaults/secrets/getSecret/action`. A user with
+   this role reads a secret's value successfully. Give two distinct explanations -
+   and say why `NotActions: Microsoft.KeyVault/vaults/secrets/read` would never have
+   stopped it.
 4. Your MUA Resource Guard lives in the same subscription as the Recovery Services
    vault, owned by the same admin. State precisely what MUA still protects against
    and what it does not.
@@ -400,3 +403,5 @@ See [01-03 lab](../../labs/01-identity-access-governance/01-03-lab.md).
 - Microsoft Security DevOps GitHub Action: <https://learn.microsoft.com/en-us/azure/defender-for-cloud/github-action>
 - Enable pull request annotations: <https://learn.microsoft.com/en-us/azure/defender-for-cloud/enable-pull-request-annotations>
 - Offboard Microsoft Entra Permissions Management (retirement): <https://learn.microsoft.com/en-us/entra/permissions-management/how-to-offboard-permissions-management>
+- Understand Azure role definitions (NotActions and NotDataActions are not deny rules): <https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions>
+- Azure built-in roles for Security (Key Vault data actions): <https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security>

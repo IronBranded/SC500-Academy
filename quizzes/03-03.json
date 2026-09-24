@@ -14,7 +14,13 @@
         "The backend pool has no circuit breaker"
       ],
       "answer": 1,
-      "explanation": "Limiting by a key every consumer shares reproduces the problem you were solving. A per-consumer counter key — the subscription ID — means one application hitting its limit leaves the others working."
+      "explanation": "Limiting by a key every consumer shares reproduces the problem you were solving. A per-consumer counter key — the subscription ID — means one application hitting its limit leaves the others working.",
+      "why_not": [
+        "The window size changes how quickly a consumer reaches its limit, not whether one consumer's usage starves the others.",
+        null,
+        "Semantic caching reduces backend calls for repeated prompts. It does not separate one consumer's quota from another's.",
+        "A circuit breaker protects against a failing backend. The problem here is one shared token counter."
+      ]
     },
     {
       "id": "03-03-q2",
@@ -27,7 +33,13 @@
         "An llm-emit-token-metric dimension on prompt length"
       ],
       "answer": 1,
-      "explanation": "The token limit policy can precalculate prompt tokens at the gateway, so a request that already exceeds the limit never reaches the backend at all."
+      "explanation": "The token limit policy can precalculate prompt tokens at the gateway, so a request that already exceeds the limit never reaches the backend at all.",
+      "why_not": [
+        "Semantic caching answers repeated prompts from the cache. It does not reject oversized ones.",
+        null,
+        "A circuit breaker reacts to backend failures. It does not measure prompt size.",
+        "Emitting a metric reports token usage after the fact. It rejects nothing."
+      ]
     },
     {
       "id": "03-03-q3",
@@ -40,7 +52,13 @@
         "Indirect injection can only be addressed at the API Management gateway"
       ],
       "answer": 1,
-      "explanation": "Prompt Shields detects the attack — direct and indirect injection attempts. Content filters govern the content. An injection carried in a retrieved document is not a harm-category problem, and treating it as one is how organisations conclude they have handled something they have not."
+      "explanation": "Prompt Shields detects the attack — direct and indirect injection attempts. Content filters govern the content. An injection carried in a retrieved document is not a harm-category problem, and treating it as one is how organisations conclude they have handled something they have not.",
+      "why_not": [
+        "The direction filters apply in is not the problem. An injection hidden in retrieved content is not a harm category, so content filters do not look for it.",
+        null,
+        "Groundedness detection does not switch content filters off. The gap is that detecting injection is Prompt Shields' job.",
+        "Prompt Shields, in Foundry, is the control built to detect direct and indirect injection attempts. The gateway is not the only place to address it."
+      ]
     },
     {
       "id": "03-03-q4",
@@ -53,7 +71,13 @@
         "Only if the workload uses API Management with request logging"
       ],
       "answer": 1,
-      "explanation": "Suspicious prompt evidence is an optional extension of the AI workloads plan, off by default. With it on, short redacted snippets of the triggering prompts surface in Defender XDR. Without it, the alert fires and the evidence was never captured."
+      "explanation": "Suspicious prompt evidence is an optional extension of the AI workloads plan, off by default. With it on, short redacted snippets of the triggering prompts surface in Defender XDR. Without it, the alert fires and the evidence was never captured.",
+      "why_not": [
+        "Alerts do not include prompt content by default. Suspicious prompt evidence is an optional extension, off by default.",
+        null,
+        "Connecting Purview is not what captures this evidence. It comes from the AI workloads plan's suspicious prompt evidence extension.",
+        "The alert's own evidence comes from the suspicious prompt evidence extension. Without it, the alert fires with no prompt content attached."
+      ]
     },
     {
       "id": "03-03-q5",
@@ -66,7 +90,13 @@
         "Only its attack paths, from the cloud security graph"
       ],
       "answer": 1,
-      "explanation": "Enabling the plan is what triggers discovery of Microsoft Foundry, Azure OpenAI and Azure Machine Learning resources, with results appearing in the Data and AI security dashboard within minutes. Without it, the workload is entirely unmonitored."
+      "explanation": "Enabling the plan is what triggers discovery of Microsoft Foundry, Azure OpenAI and Azure Machine Learning resources, with results appearing in the Data and AI security dashboard within minutes. Without it, the workload is entirely unmonitored.",
+      "why_not": [
+        "Enabling Defender for Cloud alone does not discover AI services. Discovery is triggered by enabling the AI workloads plan.",
+        null,
+        "Without the plan the workload is not discovered as an AI workload at all, so it does not appear in the Data and AI security dashboard.",
+        "The plan is what triggers discovery of AI services. Without it, Defender for Cloud has no AI-specific view of the workload."
+      ]
     }
   ]
 }

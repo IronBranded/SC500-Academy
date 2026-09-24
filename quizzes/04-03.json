@@ -14,7 +14,13 @@
         "Ingestion fails with a schema conflict"
       ],
       "answer": 1,
-      "explanation": "The unified connector supersedes the individual ones. Leaving both on is the most common avoidable Sentinel cost, and the duplicate rows quietly corrupt every aggregation."
+      "explanation": "The unified connector supersedes the individual ones. Leaving both on is the most common avoidable Sentinel cost, and the duplicate rows quietly corrupt every aggregation.",
+      "why_not": [
+        "Nothing deduplicates the events. They are ingested and billed twice.",
+        null,
+        "The product connectors keep ingesting. Nothing makes them inert until you disable them.",
+        "Ingestion does not fail. It succeeds twice, which is the problem."
+      ]
     },
     {
       "id": "04-03-q2",
@@ -27,7 +33,13 @@
         "Enable diagnostic settings on the appliance; events land in AzureDiagnostics"
       ],
       "answer": 1,
-      "explanation": "Appliances do not run agents, so the forwarder pattern is mandatory rather than stylistic. CEF is a structured key-value extension of syslog, which is why it lands parsed in CommonSecurityLog rather than as raw text in Syslog."
+      "explanation": "Appliances do not run agents, so the forwarder pattern is mandatory rather than stylistic. CEF is a structured key-value extension of syslog, which is why it lands parsed in CommonSecurityLog rather than as raw text in Syslog.",
+      "why_not": [
+        "Appliances do not run agents, so the Azure Monitor Agent cannot go on the appliance itself.",
+        null,
+        "A firewall sending CEF uses the forwarder pattern and lands in CommonSecurityLog. The Logs Ingestion API is for sources that can call an API into a custom table.",
+        "Diagnostic settings are an Azure resource feature. A third-party appliance sends syslog instead."
+      ]
     },
     {
       "id": "04-03-q3",
@@ -40,7 +52,13 @@
         "The Common predefined event set with an exclusion list"
       ],
       "answer": 1,
-      "explanation": "All events, Common and Minimal are the predefined sets. 'Collect only these event IDs' is an XPath question. A transformation reshapes data after collection is defined; XPath decides what is collected at all."
+      "explanation": "All events, Common and Minimal are the predefined sets. 'Collect only these event IDs' is an XPath question. A transformation reshapes data after collection is defined; XPath decides what is collected at all.",
+      "why_not": [
+        "Minimal is a predefined set chosen by Microsoft, not your list of event IDs.",
+        null,
+        "A transformation reshapes data after collection is defined. XPath decides what is collected at all.",
+        "Trimming a predefined set is not how selection works. A custom XPath query names exactly the events to collect."
+      ]
     },
     {
       "id": "04-03-q4",
@@ -56,7 +74,13 @@
         0,
         2
       ],
-      "explanation": "Two collection-side causes produce silence. A filter chosen to save money can remove the exact event IDs a detection depends on, and a daily cap drops data once reached. Enabling both the Security log connector and WEF would produce duplicates, not silence."
+      "explanation": "Two collection-side causes produce silence. A filter chosen to save money can remove the exact event IDs a detection depends on, and a daily cap drops data once reached. Enabling both the Security log connector and WEF would produce duplicates, not silence.",
+      "why_not": [
+        null,
+        "Enabling both the Security log connector and WEF would produce duplicates, not silence.",
+        null,
+        "Workspace region is not a collection-side cause of silence. Filters and the daily cap are."
+      ]
     },
     {
       "id": "04-03-q5",
@@ -69,7 +93,13 @@
         "Store the logs in a storage account and query them with a search job"
       ],
       "answer": 1,
-      "explanation": "Custom tables are DCR-based and need a data collection endpoint — ingestion fails quietly without one. Everything on the Analytics plan because it is the default is the most common cost mistake after over-collection."
+      "explanation": "Custom tables are DCR-based and need a data collection endpoint — ingestion fails quietly without one. Everything on the Analytics plan because it is the default is the most common cost mistake after over-collection.",
+      "why_not": [
+        "Twelve months of verbose logs on the Analytics plan is the most common cost mistake after over-collection. Only the detection subset needs it.",
+        null,
+        "The syslog forwarder pattern is for appliances that speak syslog. An application with no connector needs a custom table and a DCR, and filtering at query time still pays to ingest everything.",
+        "Search jobs query the workspace's own long-term retention, not a storage account, and detections need the data in the workspace."
+      ]
     },
     {
       "id": "04-03-q6",
@@ -82,7 +112,13 @@
         "It applies only to Windows Security events"
       ],
       "answer": 1,
-      "explanation": "Transformations drop columns, filter rows and normalise fields at ingestion. That is the cost lever, and it carries the same asymmetry as every other collection decision: a transformation written and never reviewed removes a field a future detection needs, invisibly."
+      "explanation": "Transformations drop columns, filter rows and normalise fields at ingestion. That is the cost lever, and it carries the same asymmetry as every other collection decision: a transformation written and never reviewed removes a field a future detection needs, invisibly.",
+      "why_not": [
+        "Transformations act at ingestion, not at query time. What they drop is gone.",
+        null,
+        "A transformation does not change a table's plan. It reshapes data as it arrives.",
+        "Transformations are not limited to Windows Security events. They reshape data flowing through a data collection rule."
+      ]
     }
   ]
 }

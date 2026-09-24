@@ -57,9 +57,19 @@
     (manifest.appendix || []).forEach(function (a, i) {
       out.push({ kind: 'Appendix', label: a.title, sub: 'Reference', href: '#/appendix/' + i });
     });
-    out.push({ kind: 'View', label: 'Dashboard', sub: 'Progress and coverage', href: '#/' });
+    out.push({ kind: 'View', label: 'Dashboard', sub: 'What to study next', href: '#/' });
+    out.push({ kind: 'View', label: 'Exam prep', sub: 'Review by domain, objective, wrong answers, bookmarks', href: '#/prep' });
+    out.push({ kind: 'View', label: 'Needs review', sub: 'Sub-objectives whose latest answer was wrong', href: '#/prep/needs-review' });
+    out.push({ kind: 'View', label: 'Objective coverage', sub: 'Every official sub-objective and what teaches it', href: '#/coverage' });
+    out.push({ kind: 'View', label: 'Mock exam', sub: 'Timed, weighted, mixed', href: '#/exam' });
+    out.push({ kind: 'View', label: 'Flashcards', sub: 'Distinctions, spaced repetition', href: '#/cards' });
     out.push({ kind: 'View', label: 'Cost planner', sub: 'What can I afford to run', href: '#/cost' });
     out.push({ kind: 'View', label: 'Readiness', sub: 'What to study next', href: '#/readiness' });
+    out.push({ kind: 'View', label: 'Verification watchlist', sub: 'Preview features and stale verification dates', href: '#/preview' });
+    manifest.domains.forEach(function (d) {
+      if (!d.weight || d.weight === 'n/a') return;
+      out.push({ kind: 'View', label: 'Domain review: ' + d.name, sub: d.weight + ' of the exam', href: '#/domain/' + d.id });
+    });
     return out;
   }
 
@@ -101,8 +111,9 @@
           if (b) { b.click(); b.focus(); }
         } },
       { kind: 'Action', label: 'Toggle review pass', sub: 'Collapse explanation, keep exam tips', run: function () {
-          var b = Array.prototype.find.call(document.querySelectorAll('#page-progress .btn'),
-            function (x) { return /review|show everything/i.test(x.textContent); });
+          /* Lessons keep the toggle in their header; other pages in the strip. */
+          var b = Array.prototype.find.call(document.querySelectorAll('.lesson-head__actions .btn, #page-progress .btn'),
+            function (x) { return /review pass|show everything|show full lesson/i.test(x.textContent); });
           if (b) b.click();
         } },
       { kind: 'Action', label: 'Download progress', sub: 'Export as JSON', run: function () {
@@ -286,6 +297,8 @@
           if (ev.key === 'd') { ev.preventDefault(); location.hash = '#/'; }
           if (ev.key === 'c') { ev.preventDefault(); location.hash = '#/cost'; }
           if (ev.key === 'r') { ev.preventDefault(); location.hash = '#/readiness'; }
+          if (ev.key === 'p') { ev.preventDefault(); location.hash = '#/prep'; }
+          if (ev.key === 'e') { ev.preventDefault(); location.hash = '#/exam'; }
           if (ev.key === 't') {
             ev.preventDefault();
             var t = document.getElementById('teardown');

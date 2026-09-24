@@ -217,6 +217,30 @@
     {
       "title": "AZ-500 to SC-500 Delta",
       "content": "content/appendix/a5-az500-to-sc500-delta.md"
+    },
+    {
+      "title": "Choosing Between Overlapping Controls",
+      "content": "content/appendix/a6-choosing-between-controls.md"
+    },
+    {
+      "title": "Related Topics With No Skills-Measured Bullet",
+      "content": "content/appendix/a7-related-topics.md"
+    },
+    {
+      "title": "Timed Portal Drills",
+      "content": "content/appendix/a8-timed-portal-drills.md"
+    },
+    {
+      "title": "Case Study 1 - Northwind Logistics",
+      "content": "content/appendix/a9-case-study-northwind-ai.md"
+    },
+    {
+      "title": "Case Study 2 - Contoso Manufacturing",
+      "content": "content/appendix/a10-case-study-contoso-landing-zone.md"
+    },
+    {
+      "title": "Case Study 3 - Meridian Trust",
+      "content": "content/appendix/a11-case-study-meridian-governance.md"
     }
   ]
 }

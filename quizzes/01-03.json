@@ -14,7 +14,13 @@
         "Compliance data refreshes monthly; wait for the next cycle"
       ],
       "answer": 1,
-      "explanation": "Deny blocks new and changed resources and never touches existing ones, so pre-existing non-compliant accounts stay non-compliant and nothing fails because nobody deployed a new one. Remediating existing resources needs Modify or DeployIfNotExists plus a remediation task. Azure Policy has no report-only mode - that is Conditional Access."
+      "explanation": "Deny blocks new and changed resources and never touches existing ones, so pre-existing non-compliant accounts stay non-compliant and nothing fails because nobody deployed a new one. Remediating existing resources needs Modify or DeployIfNotExists plus a remediation task. Azure Policy has no report-only mode - that is Conditional Access.",
+      "why_not": [
+        "A managed identity is needed by Modify and DeployIfNotExists to remediate, not by Deny. Adding one changes nothing about resources that already exist.",
+        null,
+        "Azure Policy has no report-only mode. Report-only is a Conditional Access policy state.",
+        "Waiting changes nothing. Deny never acts on resources that already exist, so they stay non-compliant however often compliance is evaluated."
+      ]
     },
     {
       "id": "01-03-q2",
@@ -27,7 +33,13 @@
         "ReadOnly locks require the application to re-authenticate every hour"
       ],
       "answer": 1,
-      "explanation": "Locks are control-plane controls. ReadOnly does not stop blob reads, but it does block operations implemented as POST that look like reads - listing account keys being the standard example. This is why CanNotDelete is the usual recommendation and ReadOnly causes more outages than it prevents."
+      "explanation": "Locks are control-plane controls. ReadOnly does not stop blob reads, but it does block operations implemented as POST that look like reads - listing account keys being the standard example. This is why CanNotDelete is the usual recommendation and ReadOnly causes more outages than it prevents.",
+      "why_not": [
+        "Locks are control-plane controls. Blob reads are data plane and are not affected by a ReadOnly lock.",
+        null,
+        "Locks do not remove or change role assignments.",
+        "Locks have nothing to do with authentication or token lifetime."
+      ]
     },
     {
       "id": "01-03-q3",
@@ -40,7 +52,13 @@
         "Permissions Management was renamed Entra ID Governance; use that blade"
       ],
       "answer": 1,
-      "explanation": "Microsoft Entra Permissions Management was retired on 1 October 2025, with support ending 1 November 2025. Its entitlement capabilities live on inside Defender CSPM. This is one of the sharper traps in AZ-500-era material, and the SC-500 bullet is worded 'by using Azure role-based access control' for that reason."
+      "explanation": "Microsoft Entra Permissions Management was retired on 1 October 2025, with support ending 1 November 2025. Its entitlement capabilities live on inside Defender CSPM. This is one of the sharper traps in AZ-500-era material, and the SC-500 bullet is worded 'by using Azure role-based access control' for that reason.",
+      "why_not": [
+        "Something is wrong: Permissions Management was retired on 1 October 2025, not moved.",
+        null,
+        "No licence brings it back. The product was retired, and support ended on 1 November 2025.",
+        "It was not renamed. It was retired, and its entitlement capabilities live on in Defender CSPM."
+      ]
     },
     {
       "id": "01-03-q4",
@@ -53,20 +71,123 @@
         "Ransomware encrypting the recovery points"
       ],
       "answer": 1,
-      "explanation": "MUA works only if the Resource Guard lives where the vault's administrator cannot reach it - a different subscription, ideally a different tenant, under different people. Same-owner MUA is a speed bump against accident and no defence against an attacker who already holds that account."
+      "explanation": "MUA works only if the Resource Guard lives where the vault's administrator cannot reach it - a different subscription, ideally a different tenant, under different people. Same-owner MUA is a speed bump against accident and no defence against an attacker who already holds that account.",
+      "why_not": [
+        "A compromised administrator who also owns the Resource Guard can approve their own critical operation.",
+        null,
+        "MUA does function with the Resource Guard in the same subscription. It simply guards only against accident when one person controls both sides.",
+        "MUA adds a second approval to critical operations on the vault. It is not a control against data being encrypted."
+      ]
     },
     {
       "id": "01-03-q5",
       "sub_skill": "Manage custom roles, including Azure roles and Microsoft Entra roles",
-      "prompt": "A custom Azure role includes NotActions for Microsoft.KeyVault/vaults/secrets/read. A user holding this role reads a secret successfully. Give the two most likely explanations.",
+      "prompt": "A custom Azure role grants DataActions Microsoft.KeyVault/vaults/secrets/* with NotDataActions Microsoft.KeyVault/vaults/secrets/getSecret/action, so that a support team can manage secrets without reading their values. It is assigned to Priya on a key vault. Priya still retrieves a secret's value from that vault. Which two statements could each explain this?",
       "options": [
-        "NotActions is a subtraction within one role definition, not a deny, and another assignment grants the operation",
-        "The vault uses the access policy model, so the RBAC role is not what governs data-plane access",
-        "NotActions only applies to DataActions, never to Actions",
-        "Custom roles cannot contain NotActions for Key Vault"
+        "Priya holds another role assignment, on the vault or at a scope above it, that includes getSecret/action - NotDataActions subtracts only within its own role and is not a deny",
+        "The vault uses the access policy permission model, where Azure RBAC data actions do not apply, and an access policy grants Priya secret permissions",
+        "The exclusion should have been Microsoft.KeyVault/vaults/secrets/read under NotActions, which is what controls reading a secret's value",
+        "Priya also holds Key Vault Reader on the vault, which includes reading secret values"
       ],
       "answer": [0, 1],
-      "explanation": "NotActions subtracts within a single role definition; effective permission is the union of every assignment, so a broader role elsewhere still grants it. Separately, if the vault is in access policy mode, RBAC does not govern the data plane at all - check enableRbacAuthorization before debugging anything else."
+      "explanation": "Effective access is the union of every role assignment at the scope and above. NotDataActions removes a data action from its own role only - Microsoft's documentation states it is not a deny rule - so a second assignment that includes getSecret/action still grants it. Separately, Azure RBAC data actions govern only vaults on the Azure RBAC permission model; on an access policy vault, the policy decides, so check enableRbacAuthorization before debugging anything else. Only a deny assignment, which you cannot create directly, overrides a grant.",
+      "why_not": [
+        null,
+        null,
+        "Microsoft.KeyVault/vaults/secrets/read is a control-plane action that views a secret's properties, not its value. Reading the value is the data action getSecret/action, so NotDataActions is the right place for this exclusion.",
+        "Key Vault Reader reads metadata only. It cannot read secret contents."
+      ],
+      "difficulty": "scenario",
+      "concept": "NotDataActions is not a deny; the vault's permission model decides",
+      "misconception": "An exclusion in one role definition blocks the permission everywhere"
+    },
+    {
+      "id": "01-03-q6",
+      "sub_skill": "Evaluate regulatory compliance by using Microsoft Defender for Cloud",
+      "prompt": "An auditor asks which PCI DSS controls your Azure subscription currently fails, and which of your resources are responsible. Defender for Cloud is enabled on the subscription. Where do you get this answer?",
+      "options": [
+        "The secure score, filtered to the recommendations with the highest score impact",
+        "The PCI DSS audit report for Azure in the Microsoft Service Trust Portal",
+        "The Regulatory compliance dashboard, after adding the PCI DSS standard to the subscription",
+        "The Microsoft cloud security benchmark, which is applied by default and covers PCI DSS on its own"
+      ],
+      "answer": 2,
+      "explanation": "Additional standards are assigned to a subscription or management group and then appear in the Regulatory compliance dashboard, which maps each control in the framework to the recommendations - and so the resources - that evidence it.",
+      "why_not": [
+        "Secure score is computed from the Microsoft cloud security benchmark. It helps you prioritise recommendations; it does not map them to PCI DSS controls.",
+        "The Service Trust Portal documents Microsoft's own compliance as the cloud provider. It says nothing about how your resources are configured.",
+        null,
+        "The Microsoft cloud security benchmark is the default standard and the basis of secure score. PCI DSS still has to be added as a standard of its own before its controls appear in the dashboard."
+      ],
+      "difficulty": "foundation",
+      "concept": "Regulatory compliance dashboard",
+      "misconception": "Secure score or the provider's audit reports show your own framework compliance"
+    },
+    {
+      "id": "01-03-q7",
+      "sub_skill": "Implement and configure security controls in Defender for Cloud, including security standards and recommendations",
+      "prompt": "A Defender for Cloud recommendation flags a storage account used only by an isolated test harness. The risk has been formally accepted until the harness is decommissioned in three months. The account must stay visible in compliance reporting with the reason recorded, and the waiver must end on its own. What should you do?",
+      "options": [
+        "Disable the recommendation in the Microsoft cloud security benchmark for the subscription",
+        "Create an exemption for that resource on the recommendation, with a justification and an expiration date",
+        "Move the storage account to a resource group excluded from the standard's assignment scope",
+        "Apply a CanNotDelete lock to the storage account and record the accepted risk in the lock's notes"
+      ],
+      "answer": 1,
+      "explanation": "An exemption keeps the resource in scope but records a justified waiver, which flows into the compliance view instead of disappearing from it, and an expiration date ends the waiver without anyone having to remember to remove it.",
+      "why_not": [
+        "Disabling the recommendation removes it for every resource in the subscription, not just this one, and records no per-resource reason.",
+        null,
+        "An exclusion takes the scope out of the assignment entirely, so the account is no longer evaluated and no longer appears in compliance reporting.",
+        "A lock controls deletion on the management plane. It has no effect on recommendations or on compliance reporting."
+      ],
+      "difficulty": "scenario",
+      "concept": "Recommendation exemptions",
+      "misconception": "Removing a resource from scope is the same as accepting its risk"
+    },
+    {
+      "id": "01-03-q8",
+      "sub_skill": "Manage Azure built-in role assignments",
+      "prompt": "Alex holds the Owner role at a management group. To make Alex read-only in subscription Sub1, which sits under that management group, an administrator assigns Alex the Reader role at Sub1. What is Alex's effective access in Sub1, and what would actually make it read-only?",
+      "options": [
+        "Reader - the more specific scope takes precedence, so nothing further is needed",
+        "Owner - assignments are additive and inherited, so the Owner assignment at the management group must be replaced by assignments at only the scopes Alex should administer",
+        "Owner - add a condition to the Reader assignment that denies write operations",
+        "Owner - create a deny assignment for write operations on Sub1 from the Access control (IAM) blade"
+      ],
+      "answer": 1,
+      "explanation": "Effective permission is the union of every assignment at the scope and above it. There is no ordering and no precedence by specificity, so the inherited Owner assignment still applies in Sub1. The fix is to stop granting Owner at the parent scope.",
+      "why_not": [
+        "Azure RBAC has no precedence by scope. A Reader assignment adds nothing to, and removes nothing from, an Owner assignment inherited from above.",
+        null,
+        "A condition narrows only what its own assignment grants. It cannot take away permissions granted by a different assignment.",
+        "You cannot create deny assignments directly; they are created by platform features such as Azure managed applications."
+      ],
+      "difficulty": "applied",
+      "concept": "Additive, inherited role assignments",
+      "misconception": "A more specific role assignment overrides an inherited one"
+    },
+    {
+      "id": "01-03-q9",
+      "sub_skill": "Implement and configure security controls by using infrastructure as code",
+      "prompt": "Developers deploy storage accounts with Bicep through Azure Pipelines from an Azure Repos repository. Requirements: a storage account that allows anonymous blob access must never be created, whichever tool deploys it; and developers must see IaC misconfigurations as comments on the pull request before it is merged. Which two actions meet the requirements? Each correct answer is part of the solution.",
+      "options": [
+        "Assign an Azure Policy definition with the Deny effect that blocks storage accounts allowing anonymous blob access",
+        "Assign the same policy definition with the Audit effect and review the compliance results weekly",
+        "Connect the Azure DevOps organisation to Defender for Cloud DevOps security, run the Microsoft Security DevOps extension in the pipeline, and enable pull request annotations",
+        "Enable Defender for Storage on the subscription"
+      ],
+      "answer": [0, 2],
+      "explanation": "A Bicep deployment is a series of Azure Resource Manager requests, so a Deny policy blocks a non-compliant template exactly as it blocks a portal click - the platform enforces it, whoever deploys. Catching the problem before merge is DevOps security: Microsoft Security DevOps runs IaC analysers in the pipeline, and with pull request annotations enabled the findings appear on the pull request.",
+      "why_not": [
+        null,
+        "Audit reports non-compliance after the resource already exists. The requirement is that it is never created.",
+        null,
+        "Defender for Storage detects threats against storage at runtime. It neither blocks configurations nor comments on pull requests."
+      ],
+      "difficulty": "scenario",
+      "concept": "Policy guardrails plus pre-deployment IaC scanning",
+      "misconception": "An Audit policy prevents non-compliant deployments"
     }
   ]
 }

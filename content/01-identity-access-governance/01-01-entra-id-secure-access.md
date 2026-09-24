@@ -147,6 +147,23 @@ The rules that decide outcomes, in the order they matter:
    radio button. Getting this backwards is both a classic exam distractor and a
    classic production outage.
 
+The same rules as a decision flow. Every box restates one of the five rules above;
+nothing here is additional behaviour.
+
+```mermaid
+flowchart TD
+  accTitle: Conditional Access evaluation
+  accDescr: Every enabled policy is evaluated. A policy applies only if the user is included and not excluded. If any applicable policy blocks, the sign-in is blocked. Otherwise every grant control from every applicable policy must be satisfied.
+  S["Sign-in"]:::d01 --> E["Evaluate EVERY enabled policy<br/>no order, no priority (rule 1)"]:::d01
+  E --> A{"Does this policy apply?<br/>exclusions beat inclusions (rule 2)"}
+  A -- "No" --> N["Policy plays no part"]
+  A -- "Yes" --> B{"Does any applicable<br/>policy block? (rule 3)"}
+  B -- "Yes" --> X["Blocked<br/>block beats grant"]
+  B -- "No" --> G{"Every grant control from every<br/>applicable policy satisfied? (rule 4)"}
+  G -- "Yes" --> OK["Access granted"]
+  G -- "No" --> R["Not granted until the<br/>missing controls are met"]
+```
+
 **Report-only** is a fourth policy state alongside On and Off: the policy is fully
 evaluated and the result is written to the sign-in log, but nothing is enforced.
 **What If** is a different thing - it simulates a hypothetical sign-in you

@@ -15,7 +15,13 @@
         "An app registration with a certificate deployed to each virtual machine"
       ],
       "answer": 1,
-      "explanation": "A user-assigned identity is a standalone Azure resource, shareable across resources and surviving their deletion. A system-assigned identity is tied to one resource and deleted with it, so it fails the second requirement. Both app registration options reintroduce a credential."
+      "explanation": "A user-assigned identity is a standalone Azure resource, shareable across resources and surviving their deletion. A system-assigned identity is tied to one resource and deleted with it, so it fails the second requirement. Both app registration options reintroduce a credential.",
+      "why_not": [
+        "A system-assigned identity is tied to one VM and deleted with it, so a rebuilt VM gets a different identity - it fails the second requirement.",
+        null,
+        "An app registration with a client secret reintroduces a credential. Storing it in Key Vault moves the secret; it does not remove it.",
+        "A certificate is still a credential, now deployed to every VM - it fails the first requirement."
+      ]
     },
     {
       "id": "01-01-q2",
@@ -28,7 +34,13 @@
         "Access is granted only for the session duration configured in policy C"
       ],
       "answer": 2,
-      "explanation": "Every applicable policy is evaluated on every sign-in and there is no priority ordering. If any applicable policy blocks, the sign-in is blocked regardless of how many others would have granted."
+      "explanation": "Every applicable policy is evaluated on every sign-in and there is no priority ordering. If any applicable policy blocks, the sign-in is blocked regardless of how many others would have granted.",
+      "why_not": [
+        "Satisfying A and B does not matter: policy C also applies, and block wins over any number of grants.",
+        "Conditional Access has no priority ordering. Every enabled policy that applies is evaluated on every sign-in.",
+        null,
+        "Policy C's control is Block, which denies the sign-in outright. Session controls only shape access that has been granted."
+      ]
     },
     {
       "id": "01-01-q3",
@@ -41,7 +53,13 @@
         "Application B requires admin consent"
       ],
       "answer": [0, 2, 3],
-      "explanation": "Delegated permissions give the intersection of the grant and the signed-in user's own access. Application permissions have no user to intersect with, so the scope is tenant-wide, and they always require admin consent. The permission name is identical in both cases."
+      "explanation": "Delegated permissions give the intersection of the grant and the signed-in user's own access. Application permissions have no user to intersect with, so the scope is tenant-wide, and they always require admin consent. The permission name is identical in both cases.",
+      "why_not": [
+        null,
+        "Delegated permissions are capped by the signed-in user's own access - the intersection of the grant and what the user can reach - so A sees only that one mailbox.",
+        null,
+        null
+      ]
     },
     {
       "id": "01-01-q4",
@@ -54,7 +72,13 @@
         "Require approved client app"
       ],
       "answer": 1,
-      "explanation": "The generic MFA control accepts any registered method, including SMS. An authentication strength names the acceptable method combinations, which is how the requirement is expressed as policy rather than as guidance."
+      "explanation": "The generic MFA control accepts any registered method, including SMS. An authentication strength names the acceptable method combinations, which is how the requirement is expressed as policy rather than as guidance.",
+      "why_not": [
+        "Require multifactor authentication accepts any registered method, including SMS.",
+        null,
+        "A compliant device is a device requirement. It says nothing about which authentication methods are acceptable.",
+        "Approved client app restricts which client applications can be used, not how the user authenticates."
+      ]
     },
     {
       "id": "01-01-q5",
@@ -67,7 +91,35 @@
         "They are converted to single-tenant app registrations in each partner tenant"
       ],
       "answer": 1,
-      "explanation": "The app registration is the definition and exists once, in the home tenant. Each consenting tenant holds its own service principal with its own grants, and those are not removed by deleting the registration."
+      "explanation": "The app registration is the definition and exists once, in the home tenant. Each consenting tenant holds its own service principal with its own grants, and those are not removed by deleting the registration.",
+      "why_not": [
+        "The application object exists once, in the home tenant. Each partner tenant's service principal is its own object and is not removed with it.",
+        null,
+        "Deleting the home-tenant registration does not reach into partner tenants, so there is no disable-and-retain step there. Their service principals remain until each tenant removes its own.",
+        "A service principal cannot become an app registration. They are different object types, and the registration exists only in the home tenant."
+      ]
+    },
+    {
+      "id": "01-01-q6",
+      "sub_skill": "Implement and configure Privileged Identity Management (PIM)",
+      "prompt": "Five engineers need the Security Administrator role. Requirements: nobody holds the role until they need it; every use must be approved by a second person and record a justification; and the role must lapse four hours after it is activated. What should you configure?",
+      "options": [
+        "An active assignment for each engineer that expires after four hours",
+        "An eligible assignment for each engineer, with the Security Administrator role settings requiring approval, justification, and a four-hour maximum activation duration",
+        "An eligible assignment for each engineer, with approval and justification set on each individual assignment",
+        "A permanent active assignment for each engineer, plus a Conditional Access policy requiring MFA for users holding the Security Administrator role"
+      ],
+      "answer": 1,
+      "explanation": "Eligibility removes standing access: the engineers hold nothing until they activate. Approval, justification and maximum activation duration are settings of the role - its role management policy - and apply to every activation of that role. The eligible assignment is only the roster; the role settings are the control.",
+      "why_not": [
+        "An active assignment is held from the moment it starts, with no request, no approval and no justification. Expiring it after four hours bounds the assignment, not each use of the role.",
+        null,
+        "Approval, justification and maximum activation duration are not properties of an individual assignment. They are role settings; an assignment carries only its start and end dates and whether it is eligible or active.",
+        "The engineers still hold the role permanently. Conditional Access adds a sign-in requirement but gives you no approval, no justification and no time limit."
+      ],
+      "difficulty": "applied",
+      "concept": "PIM eligibility and role settings",
+      "misconception": "Approval and activation rules are set on each assignment"
     }
   ]
 }

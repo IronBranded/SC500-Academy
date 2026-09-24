@@ -14,7 +14,13 @@
         "Attack path analysis requires a Defender for Servers Plan 2 subscription"
       ],
       "answer": 1,
-      "explanation": "Agentless scanning requires the Subscription Owner to enable the plan. Someone with lower authorisation can enable it successfully — the scanner simply never turns on, the plan reads as enabled, and empty attack paths look identical to a clean environment."
+      "explanation": "Agentless scanning requires the Subscription Owner to enable the plan. Someone with lower authorisation can enable it successfully — the scanner simply never turns on, the plan reads as enabled, and empty attack paths look identical to a clean environment.",
+      "why_not": [
+        "Waiting will not help. Without agentless scanning running, the graph never receives the vulnerability data that attack paths are built from.",
+        null,
+        "Foundational CSPM does not need disabling. The missing piece is agentless scanning, which starts only when a Subscription Owner enables the plan.",
+        "Attack path analysis is a Defender CSPM capability. The problem is that the plan's agentless scanning never started."
+      ]
     },
     {
       "id": "04-01-q2",
@@ -27,7 +33,13 @@
         "An attack path is a recommendation that has been open for more than 30 days"
       ],
       "answer": 1,
-      "explanation": "Three separate, individually unremarkable findings become one urgent item when the graph connects them. That assembly is what turns a four-thousand-item list into a priority, and it is the conceptual core of Domain 4."
+      "explanation": "Three separate, individually unremarkable findings become one urgent item when the graph connects them. That assembly is what turns a four-thousand-item list into a priority, and it is the conceptual core of Domain 4.",
+      "why_not": [
+        "An attack path is not one finding with a higher score. It is several findings connected by the security graph.",
+        null,
+        "Scope is not the difference. An attack path runs through specific resources, joining findings that are individually unremarkable.",
+        "Age has nothing to do with it. An attack path is assembled from connected findings, however new they are."
+      ]
     },
     {
       "id": "04-01-q3",
@@ -40,7 +52,13 @@
         "The ratio of resolved to open recommendations"
       ],
       "answer": 1,
-      "explanation": "Secure score is computed from MCSB-based controls. It measures what is assessed, not what is dangerous. A high score with an unaddressed attack path is worse than the reverse, which is the argument for risk prioritisation."
+      "explanation": "Secure score is computed from MCSB-based controls. It measures what is assessed, not what is dangerous. A high score with an unaddressed attack path is worse than the reverse, which is the argument for risk prioritisation.",
+      "why_not": [
+        "Secure score is not risk-weighted. It measures compliance with the Microsoft cloud security benchmark, which is why a dangerous attack path can coexist with a high score.",
+        null,
+        "Plan coverage is not what the score counts. It is computed from MCSB-based controls.",
+        "It is not a count of resolved recommendations. It is computed from MCSB-based controls, and it measures what is assessed, not what is dangerous."
+      ]
     },
     {
       "id": "04-01-q4",
@@ -53,7 +71,13 @@
         "Plans apply to new subscriptions automatically once enabled anywhere"
       ],
       "answer": 1,
-      "explanation": "Plans are enabled at subscription scope and manual enablement covers only what exists. Assigning the policy is the governance pattern from 01-03 applied to workload protection — and note that a policy will re-enable a plan you turn off, so remove the assignment first when tearing down."
+      "explanation": "Plans are enabled at subscription scope and manual enablement covers only what exists. Assigning the policy is the governance pattern from 01-03 applied to workload protection — and note that a policy will re-enable a plan you turn off, so remove the assignment first when tearing down.",
+      "why_not": [
+        "Plans are enabled at subscription scope, and manual enablement covers only subscriptions that exist. Future subscriptions need the policy.",
+        null,
+        "There is no plan inheritance to turn on. Manual enablement covers only the subscriptions that exist today.",
+        "Enabling a plan covers the subscription it was enabled on. New subscriptions start without it."
+      ]
     },
     {
       "id": "04-01-q5",
@@ -66,7 +90,13 @@
         "Cross-cloud attack paths, which require Arc on both sides"
       ],
       "answer": 1,
-      "explanation": "The connector establishes read access, discovers resources and applies the equivalent assessments. Arc is what gives each machine an ARM resource ID so that Defender for Servers, Azure Policy and Machine Configuration can reach it."
+      "explanation": "The connector establishes read access, discovers resources and applies the equivalent assessments. Arc is what gives each machine an ARM resource ID so that Defender for Servers, Azure Policy and Machine Configuration can reach it.",
+      "why_not": [
+        "The connector gives read access, discovery and assessments, but not Defender for Servers on the machines. That needs Arc.",
+        null,
+        "The connector's assessments still reach Defender for Cloud. What you lose is server workload protection on the machines.",
+        "What Arc adds is an ARM resource ID for each machine, which Defender for Servers, Azure Policy and Machine Configuration need. That is the loss here."
+      ]
     },
     {
       "id": "04-01-q6",
@@ -79,7 +109,13 @@
         "Network Watcher connection troubleshoot"
       ],
       "answer": 1,
-      "explanation": "MDVM reaches Azure VMs two ways: with the Defender for Endpoint extension, which is an agent, and agentlessly through disk snapshot scanning. Only the second satisfies 'without installing anything', and its findings feed the security graph."
+      "explanation": "MDVM reaches Azure VMs two ways: with the Defender for Endpoint extension, which is an agent, and agentlessly through disk snapshot scanning. Only the second satisfies 'without installing anything', and its findings feed the security graph.",
+      "why_not": [
+        "The Defender for Endpoint extension is an agent, so it fails 'without installing anything'.",
+        null,
+        "Machine Configuration needs its own extension on the VM, and it assesses configuration, not vulnerabilities.",
+        "Connection troubleshoot tests network reachability. It produces no vulnerability findings."
+      ]
     },
     {
       "id": "04-01-q7",
@@ -92,7 +128,13 @@
         "Machines whose agents have stopped reporting"
       ],
       "answer": 1,
-      "explanation": "EASM works outward from seeds — domains, IP blocks, hosts, ASNs, WHOIS organisations — and builds an inventory of what an attacker sees. That is shadow IT, which is the category most likely to be unpatched, unmonitored and unowned. Note it is billed per asset in inventory, so seed narrowly."
+      "explanation": "EASM works outward from seeds — domains, IP blocks, hosts, ASNs, WHOIS organisations — and builds an inventory of what an attacker sees. That is shadow IT, which is the category most likely to be unpatched, unmonitored and unowned. Note it is billed per asset in inventory, so seed narrowly.",
+      "why_not": [
+        "EASM does not look inside Azure subscriptions at all. It works outward from seeds such as domains and IP blocks to find what an attacker can see.",
+        null,
+        "A missing workload protection plan shows up in Defender for Cloud itself. EASM finds assets that are not in your inventory at all.",
+        "Machines whose agents have gone quiet are still in your inventory. EASM finds internet-facing assets that never were."
+      ]
     }
   ]
 }

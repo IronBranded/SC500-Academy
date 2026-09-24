@@ -6,7 +6,21 @@
 
    Checkbox identity is a hash of the item's own text, not its position. Adding a
    step to a teardown checklist therefore does not silently un-tick everything
-   below it; only editing an item's wording resets that one item. */
+   below it; only editing an item's wording resets that one item.
+
+   THREE LEARNING STATES, tracked separately (the redesign's progress model):
+
+     studied    the lesson page is marked studied (or its checklist is complete)
+     practised  the lab's checklist is complete - which means its teardown is
+                done, so a lab cannot count as practised while it is billing
+     checked    the knowledge check was passed; tracked PER QUESTION since v1.1
+                of this file, so it can be reported per official sub-objective
+
+   Opening or scrolling a page never counts as any of them.
+
+   Schema stays v:1. v1.1 only ADDS keys (answers, marks, last), so a progress
+   file exported before the redesign still imports, and one exported after it
+   still imports into an older build (the extra keys are ignored there). */
 
 (function (global) {
   'use strict';
@@ -16,7 +30,7 @@
 
   /* ----------------------------------------------------------- persistence */
 
-  function blank() { return { v: 1, items: {}, pages: {}, quiz: {} }; }
+  function blank() { return { v: 1, items: {}, pages: {}, quiz: {}, answers: {}, marks: {}, last: null }; }
 
   function load() {
     if (state) return state;
@@ -27,6 +41,9 @@
       state.items = state.items || {};
       state.pages = state.pages || {};
       state.quiz = state.quiz || {};
+      state.answers = state.answers || {};
+      state.marks = state.marks || {};
+      if (state.last === undefined) state.last = null;
     } catch (e) {
       state = blank();
     }
@@ -36,6 +53,12 @@
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(load())); }
     catch (e) { /* private browsing, quota - progress is best effort */ }
+  }
+
+  /* Tell the views that show learning state that it changed. */
+  function notify() {
+    if (global.SC500Nav) global.SC500Nav.refreshProgress();
+    if (global.SC500Lesson && global.SC500Lesson.refresh) global.SC500Lesson.refresh();
   }
 
   function hash(str) {
@@ -81,6 +104,7 @@
     var boxes = root.querySelectorAll('input[type="checkbox"]');
     var s = load();
     var key = pageKey(route);
+    var registered = false;
 
     /* marked renders task lists disabled. Enable them and bind to storage. */
     for (var i = 0; i < boxes.length; i++) {
@@ -89,6 +113,9 @@
         var label = (li ? li.textContent : '').trim().slice(0, 160);
         var id = key + ':' + hash(label);
 
+        /* Register every item the first time the page is seen, so "0 of 16
+           steps" is reported from the first visit instead of "Not read". */
+        if (!(id in s.items)) { s.items[id] = false; registered = true; }
         box.disabled = false;
         box.checked = !!s.items[id];
         box.setAttribute('aria-label', label);
@@ -98,11 +125,12 @@
           load().items[id] = box.checked;
           save();
           paintStrip(route);
-          if (global.SC500Nav) global.SC500Nav.refreshProgress();
+          notify();
         });
       })(boxes[i]);
     }
 
+    if (registered) save();
     buildStrip(root, route, boxes.length);
   }
 
@@ -136,7 +164,7 @@
         s.pages[k] = !s.pages[k];
         save();
         paintStrip(route);
-        if (global.SC500Nav) global.SC500Nav.refreshProgress();
+        notify();
       });
       strip.appendChild(mark);
     }
@@ -151,6 +179,11 @@
       Object.keys(s.items).forEach(function (id) { if (id.indexOf(prefix) === 0) delete s.items[id]; });
       delete s.pages[k];
       delete s.quiz[k];
+      if (route.kind === 'module') {
+        Object.keys(s.answers).forEach(function (q) {
+          if (s.answers[q] && s.answers[q].lesson === route.moduleId) delete s.answers[q];
+        });
+      }
       save();
       if (global.SC500App) global.SC500App.reroute();
       if (global.SC500Nav) global.SC500Nav.refreshProgress();
@@ -172,14 +205,20 @@
     var mark = document.getElementById('page-mark');
     var bar = fill ? fill.parentNode : null;
 
-    if (label) label.textContent = st.total ? st.done + ' of ' + st.total + ' steps' : (st.marked ? 'Read' : 'Not read');
+    var studyWord = route.kind === 'module' ? 'Studied' : 'Read';
+    if (label) label.textContent = st.total ? st.done + ' of ' + st.total + ' steps' : (st.marked ? studyWord : 'Not ' + studyWord.toLowerCase());
     if (fill) fill.style.width = pct + '%';
     if (bar) {
       bar.setAttribute('aria-valuenow', String(pct));
       bar.setAttribute('aria-valuemin', '0');
       bar.setAttribute('aria-valuemax', '100');
     }
-    if (mark) mark.textContent = st.marked ? 'Mark as unread' : 'Mark as read';
+    if (mark) {
+      mark.textContent = route.kind === 'module'
+        ? (st.marked ? 'Studied \u2713  (undo)' : 'Mark as studied')
+        : (st.marked ? 'Mark as unread' : 'Mark as read');
+      mark.setAttribute('aria-pressed', st.marked ? 'true' : 'false');
+    }
   }
 
   /* Two clicks, no dialog box. The second click is the confirmation. */
@@ -267,6 +306,12 @@
   }
 
   function mountDashboard(root, manifest) {
+    /* The redesigned dashboard lives in dashboard.js. This older renderer is
+       kept as the fallback so the home page still works if that file is
+       missing from a partial deploy. */
+    if (global.SC500Dashboard && global.SC500Dashboard.mount) {
+      return global.SC500Dashboard.mount(root, manifest);
+    }
     var totalPages = 0, totalDone = 0;
 
     var overallWrap = node('div', 'progress-strip');
@@ -379,6 +424,14 @@
         Object.keys(incoming.items || {}).forEach(function (k) { if (incoming.items[k]) s.items[k] = true; });
         Object.keys(incoming.pages || {}).forEach(function (k) { if (incoming.pages[k]) s.pages[k] = true; });
         Object.keys(incoming.quiz || {}).forEach(function (k) { s.quiz[k] = s.quiz[k] || incoming.quiz[k]; });
+        /* Per-question answers: the more recent answer wins, because the
+           latest attempt is what "checked" and "needs review" are based on. */
+        Object.keys(incoming.answers || {}).forEach(function (k) {
+          var a = incoming.answers[k], b = s.answers[k];
+          if (a && (!b || String(a.at) > String(b.at))) s.answers[k] = a;
+        });
+        Object.keys(incoming.marks || {}).forEach(function (k) { if (!s.marks[k]) s.marks[k] = incoming.marks[k]; });
+        if (incoming.last && (!s.last || String(incoming.last.at) > String(s.last.at))) s.last = incoming.last;
         save();
         if (global.SC500App) global.SC500App.reroute();
       }).catch(function (e) {
@@ -417,6 +470,102 @@
   }
   function readQuiz(route) { return load().quiz[pageKey(route)] || null; }
 
+  /* ------------------------------------------------ per-question answers */
+
+  function recordAnswer(qid, ok, meta) {
+    var s = load();
+    var prev = s.answers[qid];
+    s.answers[qid] = {
+      ok: !!ok,
+      at: new Date().toISOString(),
+      n: (prev && prev.n ? prev.n : 0) + 1,
+      wrong: (prev && prev.wrong ? prev.wrong : 0) + (ok ? 0 : 1),
+      lesson: meta && meta.lesson ? meta.lesson : (prev ? prev.lesson : null),
+      src: meta && meta.src ? meta.src : 'check'
+    };
+    save();
+  }
+
+  function answer(qid) { return load().answers[qid] || null; }
+
+  /* Knowledge-check state for a set of questions (a lesson's, or one
+     sub-objective's). Latest answer per question decides.
+
+       checked  every question answered, >= 80% correct, and for a single
+                sub-objective (strict) every one of them correct
+       review   at least one question's latest answer was wrong
+       partial  some answered, none wrong, not finished
+       none     nothing answered
+       noq      there are no questions to answer */
+  function checkState(qids, strict) {
+    if (!qids || !qids.length) return 'noq';
+    var s = load(), answered = 0, right = 0, wrong = 0;
+    qids.forEach(function (q) {
+      var a = s.answers[q];
+      if (!a) return;
+      answered++;
+      if (a.ok) right++; else wrong++;
+    });
+    if (!answered) return 'none';
+    if (answered === qids.length) {
+      if (strict) return wrong ? 'review' : 'checked';
+      return (right / qids.length) >= 0.8 ? 'checked' : 'review';
+    }
+    return wrong ? 'review' : 'partial';
+  }
+
+  /* A lesson's check state, falling back to the pre-redesign whole-quiz
+     record when the learner has no per-question answers for it yet. */
+  function lessonCheck(lessonId, qids) {
+    var st = checkState(qids, false);
+    if (st !== 'none') return st;
+    var legacy = load().quiz['module:' + lessonId];
+    if (!legacy) return qids && qids.length ? 'none' : 'noq';
+    return legacy.pct >= 80 ? 'checked' : 'review';
+  }
+
+  function bulletCheck(qids, lessonIds, bulletText) {
+    var st = checkState(qids, true);
+    if (st !== 'none' || !qids || !qids.length) return st;
+    /* Legacy: the old quiz stored which sub_skills were missed. */
+    var s = load(), seen = false, missed = false;
+    (lessonIds || []).forEach(function (id) {
+      var q = s.quiz['module:' + id];
+      if (!q) return;
+      seen = true;
+      if ((q.weak || []).indexOf(bulletText) !== -1) missed = true;
+    });
+    if (!seen) return 'none';
+    return missed ? 'review' : 'checked';
+  }
+
+  /* ----------------------------------------------------- review later ---- */
+
+  function toggleMark(key, info) {
+    var s = load();
+    if (s.marks[key]) delete s.marks[key];
+    else s.marks[key] = { title: info && info.title || key, href: info && info.href || '', domain: info && info.domain || null, at: new Date().toISOString() };
+    save();
+    return !!s.marks[key];
+  }
+  function isMarked(key) { return !!load().marks[key]; }
+  function marks() {
+    var s = load();
+    return Object.keys(s.marks).map(function (k) {
+      var m = s.marks[k]; return { key: k, title: m.title, href: m.href, domain: m.domain, at: m.at };
+    }).sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+  }
+
+  /* ------------------------------------------------------ last visited --- */
+
+  function recordVisit(route) {
+    if (!route || (route.kind !== 'module' && route.kind !== 'lab')) return;
+    var s = load();
+    s.last = { kind: route.kind, id: route.moduleId, at: new Date().toISOString() };
+    save();
+  }
+  function lastVisit() { return load().last; }
+
   global.SC500Progress = {
     mountPage: mountPage,
     mountDashboard: mountDashboard,
@@ -424,6 +573,18 @@
     pagePercent: pagePercent,
     pageStats: pageStats,
     recordQuiz: recordQuiz,
-    readQuiz: readQuiz
+    readQuiz: readQuiz,
+    recordAnswer: recordAnswer,
+    answer: answer,
+    checkState: checkState,
+    lessonCheck: lessonCheck,
+    bulletCheck: bulletCheck,
+    toggleMark: toggleMark,
+    isMarked: isMarked,
+    marks: marks,
+    recordVisit: recordVisit,
+    lastVisit: lastVisit,
+    controls: controls,
+    armConfirm: armConfirm
   };
 })(window);

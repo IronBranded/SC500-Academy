@@ -169,5 +169,5 @@
     tagCallouts(root);
   }
 
-  global.SC500Sections = { mount: mount, shapes: SHAPES, tagCallouts: tagCallouts };
+  global.SC500Sections = { mount: mount, shapes: SHAPES, tagCallouts: tagCallouts, tagTables: tagTables, tagTeardown: tagTeardown };
 })(window);

@@ -45,8 +45,11 @@
     for (var i = 0; i < inner.length; i++) {
       var c = inner.charAt(i);
       if (quote) {
-        if (c === quote && inner.charAt(i - 1) !== '\\') quote = null;
-        else { buf += c; continue; }
+        /* The closing quote ends the item's text and is not part of it. The
+           previous version fell through here and appended it, which turned
+           prerequisites: ["00-00"] into the broken route #/module/00-00". */
+        if (c === quote && inner.charAt(i - 1) !== '\\') { quote = null; continue; }
+        buf += c; continue;
       } else if (c === '"' || c === "'") { quote = c; continue; }
       else if (c === ',') { out.push(coerce(buf)); buf = ''; continue; }
       buf += c;

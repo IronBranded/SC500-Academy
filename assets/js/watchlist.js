@@ -93,7 +93,12 @@
     var tbl = node('table', 'pr__table');
     var thead = node('thead'), hr = node('tr');
     ['', 'Title', 'Status', 'Verified', 'Age', 'Window'].forEach(function (h) {
-      hr.appendChild(node('th', null, h));
+      var th = node('th', null, h);
+      th.setAttribute('scope', 'col');
+      /* The first column holds the module id; give its header a name for
+         screen readers without changing what is displayed. */
+      if (!h) th.appendChild(node('span', 'visually-hidden', 'Module'));
+      hr.appendChild(th);
     });
     thead.appendChild(hr);
     tbl.appendChild(thead);

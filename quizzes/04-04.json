@@ -14,7 +14,13 @@
         "The automation rule's order places it after a closing rule"
       ],
       "answer": 1,
-      "explanation": "This is the silent failure the role exists to prevent — the rule looks correct and does nothing, with no error where you would look for one. It is also the reason Automation Contributor is assigned to the Sentinel service rather than to a person."
+      "explanation": "This is the silent failure the role exists to prevent — the rule looks correct and does nothing, with no error where you would look for one. It is also the reason Automation Contributor is assigned to the Sentinel service rather than to a person.",
+      "why_not": [
+        "An incident trigger is the right one for a rule that fires on incident creation.",
+        null,
+        "Launching the playbook is not the playbook identity's job. Sentinel itself needs Automation Contributor on the playbook's resource group.",
+        "Nothing in the scenario involves another rule. A playbook that never runs, with no error, is the permissions gap this role exists to prevent."
+      ]
     },
     {
       "id": "04-04-q2",
@@ -27,7 +33,13 @@
         "Only a rule can run on a schedule; only a playbook can close an incident"
       ],
       "answer": 1,
-      "explanation": "Automation rules are the routing layer — trigger, conditions, order, status and severity changes, suppression with an expiry. Playbooks are the action layer and can reach anything Logic Apps can reach."
+      "explanation": "Automation rules are the routing layer — trigger, conditions, order, status and severity changes, suppression with an expiry. Playbooks are the action layer and can reach anything Logic Apps can reach.",
+      "why_not": [
+        "Both can add comments, and changing severity is something automation rules do.",
+        null,
+        "It is the reverse: reaching an external API is what playbooks are for, and assigning an owner is available to automation rules.",
+        "Automation rules run on incident and alert events, not on a schedule, and closing an incident is a status change they can make."
+      ]
     },
     {
       "id": "04-04-q3",
@@ -40,7 +52,13 @@
         "Raise interactive retention to 24 months, which applies retroactively"
       ],
       "answer": 1,
-      "explanation": "Archived data is retained, not queryable. 'We have two years of data' and 'we can query two years of data' are different claims with different price tags — and a search job leaves a new table behind that counts against retention."
+      "explanation": "Archived data is retained, not queryable. 'We have two years of data' and 'we can query two years of data' are different claims with different price tags — and a search job leaves a new table behind that counts against retention.",
+      "why_not": [
+        "Data in long-term retention is retained, not directly queryable. It needs a search job or a restore.",
+        null,
+        "Re-ingesting duplicates data you already retain, at ingestion cost. Search jobs and restore exist for exactly this.",
+        "Changing retention settings is not the mechanism for querying old data. Search jobs and restore are built for that."
+      ]
     },
     {
       "id": "04-04-q4",
@@ -53,7 +71,13 @@
         "Whether the mailbox was placed on litigation hold"
       ],
       "answer": 1,
-      "explanation": "MailItemsAccessed fires when mail data is accessed by a protocol or client, even with no explicit signal that messages were read, and records the access type. It is per-user licensed, so the answer to 'what did the attacker read' was decided months before the incident."
+      "explanation": "MailItemsAccessed fires when mail data is accessed by a protocol or client, even with no explicit signal that messages were read, and records the access type. It is per-user licensed, so the answer to 'what did the attacker read' was decided months before the incident.",
+      "why_not": [
+        "The OfficeActivity connector brings audit records into Sentinel. It cannot create a MailItemsAccessed record that was never generated.",
+        null,
+        "Mailbox auditing being on is not enough. MailItemsAccessed is generated only for users with an Audit (Premium) licence.",
+        "Litigation hold preserves mailbox content. It does not record which items were accessed."
+      ]
     },
     {
       "id": "04-04-q5",
@@ -66,7 +90,13 @@
         "Whether the Defender portal has finished indexing"
       ],
       "answer": 1,
-      "explanation": "Get-AdminAuditLogConfig reports UnifiedAuditLogIngestionEnabled. Nothing across everything is a very different symptom from nothing for one workload, and in a real tenant a disabled audit log is a finding in its own right."
+      "explanation": "Get-AdminAuditLogConfig reports UnifiedAuditLogIngestionEnabled. Nothing across everything is a very different symptom from nothing for one workload, and in a real tenant a disabled audit log is a finding in its own right.",
+      "why_not": [
+        "Expired records would leave gaps in older data, not silence for every query across every workload.",
+        null,
+        "Silence across everything points at ingestion being off tenant-wide. That is the check that explains every workload at once.",
+        "An indexing delay affects recent events, not every query across every workload."
+      ]
     }
   ]
 }

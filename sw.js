@@ -29,7 +29,9 @@
    Bump CACHE_VERSION whenever the shell changes. Old caches are deleted on
    activate. */
 
-var CACHE_VERSION = 'sc500-v1';
+/* Bump on EVERY deploy that changes a JS or CSS file. Content is revalidated
+   in the background, but the shell is served cache-first. */
+var CACHE_VERSION = 'sc500-v2';
 var SHELL = [
   './',
   'index.html',
@@ -39,22 +41,28 @@ var SHELL = [
   'assets/css/layout.css',
   'assets/css/components.css',
   'assets/css/practice.css',
+  'assets/css/learn.css',
+  'docs/SKILLS-MEASURED-SNAPSHOT.md',
+  'content/official-training.json',
   'assets/js/theme.js',
   'assets/js/vendor/marked.min.js',
-  'assets/js/vendor/mermaid.min.js',
   'assets/js/frontmatter.js',
+  'assets/js/domains.js',
+  'assets/js/curriculum.js',
   'assets/js/nav.js',
   'assets/js/tabs.js',
   'assets/js/sections.js',
   'assets/js/highlight.js',
   'assets/js/outline.js',
-  'assets/js/objectives.js',
   'assets/js/progress.js',
   'assets/js/quiz.js',
   'assets/js/search.js',
   'assets/js/views.js',
   'assets/js/practice.js',
   'assets/js/watchlist.js',
+  'assets/js/lesson.js',
+  'assets/js/dashboard.js',
+  'assets/js/review.js',
   'assets/js/palette.js',
   'assets/js/app.js'
 ];

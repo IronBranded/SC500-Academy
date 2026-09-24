@@ -14,7 +14,13 @@
         "It enables BitLocker inside the guest, and the VM must be re-imaged"
       ],
       "answer": 1,
-      "explanation": "Encryption at host runs on the host before data reaches storage and covers temp disks and host caches, which server-side encryption alone does not. Enabling it on an existing VM requires deallocation — the constraint scenario questions hang on."
+      "explanation": "Encryption at host runs on the host before data reaches storage and covers temp disks and host caches, which server-side encryption alone does not. Enabling it on an existing VM requires deallocation — the constraint scenario questions hang on.",
+      "why_not": [
+        "The OS disk is already encrypted by server-side encryption. Encryption at host adds temp disks and host caches, and needs the VM deallocated.",
+        null,
+        "Encryption at host moves no keys, and enabling it on an existing VM needs deallocation, not a restart.",
+        "Encryption at host runs on the host, not inside the guest. BitLocker in the guest is Azure Disk Encryption, a different mechanism."
+      ]
     },
     {
       "id": "03-04-q2",
@@ -27,7 +33,13 @@
         "Azure Machine Configuration, because it audits the OS baseline"
       ],
       "answer": 2,
-      "explanation": "Secure Boot prevents unsigned boot components loading. The vTPM measures the chain. Integrity monitoring attests those measurements and reports. A question asking how you would detect boot-level tampering wants the third."
+      "explanation": "Secure Boot prevents unsigned boot components loading. The vTPM measures the chain. Integrity monitoring attests those measurements and reports. A question asking how you would detect boot-level tampering wants the third.",
+      "why_not": [
+        "Secure Boot prevents unsigned components loading. It does not report that the chain was tampered with.",
+        "The vTPM measures the boot chain. Attesting those measurements and raising an alert is integrity monitoring's job.",
+        null,
+        "Machine Configuration audits OS settings once the machine is running. It does not attest the boot chain."
+      ]
     },
     {
       "id": "03-04-q3",
@@ -40,7 +52,13 @@
         "Yes, but only for Windows machines"
       ],
       "answer": 1,
-      "explanation": "Endpoint protection, vulnerability assessment and agentless scanning are on by default with the plan. File integrity monitoring is not, and it now runs on Defender for Endpoint rather than the retired Log Analytics or Azure Monitor agent paths."
+      "explanation": "Endpoint protection, vulnerability assessment and agentless scanning are on by default with the plan. File integrity monitoring is not, and it now runs on Defender for Endpoint rather than the retired Log Analytics or Azure Monitor agent paths.",
+      "why_not": [
+        "File integrity monitoring is the one Plan 2 feature not enabled by default. It has to be switched on.",
+        null,
+        "FIM is a Plan 2 feature, and it now runs on Defender for Endpoint rather than the retired Log Analytics agent.",
+        "FIM covers Linux machines as well. The issue is that it is not on by default."
+      ]
     },
     {
       "id": "03-04-q4",
@@ -53,7 +71,13 @@
         "The engineer holds Owner, which bypasses Bastion"
       ],
       "answer": 1,
-      "explanation": "Bastion removes the need for a public IP; it does not remove one that already exists. Bastion and just-in-time VM access are complementary — one removes the public IP, the other ensures the port is shut when nobody is using it."
+      "explanation": "Bastion removes the need for a public IP; it does not remove one that already exists. Bastion and just-in-time VM access are complementary — one removes the public IP, the other ensures the port is shut when nobody is using it.",
+      "why_not": [
+        "Subnet placement does not explain direct RDP. Bastion adds a path; the direct path through the public IP still exists.",
+        null,
+        "No Bastion SKU blocks direct RDP. Bastion never removes a public IP or an open port that already exists.",
+        "Holding Owner bypasses nothing here. The direct path exists because the VM still has a public IP and an open port."
+      ]
     },
     {
       "id": "03-04-q5",
@@ -66,7 +90,13 @@
         "They are alternatives and enabling both is unsupported"
       ],
       "answer": 1,
-      "explanation": "They are complementary, not alternatives. Agentless gives software inventory, vulnerability assessment, secrets and malware detection out of band. A machine with only agentless coverage has no EDR."
+      "explanation": "They are complementary, not alternatives. Agentless gives software inventory, vulnerability assessment, secrets and malware detection out of band. A machine with only agentless coverage has no EDR.",
+      "why_not": [
+        "Not the same data. Agentless gives no real-time behavioural signal, which is what the agent's EDR provides.",
+        null,
+        "Agentless scanning covers vulnerability assessment too, alongside software inventory, secrets and malware.",
+        "They are complementary and designed to run together. Agentless works out of band; the agent works on the machine."
+      ]
     },
     {
       "id": "03-04-q6",
@@ -79,7 +109,79 @@
         "Whether agentless scanning is enabled on the subscription"
       ],
       "answer": 1,
-      "explanation": "OS configuration assessment against the Microsoft cloud security benchmark baselines requires the Azure Machine Configuration extension, which in turn needs a managed identity on the machine. Silence is not a clean result."
+      "explanation": "OS configuration assessment against the Microsoft cloud security benchmark baselines requires the Azure Machine Configuration extension, which in turn needs a managed identity on the machine. Silence is not a clean result.",
+      "why_not": [
+        "A public IP has nothing to do with OS configuration assessment on an Arc-enabled server.",
+        null,
+        "Workspace region is not the dependency. The assessment requires the Machine Configuration extension and its managed identity.",
+        "Agentless scanning is a separate capability. OS configuration assessment comes from the Machine Configuration extension."
+      ]
+    },
+    {
+      "id": "03-04-q7",
+      "sub_skill": "Plan and implement Azure Bastion",
+      "prompt": "Administrators must reach Windows VMs over RDP without the VMs having public IP addresses, and every administrative session must be recorded for audit. You are adding Azure Bastion to the virtual network. Which deployment meets the requirements?",
+      "options": [
+        "A subnet named BastionSubnet with a /27 prefix, and the Standard SKU",
+        "A subnet named AzureBastionSubnet with a /26 prefix, and the Standard SKU",
+        "A subnet named AzureBastionSubnet with a /26 prefix, and the Premium SKU",
+        "A subnet named AzureBastionSubnet with a /27 prefix, and the Premium SKU"
+      ],
+      "answer": 2,
+      "explanation": "Every Bastion SKU except the Developer offering needs a dedicated subnet named exactly AzureBastionSubnet, and deployments since November 2021 need /26 or larger. Session recording is a Premium SKU feature. Bastion then reaches the VMs on their private addresses, so they need no public IP.",
+      "why_not": [
+        "The subnet must be named exactly AzureBastionSubnet, /27 is below the minimum for a new deployment, and Standard does not record sessions.",
+        "The subnet is right, but session recording requires the Premium SKU.",
+        null,
+        "Premium is right, but /27 is below the /26 minimum for new deployments; only Bastion hosts deployed on /27 before November 2021 are grandfathered."
+      ],
+      "difficulty": "applied",
+      "concept": "Bastion subnet requirements and SKU features",
+      "misconception": "Bastion SKU choice is only about scale"
+    },
+    {
+      "id": "03-04-q8",
+      "sub_skill": "Extend security controls to hybrid and multicloud servers by using Azure Arc",
+      "prompt": "Fifty on-premises Windows servers must be governed by the same Azure Policy assignments, Azure Machine Configuration policies and Azure RBAC as your Azure VMs. The servers will stay on-premises. What must be done on each server first?",
+      "options": [
+        "Install the Azure Connected Machine agent to connect the server to Azure Arc",
+        "Replicate the server to Azure with Azure Migrate",
+        "Install the Azure Monitor agent and send its logs to a Log Analytics workspace",
+        "Connect the datacenter to an Azure virtual network with a site-to-site VPN"
+      ],
+      "answer": 0,
+      "explanation": "The Connected Machine agent registers the server as an Azure resource with its own resource ID. Once it is one, Azure Policy, Machine Configuration, RBAC, extensions and Defender for Servers can all target it. Arc does not move the machine.",
+      "why_not": [
+        null,
+        "Migration moves the workload into Azure, which the requirement rules out.",
+        "The Azure Monitor agent collects telemetry. On a non-Azure server it depends on Arc, and it does not by itself make the server an Azure resource that policy and RBAC can target.",
+        "Network connectivity registers nothing with Azure Resource Manager; the servers would still have no resource ID to assign policy or roles to."
+      ],
+      "difficulty": "foundation",
+      "concept": "Azure Arc gives a non-Azure machine an Azure resource ID",
+      "misconception": "Monitoring or connectivity makes a server governable by Azure"
+    },
+    {
+      "id": "03-04-q9",
+      "sub_skill": "Onboard servers to Defender for Servers in Defender for Cloud, including hybrid and multicloud scenarios",
+      "prompt": "Your organisation runs several hundred EC2 instances across its AWS accounts, and new instances launch every day. They must be protected by Defender for Servers Plan 2, and onboarding must cover instances launched in future without per-machine scripts. What should you do?",
+      "options": [
+        "Enable Defender for Servers Plan 2 on the Azure subscription; coverage extends to AWS automatically",
+        "Create an AWS connector in Defender for Cloud with the Servers plan on, and use Azure Arc auto-provisioning",
+        "Run the Azure Arc onboarding script on each existing instance with a service principal",
+        "Install Defender for Endpoint on each instance from the Microsoft Defender portal"
+      ],
+      "answer": 1,
+      "explanation": "The AWS connector brings the AWS account into Defender for Cloud, and its Servers plan covers EC2. Arc auto-provisioning uses AWS Systems Manager to install Arc on existing and future instances, so new instances are onboarded without anyone running anything.",
+      "why_not": [
+        "A plan enabled on an Azure subscription covers that subscription's resources. AWS is in scope only once a connector links the account to Defender for Cloud.",
+        null,
+        "Scripted onboarding covers the instances that exist today but must be repeated for every new instance, which the requirement rules out.",
+        "Defender for Endpoint is one component that Defender for Servers deploys. Installing it by hand is still per-machine, and it does not bring the instances into Defender for Cloud with Plan 2's other capabilities, such as agentless scanning."
+      ],
+      "difficulty": "scenario",
+      "concept": "Multicloud onboarding at scale with the AWS connector",
+      "misconception": "A Defender plan on an Azure subscription covers other clouds automatically"
     }
   ]
 }

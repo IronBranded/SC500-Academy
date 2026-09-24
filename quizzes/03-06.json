@@ -14,7 +14,13 @@
         "The tester used the app's managed identity"
       ],
       "answer": 1,
-      "explanation": "There are two sites to protect. The SCM site carries deployment and console access and is the more dangerous of the two. It has its own rules, with an option to inherit the main site's."
+      "explanation": "There are two sites to protect. The SCM site carries deployment and console access and is the more dangerous of the two. It has its own rules, with an option to inherit the main site's.",
+      "why_not": [
+        "Timing is not the issue. The SCM site has its own rule set and was never restricted.",
+        null,
+        "Access restrictions apply whether or not HTTPS-only is on. The gap is that the SCM site has separate rules.",
+        "A managed identity is how the app authenticates to other services. It does not let an outsider reach the console."
+      ]
     },
     {
       "id": "03-06-q2",
@@ -27,7 +33,13 @@
         "An exclusion was applied to the whole rule set"
       ],
       "answer": 1,
-      "explanation": "Policies start in Detection mode. It fully evaluates and logs what it would have done and blocks nothing — Microsoft's own wording is that detection mode provides no protection. 'Configured but attacks still succeed' is usually this."
+      "explanation": "Policies start in Detection mode. It fully evaluates and logs what it would have done and blocks nothing — Microsoft's own wording is that detection mode provides no protection. 'Configured but attacks still succeed' is usually this.",
+      "why_not": [
+        "A current managed rule set includes SQL injection rules, and the WAF logged the attack, so a rule matched.",
+        null,
+        "The WAF logged the injection, so it inspected the request. The problem is that Detection mode blocks nothing.",
+        "The WAF logged the attack, so the request was evaluated. An exclusion covering the whole rule set would not explain a logged match."
+      ]
     },
     {
       "id": "03-06-q3",
@@ -40,7 +52,13 @@
         "Switch to Detection mode until the vendor fixes the rule"
       ],
       "answer": 1,
-      "explanation": "An exclusion omits one request attribute from evaluation and leaves the rule protecting everything else; disabling stops it protecting anything. And a rule set version change resets enabled/disabled customisations, so upgrading is a re-tuning exercise rather than a version bump."
+      "explanation": "An exclusion omits one request attribute from evaluation and leaves the rule protecting everything else; disabling stops it protecting anything. And a rule set version change resets enabled/disabled customisations, so upgrading is a re-tuning exercise rather than a version bump.",
+      "why_not": [
+        "Disabling the rule stops it protecting anything. And a rule set version change resets enabled and disabled customisations.",
+        null,
+        "A custom rule allowing every request with that header exempts those requests from inspection altogether. An exclusion omits only the one attribute.",
+        "Detection mode blocks nothing for any request, which trades one broken header for no protection at all."
+      ]
     },
     {
       "id": "03-06-q4",
@@ -53,7 +71,13 @@
         "Function keys cannot be used by external partners"
       ],
       "answer": 1,
-      "explanation": "You cannot say which caller made a request, cannot revoke one partner without breaking the others, and the key lives in a URL, in logs and in browser history. Where the caller can hold an Entra identity, use Easy Auth or a gateway in front."
+      "explanation": "You cannot say which caller made a request, cannot revoke one partner without breaking the others, and the key lives in a URL, in logs and in browser history. Where the caller can hold an Entra identity, use Easy Auth or a gateway in front.",
+      "why_not": [
+        "HTTPS protects the key in transit, but it is still a bearer credential with no identity, no expiry and no per-caller revocation, sitting in a URL, in logs and in browser history.",
+        null,
+        "The problem is the opposite: nothing expires the key, so it lives on until someone rotates it.",
+        "Partners can use function keys. That is the problem, not a constraint."
+      ]
     },
     {
       "id": "03-06-q5",
@@ -66,7 +90,13 @@
         "The workflow will reject the call unless the caller holds the Logic App Contributor role"
       ],
       "answer": 1,
-      "explanation": "The callback URL is a credential, not an address. Mitigations in increasing strength are IP restrictions on the trigger, Entra OAuth validation on the request trigger, and putting API Management in front so the callback URL is never the public entry point."
+      "explanation": "The callback URL is a credential, not an address. Mitigations in increasing strength are IP restrictions on the trigger, Entra OAuth validation on the request trigger, and putting API Management in front so the callback URL is never the public entry point.",
+      "why_not": [
+        "The callback URL is a credential, not an address. It contains a shared access signature, so holding it is enough to run the workflow.",
+        null,
+        "Anyone holding the URL can run the workflow, not just read its history.",
+        "The trigger does not check Azure roles. The signature in the URL is what authorizes the call."
+      ]
     },
     {
       "id": "03-06-q6",
@@ -79,7 +109,13 @@
         "Requiring a subscription key in addition to the token"
       ],
       "answer": 1,
-      "explanation": "If the backend is directly reachable, every gateway policy is optional from an attacker's point of view. The gateway must be the only path — the same argument as the AI gateway in 03-03."
+      "explanation": "If the backend is directly reachable, every gateway policy is optional from an attacker's point of view. The gateway must be the only path — the same argument as the AI gateway in 03-03.",
+      "why_not": [
+        "A higher tier adds capacity and features, but a directly reachable backend still makes every gateway policy optional.",
+        null,
+        "Policy scope decides which APIs a policy applies to. It does not stop callers going around the gateway.",
+        "A subscription key is another gateway control, equally optional if the backend can be reached directly."
+      ]
     }
   ]
 }

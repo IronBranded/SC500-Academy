@@ -72,13 +72,22 @@ Monitor Agent (AMA)**, and AMA is configured entirely by **data collection rules
 
 The pipeline is the same for every source:
 
+```mermaid
+flowchart TD
+  accTitle: Microsoft Sentinel collection pipeline
+  accDescr: Every source follows the same pipeline. The source reaches Azure Monitor Agent or a direct API, then a data collection rule decides what to collect and filters before ingestion, an optional transformation reshapes the data, and it lands in a table in the workspace on the Analytics, Basic or Auxiliary plan. Appliances that cannot run an agent send syslog or CEF to a Linux forwarder running the agent. Custom sources post to the Logs Ingestion API through a data collection endpoint into a table with the _CL suffix.
+  SRC["Source"] --> AMA["Azure Monitor Agent<br/>(or a direct API)"]
+  AMA --> DCR["Data collection rule<br/>what to collect,<br/>filters applied BEFORE ingestion"]:::d04
+  DCR --> TR["[Transformation]<br/>optional KQL at ingestion"]:::d04
+  TR --> TBL["Table in the workspace<br/>Analytics / Basic / Auxiliary"]:::d04
+  APP["Appliance that cannot<br/>run an agent"] -- "syslog / CEF" --> FWD["Linux forwarder<br/>running the agent"]
+  FWD --> DCR
+  CUS["Source with no connector"] -- "Logs Ingestion API<br/>via a data collection endpoint" --> DCR
 ```
-  source → AMA (or a direct API) → DCR → [transformation] → table in the workspace
-                                    │                          │
-                          what to collect,            Analytics / Basic /
-                          filters applied              Auxiliary tier
-                          BEFORE ingestion
-```
+
+The same pipeline for every source, with the two routes this module covers below: the
+forwarder for appliances (lands in `Syslog` or `CommonSecurityLog`) and the Logs Ingestion
+API for custom tables (`_CL`).
 
 Two properties of that diagram do most of the work:
 

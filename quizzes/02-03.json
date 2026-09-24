@@ -14,7 +14,13 @@
         "Any action, because admin rules always override NSGs"
       ],
       "answer": 2,
-      "explanation": "Security admin rules are evaluated before NSGs. Deny blocks and stops evaluation, so the NSG never runs. Allow permits evaluation to continue, meaning an NSG can still deny. AlwaysAllow stops evaluation in the other direction - use it for traffic that must survive an over-broad local deny."
+      "explanation": "Security admin rules are evaluated before NSGs. Deny blocks and stops evaluation, so the NSG never runs. Allow permits evaluation to continue, meaning an NSG can still deny. AlwaysAllow stops evaluation in the other direction - use it for traffic that must survive an over-broad local deny.",
+      "why_not": [
+        "Allow lets evaluation continue to the NSG, which can still decide the outcome - including permitting RDP.",
+        "AlwaysAllow ends evaluation by guaranteeing traffic is permitted - the opposite of the requirement.",
+        null,
+        "Only Deny and AlwaysAllow end evaluation. Allow hands the decision to the NSG."
+      ]
     },
     {
       "id": "02-03-q2",
@@ -27,7 +33,13 @@
         "The virtual networks lack an NSG for the admin rules to override"
       ],
       "answer": 1,
-      "explanation": "Nothing takes effect until you deploy the configuration to the regions in use. A saved-but-undeployed configuration produces no enforcement, no error and no clue in the rule view, which makes it the classic 'why isn't my rule working' answer."
+      "explanation": "Nothing takes effect until you deploy the configuration to the regions in use. A saved-but-undeployed configuration produces no enforcement, no error and no clue in the rule view, which makes it the classic 'why isn't my rule working' answer.",
+      "why_not": [
+        "Rule priority orders rules within a configuration that is in force. It cannot explain a configuration having no effect at all.",
+        null,
+        "Static and dynamic membership only change how virtual networks join the group. With the right members, either works.",
+        "Security admin rules do not need an NSG to exist. They are evaluated whether or not one is present."
+      ]
     },
     {
       "id": "02-03-q3",
@@ -40,7 +52,13 @@
         "No - NSGs are stateless, so a matching outbound rule is also required"
       ],
       "answer": 2,
-      "explanation": "Inbound traffic is evaluated against the subnet NSG first, then the NIC NSG, and must pass both. Within the NIC NSG, first match wins and 150 is evaluated before 200. NSGs are stateful, so no outbound rule is needed for return traffic."
+      "explanation": "Inbound traffic is evaluated against the subnet NSG first, then the NIC NSG, and must pass both. Within the NIC NSG, first match wins and 150 is evaluated before 200. NSGs are stateful, so no outbound rule is needed for return traffic.",
+      "why_not": [
+        "Subnet rules do not take precedence. Inbound traffic must pass the subnet NSG and then the NIC NSG.",
+        "Priority numbers are compared only within one NSG. Each NSG is evaluated on its own, and both must allow.",
+        null,
+        "NSGs are stateful, so return traffic needs no outbound rule."
+      ]
     },
     {
       "id": "02-03-q4",
@@ -53,7 +71,13 @@
         "Connection monitor in Network Watcher"
       ],
       "answer": 1,
-      "explanation": "NSG flow logs cannot be created - new ones have been unavailable since 30 June 2025 - and the feature retires on 30 September 2027. Virtual network flow logs replace them, and they are also the only place traffic allowed or denied by Virtual Network Manager security admin rules is visible."
+      "explanation": "NSG flow logs cannot be created - new ones have been unavailable since 30 June 2025 - and the feature retires on 30 September 2027. Virtual network flow logs replace them, and they are also the only place traffic allowed or denied by Virtual Network Manager security admin rules is visible.",
+      "why_not": [
+        "New NSG flow logs cannot be created since 30 June 2025, and the feature retires on 30 September 2027.",
+        null,
+        "Diagnostic settings on an NSG do not produce flow-level records. Flow logging is a Network Watcher feature, and virtual network flow logs are its current form.",
+        "Connection monitor tests reachability between endpoints. It does not log the flows passing through your networks."
+      ]
     },
     {
       "id": "02-03-q5",
@@ -66,7 +90,35 @@
         "Any tunnel type, with Entra ID authentication selected"
       ],
       "answer": 2,
-      "explanation": "Microsoft Entra ID authentication for point-to-site requires the OpenVPN tunnel type. IKEv2 and SSTP support certificate and RADIUS authentication only, neither of which brings the connection under Conditional Access."
+      "explanation": "Microsoft Entra ID authentication for point-to-site requires the OpenVPN tunnel type. IKEv2 and SSTP support certificate and RADIUS authentication only, neither of which brings the connection under Conditional Access.",
+      "why_not": [
+        "IKEv2 supports certificate and RADIUS authentication only, neither of which brings the connection under Conditional Access.",
+        "SSTP supports certificate and RADIUS authentication only. Entra ID authentication needs OpenVPN.",
+        null,
+        "Entra ID authentication is available only with the OpenVPN tunnel type."
+      ]
+    },
+    {
+      "id": "02-03-q6",
+      "sub_skill": "Configure security for an Azure Virtual WAN",
+      "prompt": "Your Virtual WAN hub connects spoke virtual networks and branch offices. Traffic between any two spokes, and between branches and spokes, must be inspected by Azure Firewall in the hub. Internet-bound traffic must also be inspected, and must then leave through the on-premises default route rather than directly from Azure. What should you configure?",
+      "options": [
+        "Deploy Azure Firewall in the hub, and configure routing intent with a private routing policy and an internet routing policy in Forced Tunnel mode",
+        "Deploy Azure Firewall in the hub, and configure routing intent with a private routing policy and an internet routing policy in Direct Access mode",
+        "Deploy Azure Firewall in the hub, and configure routing intent with only an internet routing policy in Forced Tunnel mode",
+        "Deploy Azure Firewall in the hub, and add a user-defined route sending 0.0.0.0/0 to the firewall on every spoke subnet"
+      ],
+      "answer": 0,
+      "explanation": "A secured virtual hub inspects what routing intent sends through it. The private routing policy covers traffic between virtual networks, branches and ExpressRoute; the internet routing policy covers internet-bound traffic, and Forced Tunnel mode sends it on through a 0.0.0.0/0 next hop learnt from on-premises instead of straight out. If no such route exists, Forced Tunnel blocks internet-bound traffic rather than falling back.",
+      "why_not": [
+        null,
+        "Direct Access sends internet traffic straight out to the internet after inspection, not through on-premises.",
+        "Without a private routing policy, traffic between spokes and between branches and spokes is not sent through the firewall.",
+        "Spoke route tables only affect traffic leaving the spokes. They do not bring branch traffic through the firewall or send internet traffic via on-premises; routing intent is the hub's own mechanism for both."
+      ],
+      "difficulty": "scenario",
+      "concept": "Secured virtual hub and routing intent",
+      "misconception": "An internet routing policy also covers private traffic"
     }
   ]
 }

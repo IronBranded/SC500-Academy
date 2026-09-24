@@ -501,6 +501,12 @@
         order.push(q.domainId);
       }
       byDomain[q.domainId].t++;
+      /* Feed every answered mock-exam question into the per-question record,
+         so Exam prep's "answered incorrectly" and the dashboard's knowledge-
+         checked counts include mock-exam work. Unanswered ones are skipped. */
+      if (q.chosen && q.chosen.length && global.SC500Progress && global.SC500Progress.recordAnswer && q.id) {
+        global.SC500Progress.recordAnswer(q.id, sameSet(q.chosen, q.answers), { lesson: q.moduleId || null, src: 'mock-exam' });
+      }
       if (sameSet(q.chosen, q.answers)) {
         correct++;
         byDomain[q.domainId].c++;

@@ -30,14 +30,14 @@
     manifest.domains.forEach(function (d) {
       d.modules.forEach(function (m) {
         shallow.push({
-          id: m.id, kind: 'module', title: m.title, domain: d.name,
-          weight: d.weight, path: m.content,
+          id: m.id, kind: 'module', title: m.title, domain: d.name, domainId: d.id,
+          objective: m.objective, weight: d.weight, path: m.content,
           hay: [m.id, m.title, m.objective, d.name].join(' ').toLowerCase()
         });
         if (m.lab) {
           shallow.push({
-            id: m.id, kind: 'lab', title: m.title + ' — lab', domain: d.name,
-            weight: d.weight, path: m.lab,
+            id: m.id, kind: 'lab', title: m.title + ' — lab', domain: d.name, domainId: d.id,
+            objective: m.objective, weight: d.weight, path: m.lab,
             hay: [m.id, m.title, 'lab', m.objective, d.name].join(' ').toLowerCase()
           });
         }
@@ -96,6 +96,33 @@
     });
   }
 
+  /* Acronyms learners type, mapped to the words the content actually uses.
+     An acronym matches as a whole word ("ca" must not match "location") or
+     through its expansion. Standard Microsoft product and security acronyms
+     only; add to this list rather than guessing at runtime. */
+  var ACRONYMS = {
+    pim: 'privileged identity management', ca: 'conditional access', mfa: 'multifactor authentication',
+    sspr: 'self-service password reset', tap: 'temporary access pass', rbac: 'role-based access control',
+    abac: 'attribute-based access control', mi: 'managed identit', kv: 'key vault', hsm: 'hsm',
+    cmk: 'customer-managed key', tde: 'transparent data encryption', sas: 'shared access signature',
+    nsg: 'network security group', asg: 'application security group', avnm: 'virtual network manager',
+    waf: 'web application firewall', ddos: 'ddos', pe: 'private endpoint', jit: 'just-in-time',
+    aks: 'kubernetes service', acr: 'container registry', apim: 'api management',
+    cspm: 'posture management', cwpp: 'workload protection', mdvm: 'vulnerability management',
+    easm: 'external attack surface', ama: 'azure monitor agent', dcr: 'data collection rule',
+    cef: 'common event format', wef: 'windows event forwarding', dspm: 'dspm',
+    scu: 'security compute unit', iac: 'infrastructure as code', ade: 'azure disk encryption',
+    xdr: 'defender xdr', siem: 'sentinel', dlp: 'data loss prevention'
+  };
+
+  function hasTerm(text, t) {
+    if (ACRONYMS[t]) {
+      if (new RegExp('(^|[^a-z0-9])' + t + '([^a-z0-9]|$)').test(text)) return true;
+      return text.indexOf(ACRONYMS[t]) !== -1;
+    }
+    return text.indexOf(t) !== -1;
+  }
+
   function score(entry, terms) {
     var hay = entry.hay;
     var extra = deep ? (deep[entry.kind + ':' + entry.id] || '') : '';
@@ -103,9 +130,9 @@
 
     for (var i = 0; i < terms.length; i++) {
       var t = terms[i];
-      var inTitle = entry.title.toLowerCase().indexOf(t) !== -1;
-      var inShallow = hay.indexOf(t) !== -1;
-      var inDeep = extra.indexOf(t) !== -1;
+      var inTitle = hasTerm(entry.title.toLowerCase(), t);
+      var inShallow = hasTerm(hay, t);
+      var inDeep = hasTerm(extra, t);
       if (!inShallow && !inDeep) return 0;          // every term must appear
       total += (inTitle ? 6 : 0) + (inShallow ? 3 : 0) + (inDeep ? 1 : 0);
     }
@@ -187,20 +214,30 @@
       return;
     }
 
-    var list = node('ul', 'nav-list');
+    var list = node('ul', 'nav-list search-list');
     hits.forEach(function (h) {
       var li = document.createElement('li');
-      var a = node('a', 'nav-link');
+      var a = node('a', 'nav-link search-hit');
+      if (h.e.domainId && global.SC500Domains) global.SC500Domains.paint(a, h.e.domainId);
       a.href = '#/' + h.e.kind + '/' + h.e.id;
       a.appendChild(node('span', 'nav-link__id', h.e.kind === 'appendix' ? 'A' + (Number(h.e.id) + 1) : h.e.id));
       var t = node('span', 'nav-link__title');
       t.appendChild(document.createTextNode(h.e.title));
-      t.appendChild(node('span', 'nav-sub', h.e.domain + (h.e.weight && h.e.weight !== 'n/a' ? ' · ' + h.e.weight : '')));
+      if (h.e.domainId && global.SC500Domains) {
+        var ctxRow = node('span', 'search-meta');
+        ctxRow.appendChild(global.SC500Domains.badge(h.e.domainId, { weight: h.e.weight }));
+        if (h.e.kind === 'lab') ctxRow.appendChild(node('span', 'tag', 'Lab'));
+        t.appendChild(ctxRow);
+        if (h.e.objective && !/^\(/.test(h.e.objective)) t.appendChild(node('span', 'nav-sub', 'Objective: ' + h.e.objective));
+      } else {
+        t.appendChild(node('span', 'nav-sub', h.e.domain + (h.e.weight && h.e.weight !== 'n/a' ? ' · ' + h.e.weight : '')));
+      }
 
-      var snippet = context(h.e, q.split(/\s+/).filter(Boolean));
+      var qTerms = q.split(/\s+/).filter(Boolean).map(function (x) { return ACRONYMS[x] || x; });
+      var snippet = context(h.e, qTerms);
       if (snippet) {
         var ctx = node('span', 'search-ctx');
-        mark(ctx, snippet, q.split(/\s+/).filter(Boolean));
+        mark(ctx, snippet, qTerms);
         t.appendChild(ctx);
       }
       a.appendChild(t);

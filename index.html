@@ -5,24 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SC500 Academy</title>
 <meta name="description" content="A dependency-free interactive study guide for Exam SC-500: Implementing End-to-End Security Controls for Cloud and AI Workloads.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SC500 Academy">
+<meta property="og:description" content="Certification-first interactive study guide for Microsoft Exam SC-500: lessons, labs with mandatory teardown, and knowledge checks mapped to every official objective.">
 <meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1b1a19">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6.5' height='6.5' fill='%230078d4'/%3E%3Crect x='8.5' y='1' width='6.5' height='6.5' fill='%23008272'/%3E%3Crect x='1' y='8.5' width='6.5' height='6.5' fill='%238661c5'/%3E%3Crect x='8.5' y='8.5' width='6.5' height='6.5' fill='%23d83b01'/%3E%3C/svg%3E">
 <script src="assets/js/theme.js"></script>
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/layout.css">
 <link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/practice.css">
+<link rel="stylesheet" href="assets/css/learn.css">
 </head>
 <body>
 <a class="skip" href="#content">Skip to content</a>
 
 <header class="topbar">
-  <button id="nav-toggle" aria-expanded="false" aria-controls="sidebar">Menu</button>
-  <span class="topbar__title">SC500 Academy</span>
+  <button id="nav-toggle" type="button" aria-expanded="false" aria-controls="sidebar">Menu</button>
+  <a class="topbar__title" href="#/">SC500 Academy</a>
   <button id="theme-toggle" type="button">Dark</button>
-  <input id="search" type="search" placeholder="Search  /  or ⌘K" aria-label="Search modules">
+  <input id="search" type="search" placeholder="Search topics, objectives, acronyms  ( / )" aria-label="Search lessons, objectives and acronyms">
 </header>
 
 <div class="shell">
-  <nav id="sidebar" class="sidebar" aria-label="Modules"><!-- built by nav.js --></nav>
+  <nav id="sidebar" class="sidebar" aria-label="Academy navigation"><!-- built by nav.js --></nav>
   <main id="content" class="content" tabindex="-1">
     <p class="loading">Loading&hellip;</p>
   </main>
@@ -30,19 +37,24 @@
 </div>
 
 <script src="assets/js/vendor/marked.min.js"></script>
-<!-- optional: vendor mermaid.min.js here and ```mermaid fences render as diagrams -->
-<script src="assets/js/vendor/mermaid.min.js" onerror="void 0"></script>
+<!-- mermaid.min.js (3.5 MB) is loaded by app.js only when a page contains a diagram -->
 <script src="assets/js/frontmatter.js"></script>
+<script src="assets/js/domains.js"></script>
+<script src="assets/js/curriculum.js"></script>
 <script src="assets/js/nav.js"></script>
 <script src="assets/js/tabs.js"></script>
 <script src="assets/js/sections.js"></script>
 <script src="assets/js/highlight.js"></script>
 <script src="assets/js/outline.js"></script>
-<script src="assets/js/objectives.js"></script>
 <script src="assets/js/progress.js"></script>
 <script src="assets/js/quiz.js"></script>
 <script src="assets/js/search.js"></script>
 <script src="assets/js/views.js"></script>
+<script src="assets/js/practice.js"></script>
+<script src="assets/js/watchlist.js"></script>
+<script src="assets/js/lesson.js"></script>
+<script src="assets/js/dashboard.js"></script>
+<script src="assets/js/review.js"></script>
 <script src="assets/js/palette.js"></script>
 <script src="assets/js/app.js"></script>
 </body>

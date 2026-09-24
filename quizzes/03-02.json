@@ -14,7 +14,13 @@
         "The agent needs a Global Secure Access licence before it can acquire tokens"
       ],
       "answer": 1,
-      "explanation": "There is no human to complete an MFA challenge. Microsoft's guidance is to audit broad policies for agent impact, exclude agents, and build dedicated policies from controls agents can actually satisfy. Conditional Access does apply to agent identities requesting tokens for a resource."
+      "explanation": "There is no human to complete an MFA challenge. Microsoft's guidance is to audit broad policies for agent impact, exclude agents, and build dedicated policies from controls agents can actually satisfy. Conditional Access does apply to agent identities requesting tokens for a resource.",
+      "why_not": [
+        "A client secret does not help. The failure is the MFA requirement, which no credential lets an agent satisfy.",
+        null,
+        "Conditional Access does apply to agent identities requesting tokens for a resource - that is exactly why the broad MFA policy caught the agent.",
+        "No licence lets an agent complete an MFA challenge. There is no human to complete it."
+      ]
     },
     {
       "id": "03-02-q2",
@@ -27,7 +33,13 @@
         "Neither has a blast radius until a credential is compromised"
       ],
       "answer": 2,
-      "explanation": "An on-behalf-of agent acts with the signed-in user's identity and permissions, so its reach changes per user. An autonomous agent has no user context, so its own assignments are the whole of its reach. Blast radius here is about subversion of instructions, not credential theft."
+      "explanation": "An on-behalf-of agent acts with the signed-in user's identity and permissions, so its reach changes per user. An autonomous agent has no user context, so its own assignments are the whole of its reach. Blast radius here is about subversion of instructions, not credential theft.",
+      "why_not": [
+        "Identical tools do not mean identical reach. The on-behalf-of agent acts with each user's permissions, so its reach changes per user.",
+        "Not in every case. An on-behalf-of agent serving a highly privileged user can reach more than an autonomous agent with narrow assignments.",
+        null,
+        "Blast radius here is about subverting the agent's instructions, not stealing a credential. It exists as soon as the agent can act."
+      ]
     },
     {
       "id": "03-02-q3",
@@ -40,7 +52,13 @@
         "A Defender for Cloud Apps connector; the agent would show as Discovered"
       ],
       "answer": 1,
-      "explanation": "Advanced real-time protection is a two-sided configuration. The Defender portal step and the Power Platform step are both required, and the indicator that protection is live is the agent showing as Connected in the Security for AI settings."
+      "explanation": "Advanced real-time protection is a two-sided configuration. The Defender portal step and the Power Platform step are both required, and the indicator that protection is live is the agent showing as Connected in the Security for AI settings.",
+      "why_not": [
+        "Licensing is not the missing piece. Advanced real-time protection needs both the Defender portal step and the Power Platform step.",
+        null,
+        "An agent's identity blueprint is not what enables runtime protection. The missing half is the Power Platform administrator step.",
+        "A Defender for Cloud Apps connector is not what is missing. The configuration needs the Power Platform step, and the agent showing as Connected in the Security for AI settings confirms it."
+      ]
     },
     {
       "id": "03-02-q4",
@@ -53,7 +71,13 @@
         "Assigning the agent to a dedicated Security Copilot workspace"
       ],
       "answer": 1,
-      "explanation": "Access packages make an agent's access expire unless someone re-confirms it, and lifecycle workflow templates for sponsorship transfer exist specifically to prevent orphaned agents. Conditional Access governs how an agent gets tokens, not who is accountable for it."
+      "explanation": "Access packages make an agent's access expire unless someone re-confirms it, and lifecycle workflow templates for sponsorship transfer exist specifically to prevent orphaned agents. Conditional Access governs how an agent gets tokens, not who is accountable for it.",
+      "why_not": [
+        "Conditional Access governs how an agent gets tokens, not who is accountable for it.",
+        null,
+        "Runtime protection inspects what an agent does while it runs. It does not expire access or transfer ownership.",
+        "A Security Copilot workspace has nothing to do with an agent's ownership or access expiry."
+      ]
     },
     {
       "id": "03-02-q5",
@@ -66,7 +90,13 @@
         "Power Platform admin center environments only"
       ],
       "answer": 1,
-      "explanation": "The Microsoft 365 admin center provides the tenant-wide agent inventory with ownership, risk indicators, and the ability to block or disable. Shadow agents are the governance problem here, and you cannot govern an inventory you have not taken."
+      "explanation": "The Microsoft 365 admin center provides the tenant-wide agent inventory with ownership, risk indicators, and the ability to block or disable. Shadow agents are the governance problem here, and you cannot govern an inventory you have not taken.",
+      "why_not": [
+        "Agent ID blueprints are identity constructs in Entra. The tenant-wide agent inventory with block and disable is in the Microsoft 365 admin center.",
+        null,
+        "The Defender portal is where runtime protection is configured, not where the tenant-wide inventory with block and disable lives.",
+        "Power Platform environments are only part of the picture. The tenant-wide inventory is in the Microsoft 365 admin center."
+      ]
     }
   ]
 }

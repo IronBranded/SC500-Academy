@@ -59,7 +59,24 @@
 
   /* Rewrite the repository's relative .md links into hash routes, so the
      cross-references written in the content actually navigate. */
-  function rewriteLinks(root) {
+  /* Resolve a Markdown link the way GitHub does: relative to the file that
+     contains it. The previous version stripped leading "../" and looked the
+     remainder up as a repository path, which only worked for links written
+     from labs/ (../../content/...). Links between lessons - ../00-lab-safety/
+     from content/01-.../, or ./a5-... within the appendix - all fell through
+     to "unresolved" and pointed at the dashboard. */
+  function resolvePath(href, basePath) {
+    try {
+      var u = new URL(href, 'https://repo.invalid/' + (basePath || ''));
+      return decodeURIComponent(u.pathname.replace(/^\//, ''));
+    } catch (e) {
+      return href.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
+    }
+  }
+
+  var REPO = 'https://github.com/IronBranded/SC500-Academy/blob/main/';
+
+  function rewriteLinks(root, basePath) {
     var byPath = {};
     manifest.domains.forEach(function (d) {
       d.modules.forEach(function (m) {
@@ -76,9 +93,18 @@
         if (/^https?:/.test(href)) { a.target = '_blank'; a.rel = 'noopener'; }
         continue;
       }
-      var clean = href.split('#')[0].replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
+      var clean = resolvePath(href.split('#')[0], basePath);
       var hit = byPath[clean];
       if (hit) { a.setAttribute('href', hit); continue; }
+
+      /* Scripts and docs are real files in the repository but not pages of
+         the site: send them to GitHub rather than to a 404. */
+      if (/^(scripts|tools|docs|quizzes|flashcards)\//.test(clean) || /\.(ps1|json|yml)$/i.test(clean)) {
+        a.setAttribute('href', REPO + clean);
+        a.target = '_blank';
+        a.rel = 'noopener';
+        continue;
+      }
 
       /* A relative link we cannot resolve is a content bug. Say so rather than
          leaving a link that silently 404s. */
@@ -123,21 +149,46 @@
      first module and has never been shown anywhere. It is the one field that
      separates this guide from a cram sheet, so it gets a callout of its own,
      directly under the title. */
+  /* Certification-first redesign: the note moved from directly under the
+     title to a collapsed panel at the end. It is useful context and it is not
+     measured by SC-500, so it no longer sits between the learner and the
+     objective. Lessons get the same panel from lesson.js. */
   function tacticalCallout(root, data) {
     if (!data || !data.forensic_relevance) return;
-    var q = document.createElement('blockquote');
-    q.dataset.callout = 'tactical';
-    q.dataset.label = 'In an investigation';
-    var p = document.createElement('p');
-    p.textContent = String(data.forensic_relevance);
-    q.appendChild(p);
+    var d = document.createElement('details');
+    d.className = 'beyond';
+    d.appendChild(node('summary', null, 'Beyond the exam: how this shows up in an investigation'));
+    d.appendChild(node('p', 'field__note', 'Not measured by SC-500. Kept for context.'));
+    d.appendChild(node('p', null, String(data.forensic_relevance)));
+    root.appendChild(d);
+  }
 
-    var anchor = root.querySelector('h1');
-    var after = anchor ? anchor.nextSibling : root.firstChild;
-    /* Sit below the progress strip if one is already there. */
-    var strip = root.querySelector('.progress-strip');
-    if (strip && strip.nextSibling) after = strip.nextSibling;
-    root.insertBefore(q, after);
+  /* Mermaid is 3.5 MB and no content file currently contains a diagram, so it
+     is loaded on first use instead of on every page. */
+  var mermaidJob = null;
+  function loadMermaid() {
+    if (global.mermaid) return Promise.resolve(global.mermaid);
+    if (mermaidJob) return mermaidJob;
+    mermaidJob = new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = 'assets/js/vendor/mermaid.min.js';
+      s.onload = function () { resolve(global.mermaid || null); };
+      s.onerror = function () { resolve(null); };
+      document.head.appendChild(s);
+    });
+    return mermaidJob;
+  }
+
+  /* Domain colours for diagrams. A node written with ":::d01" (or class d01)
+     in a mermaid block takes domain 01's colour, so diagrams share the
+     dashboard's vocabulary. Colour is never the only label: nodes keep text. */
+  function domainClassDefs() {
+    var cs = getComputedStyle(document.documentElement);
+    return ['00', '01', '02', '03', '04'].map(function (id) {
+      var c = cs.getPropertyValue('--d-' + id).trim() || '#888';
+      var t = cs.getPropertyValue('--d-' + id + '-tint').trim() || 'transparent';
+      return 'classDef d' + id + ' stroke:' + c + ',stroke-width:2px,fill:' + t + ';';
+    }).join('\n');
   }
 
   /* Mermaid is optional. Vendor assets/js/vendor/mermaid.min.js and diagrams
@@ -147,22 +198,33 @@
   function renderDiagrams(root) {
     var fences = root.querySelectorAll('pre > code.language-mermaid');
     if (!fences.length) return;
-
     if (!global.mermaid) {
+      loadMermaid().then(function (m) { if (m) renderDiagrams(root); else markUnrendered(fences); });
+      return;
+    }
+    drawDiagrams(fences);
+  }
+
+  function markUnrendered(fences) {
+    {
       for (var i = 0; i < fences.length; i++) {
         var pre = fences[i].parentNode;
         pre.dataset.diagram = 'unrendered';
         pre.title = 'Vendor assets/js/vendor/mermaid.min.js to render this as a diagram';
       }
-      return;
     }
+  }
 
+  function drawDiagrams(fences) {
     var dark = document.documentElement.getAttribute('data-theme') !== 'light';
     try {
       global.mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
         theme: dark ? 'dark' : 'neutral',
+        /* Mermaid's dark edge-label background (#585858) gives 4.4:1 with its
+           label text - just under AA. Use the page's raised surface instead. */
+        themeVariables: dark ? { edgeLabelBackground: '#252423' } : {},
         fontFamily: getComputedStyle(document.body).getPropertyValue('--face-ui')
       });
     } catch (e) { return; }
@@ -171,10 +233,24 @@
       (function (code, n) {
         var host = document.createElement('div');
         host.className = 'diagram';
+        if (code.parentNode.id) host.id = code.parentNode.id;   // keeps #stage-visualize working
         code.parentNode.replaceWith(host);
         try {
-          global.mermaid.render('mmd-' + n + '-' + Date.now(), code.textContent)
-            .then(function (out) { host.innerHTML = out.svg; })
+          var src = code.textContent;
+          if (/^\s*(flowchart|graph)\b/.test(src)) src = src.replace(/\s*$/, '\n' + domainClassDefs() + '\n');
+          /* Accessible name: write accTitle / accDescr in the mermaid source and
+             Mermaid puts them on the SVG as <title> and <desc>. */
+          global.mermaid.render('mmd-' + n + '-' + Date.now(), src)
+            .then(function (out) {
+              host.innerHTML = out.svg;
+              /* On a phone the diagram keeps a readable minimum width and
+                 scrolls sideways, so the container must be reachable by
+                 keyboard and carry a name (the diagram's own accTitle). */
+              var t = host.querySelector('svg title');
+              host.setAttribute('tabindex', '0');
+              host.setAttribute('role', 'region');
+              host.setAttribute('aria-label', 'Diagram: ' + (t ? t.textContent : 'illustration') + '. Scroll sideways on small screens.');
+            })
             .catch(function () { host.textContent = code.textContent; host.dataset.failed = 'true'; });
         } catch (e) {
           host.textContent = code.textContent;
@@ -184,15 +260,52 @@
     }
   }
 
+  /* Every table scrolls inside its own box. Tables of three or more columns
+     also get data-label on each cell, which learn.css uses to turn them into
+     one card per row on narrow screens - that is the comparison component's
+     mobile layout, and it applies to every comparison table in the content
+     without the content changing. */
+  var tableSeq = 0;
   function wrapTables(root) {
     var tables = root.querySelectorAll('table');
     for (var i = 0; i < tables.length; i++) {
       var t = tables[i];
-      if (t.parentNode.classList && t.parentNode.classList.contains('table-scroll')) continue;
-      var wrap = node('div', 'table-scroll');
-      t.parentNode.insertBefore(wrap, t);
-      wrap.appendChild(t);
+      var heads = t.querySelectorAll('thead th');
+      /* A comparison table's corner cell is often blank in the Markdown; give
+         it a name for screen readers without changing what is displayed. */
+      if (heads[0] && !heads[0].textContent.trim()) {
+        heads[0].appendChild(node('span', 'visually-hidden', 'Option'));
+      }
+      if (!(t.parentNode.classList && t.parentNode.classList.contains('table-scroll'))) {
+        var wrap = node('div', 'table-scroll');
+        /* Scrollable regions must be keyboard reachable, and a named region
+           must have a unique name: use the table's own column headers. */
+        wrap.setAttribute('tabindex', '0');
+        wrap.setAttribute('role', 'region');
+        tableSeq++;
+        var cols = Array.prototype.map.call(heads, function (h) { return h.textContent.trim(); }).filter(Boolean).slice(0, 3);
+        wrap.setAttribute('aria-label', 'Table ' + tableSeq + (cols.length ? ': ' + cols.join(', ') : ''));
+        t.parentNode.insertBefore(wrap, t);
+        wrap.appendChild(t);
+      }
+      if (heads.length < 3) continue;
+      var labels = Array.prototype.map.call(heads, function (h) { return h.textContent.trim(); });
+      t.dataset.stack = 'true';
+      var rows = t.querySelectorAll('tbody tr');
+      for (var r = 0; r < rows.length; r++) {
+        var cells = rows[r].children;
+        for (var c = 0; c < cells.length; c++) {
+          if (labels[c] && !cells[c].dataset.label) cells[c].dataset.label = labels[c];
+        }
+      }
     }
+  }
+
+  /* Links and tables for HTML rendered outside the page pipeline (A6
+     distinctions inside a lesson, for instance). */
+  function enhance(root, basePath) {
+    rewriteLinks(root, basePath);
+    wrapTables(root);
   }
 
   /* ----------------------------------------------------------- field card */
@@ -315,15 +428,35 @@
 
   /* --------------------------------------------------------------- routes */
 
+  /* Views registered by views.js, practice.js, watchlist.js and review.js.
+     A view listed here but missing at runtime shows a clear message instead
+     of silently falling back to the dashboard - which is what #/exam,
+     #/cards, #/review and #/preview did before this list existed. */
+  var VIEWS = {
+    cost: 'Cost planner', readiness: 'Readiness', exam: 'Mock exam', cards: 'Flashcards',
+    review: 'Retention review', preview: 'Verification watchlist', coverage: 'Objective coverage',
+    prep: 'Exam prep', domain: 'Domain review'
+  };
+
   function parseRoute() {
     var h = (location.hash || '#/').replace(/^#\/?/, '');
     var parts = h.split('/').filter(Boolean);
     if (!parts.length) return { kind: 'dashboard' };
-    if (parts[0] === 'module' || parts[0] === 'lab') return { kind: parts[0], moduleId: parts[1] };
-    if (parts[0] === 'appendix') return { kind: 'appendix', idx: parseInt(parts[1], 10) };
-    if (parts[0] === 'cost') return { kind: 'cost' };
-    if (parts[0] === 'readiness') return { kind: 'readiness' };
+    if (parts[0] === 'module' || parts[0] === 'lab') return { kind: parts[0], moduleId: parts[1], anchor: parts[2] || null };
+    if (parts[0] === 'appendix') return { kind: 'appendix', idx: appendixIndex(parts[1]) };
+    if (VIEWS[parts[0]]) return { kind: 'view', view: parts[0], arg1: parts[1] || null, arg2: parts[2] || null };
     return { kind: 'dashboard' };
+  }
+
+  /* #/appendix/5 (position) keeps working; #/appendix/a6 (file prefix) is
+     stable when appendices are reordered. */
+  function appendixIndex(key) {
+    if (/^\d+$/.test(String(key))) return parseInt(key, 10);
+    var list = (manifest && manifest.appendix) || [];
+    for (var i = 0; i < list.length; i++) {
+      if (new RegExp('/' + key + '-[^/]*\\.md$', 'i').test(list[i].content)) return i;
+    }
+    return -1;
   }
 
   function pathFor(route) {
@@ -355,21 +488,47 @@
       }
 
       contentEl.innerHTML = html;
-      rewriteLinks(contentEl);
+      rewriteLinks(contentEl, path);
       wrapTables(contentEl);
       enhanceCode(contentEl);
+
+      /* Labs have no front matter of their own; they borrow the module's so
+         the lab header can show cost, licensing and resources created. */
+      var fmReady = Promise.resolve(parsed.data);
+      if (route.kind === 'lab' && index[route.moduleId]) {
+        fmReady = get(index[route.moduleId].module.content)
+          .then(function (r) { return r.text(); })
+          .then(function (t) { return FM.parse(t).data; })
+          .catch(function () { return {}; });
+      }
       buildField(parsed.data, route);
 
+      var L = global.SC500Lesson;
+      var S = global.SC500Sections;
+      var asLesson = route.kind === 'module' && L && L.mountModule(contentEl, route, parsed.data);
+
       /* Optional layers. Each is absent until its own file is written, and the
-         page must not break in the meantime. */
-      if (global.SC500Tabs && global.SC500Tabs.mount) global.SC500Tabs.mount(contentEl);
-      if (global.SC500Sections && global.SC500Sections.mount) global.SC500Sections.mount(contentEl);
+         page must not break in the meantime. Lesson pages are structured by
+         lesson.js, so the older fold-and-wrap layers only tag callouts and
+         tables there; labs and appendices keep the original treatment. */
+      if (asLesson) {
+        if (S && S.tagCallouts) S.tagCallouts(contentEl);
+        if (S && S.tagTables) S.tagTables(contentEl);
+      } else {
+        if (global.SC500Tabs && global.SC500Tabs.mount) global.SC500Tabs.mount(contentEl);
+        if (S && S.mount) S.mount(contentEl);
+      }
       if (global.SC500Highlight && global.SC500Highlight.mount) global.SC500Highlight.mount(contentEl);
       if (global.SC500Progress && global.SC500Progress.mountPage) global.SC500Progress.mountPage(contentEl, route);
       renderDiagrams(contentEl);
-      tacticalCallout(contentEl, parsed.data);
+      if (!asLesson) tacticalCallout(contentEl, parsed.data);
+      if (route.kind === 'lab' && L && L.mountLab) {
+        fmReady.then(function (fm) { if (parseRoute().moduleId === route.moduleId) L.mountLab(contentEl, route, fm); });
+      }
       if (global.SC500Outline && global.SC500Outline.mount) global.SC500Outline.mount(contentEl, metaEl);
       if (global.SC500Quiz && global.SC500Quiz.mount) global.SC500Quiz.mount(contentEl, route);
+      if (asLesson && L.enrich) L.enrich();
+      if (global.SC500Progress && global.SC500Progress.recordVisit) global.SC500Progress.recordVisit(route);
 
       if (global.SC500Nav) {
         global.SC500Nav.setCurrent(route.kind, route.moduleId != null ? route.moduleId : route.idx);
@@ -382,10 +541,23 @@
 
       contentEl.focus({ preventScroll: true });
       window.scrollTo(0, 0);
+      if (route.anchor) jumpTo(route.anchor);
     }).catch(function (err) {
       fail('That page did not load.', String(err.message || err) +
         '. If you opened this from the file system, serve it instead: python -m http.server 8080');
     });
+  }
+
+  /* #/module/01-01/check and friends: scroll to a stage once it exists. The
+     knowledge check is filled asynchronously, so retry briefly. */
+  function jumpTo(anchor) {
+    var id = /^(orient|learn|visualize|distinguish|practice|check|review)$/.test(anchor) ? 'stage-' + anchor : anchor;
+    var tries = 0;
+    (function attempt() {
+      var el = document.getElementById(id);
+      if (el) { el.scrollIntoView({ block: 'start' }); return; }
+      if (++tries < 20) setTimeout(attempt, 100);
+    })();
   }
 
   function showDashboard() {
@@ -412,23 +584,25 @@
     document.title = 'SC500 Academy';
   }
 
-  function showView(kind) {
+  function showView(r) {
+    var kind = r.view;
     contentEl.textContent = '';
     metaEl.textContent = '';
     if (!global.SC500Views || !global.SC500Views[kind]) {
       return fail('That view is unavailable.',
-        'assets/js/views.js did not load. Check the script tag in index.html.');
+        'The script that provides ' + VIEWS[kind] + ' did not load. Check the script tags in index.html.');
     }
-    global.SC500Views[kind](contentEl, manifest);
-    if (global.SC500Nav) global.SC500Nav.setCurrent(kind);
-    document.title = (kind === 'cost' ? 'Cost planner' : 'Readiness') + ' · SC500 Academy';
+    document.title = VIEWS[kind] + ' · SC500 Academy';
+    global.SC500Views[kind](contentEl, manifest, r.arg1, r.arg2);
+    if (global.SC500Nav) global.SC500Nav.setCurrent(kind, r.arg1);
+    contentEl.focus({ preventScroll: true });
     window.scrollTo(0, 0);
   }
 
   function route() {
     var r = parseRoute();
     if (r.kind === 'dashboard') showDashboard();
-    else if (r.kind === 'cost' || r.kind === 'readiness') showView(r.kind);
+    else if (r.kind === 'view') showView(r);
     else showPage(r);
   }
 
@@ -445,8 +619,12 @@
       if (global.SC500Nav) global.SC500Nav.mount(manifest);
       if (global.SC500Search && global.SC500Search.mount) global.SC500Search.mount(manifest);
       if (global.SC500Palette && global.SC500Palette.mount) global.SC500Palette.mount(manifest);
-      window.addEventListener('hashchange', route);
+      window.addEventListener('hashchange', function () {
+        /* In-page anchors (#part-3, #stage-check) are not routes. */
+        if (location.hash === '' || location.hash.indexOf('#/') === 0) route();
+      });
       route();
+      registerWorker();
     }).catch(function (err) {
       fail('The guide could not load its manifest.',
         String(err.message || err) +
@@ -454,8 +632,17 @@
     });
   }
 
+  /* Offline support (sw.js) existed but was never registered. It is skipped on
+     localhost so that local preview always shows the files as edited. */
+  function registerWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
+    if (location.protocol !== 'https:') return;
+    navigator.serviceWorker.register('sw.js').catch(function () { /* offline is best effort */ });
+  }
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  global.SC500App = { reroute: route, getManifest: function () { return manifest; } };
+  global.SC500App = { reroute: route, getManifest: function () { return manifest; }, enhance: enhance };
 })(window);

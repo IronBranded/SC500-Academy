@@ -1,0 +1,795 @@
+{
+  "_note": "Official Microsoft training mapped to the SC-500 objectives. Joined on the objective heading text in docs/SKILLS-MEASURED-SNAPSHOT.md, like every other mapping in this repo. Learning-path titles and module counts were read from Microsoft's public Learn source (github.com/MicrosoftDocs/learn, learn-pr/paths/<slug>/index.yml); lab titles from the lab files themselves. The objective assignment of each lab is this repo's, from each lab's own description. Module titles and URLs were read from each module's source index.yml (uid-confirmed); two modules not in the public source were confirmed on their Microsoft Learn pages. The lessons each module is listed under are this repo's judgement, from the module's title and summary. The outline-drift workflow re-checks every path, its exact module list, and every lab weekly.",
+  "verified": "2026-09-22",
+  "course": {
+    "code": "SC-500T00-A",
+    "title": "Implement end-to-end security controls for cloud and AI workloads",
+    "url": "https://learn.microsoft.com/en-us/training/courses/sc-500t00",
+    "page_updated": "2026-07-30"
+  },
+  "labs_repo": {
+    "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity",
+    "commit": "612f83879ab1cda3acba59a129666c4b9a498786",
+    "commit_date": "2026-08-12"
+  },
+  "paths": [
+    {
+      "objective": "Secure access to resources by using Microsoft Entra ID",
+      "title": "Secure access to resources by using Microsoft Entra",
+      "url": "https://learn.microsoft.com/en-us/training/paths/secure-access-resources-entra/",
+      "uid": "learn.wwl.secure-access-resources-entra",
+      "modules": 3,
+      "module_list": [
+        {
+          "uid": "learn.wwl.manage-implement-authentication-methods",
+          "title": "Manage and implement authentication methods in Microsoft Entra ID",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-implement-authentication-methods/",
+          "lessons": [
+            "01-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-configure-privileged-identity-management",
+          "title": "Implement and configure Privileged Identity Management (PIM)",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-configure-privileged-identity-management/",
+          "lessons": [
+            "01-01"
+          ]
+        },
+        {
+          "uid": "learn.copilot-declarative-agent-api-plugin-auth",
+          "title": "Authenticate your API plugin for declarative agents with secured APIs",
+          "url": "https://learn.microsoft.com/en-us/training/modules/copilot-declarative-agent-api-plugin-auth/",
+          "lessons": [
+            "01-01"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Secure secrets and keys by using Azure Key Vault",
+      "title": "Secure Azure Key Vault with defense in depth for the cloud and AI workloads",
+      "url": "https://learn.microsoft.com/en-us/training/paths/configure-key-vault-security/",
+      "uid": "learn.wwl.configure-key-vault-security",
+      "modules": 4,
+      "module_list": [
+        {
+          "uid": "learn.wwl.configure-secure-key-vault",
+          "title": "Configure and secure Azure Key Vault",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-secure-key-vault/",
+          "lessons": [
+            "01-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-keys-secrets-key-vault",
+          "title": "Manage keys and secrets in Azure Key Vault",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-keys-secrets-key-vault/",
+          "lessons": [
+            "01-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-certificates-monitor-key-vault",
+          "title": "Manage certificates and monitor Azure Key Vault",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-certificates-monitor-key-vault/",
+          "lessons": [
+            "01-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.defend-key-vault-defender-cloud",
+          "title": "Protect Azure Key Vault with Microsoft Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/defend-key-vault-defender-cloud/",
+          "lessons": [
+            "01-02"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement governance to enforce security and regulatory compliance",
+      "title": "Enforce security governance and regulatory compliance",
+      "url": "https://learn.microsoft.com/en-us/training/paths/security-governance-compliance/",
+      "uid": "learn.wwl.security-governance-compliance",
+      "modules": 6,
+      "module_list": [
+        {
+          "uid": "learn.wwl.enforce-governance-azure-policy-resource-locks",
+          "title": "Enforce governance with Azure Policy and resource locks",
+          "url": "https://learn.microsoft.com/en-us/training/modules/enforce-governance-azure-policy-resource-locks/",
+          "lessons": [
+            "01-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.configure-defender-cloud-security-controls",
+          "title": "Configure security controls and remediate recommendations in Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-defender-cloud-security-controls/",
+          "lessons": [
+            "01-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.evaluate-regulatory-compliance",
+          "title": "Evaluate regulatory compliance in Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/evaluate-regulatory-compliance/",
+          "lessons": [
+            "01-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-right-size-rbac-role-assignments",
+          "title": "Manage and right-size RBAC role assignments for least privilege",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-right-size-rbac-role-assignments/",
+          "lessons": [
+            "01-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.protect-backup-data-azure-backup-security",
+          "title": "Protect backup data with Azure Backup security features",
+          "url": "https://learn.microsoft.com/en-us/training/modules/protect-backup-data-azure-backup-security/",
+          "lessons": [
+            "01-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-security-controls-infrastructure-as-code",
+          "title": "Implement security controls in infrastructure as code",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-security-controls-infrastructure-as-code/",
+          "lessons": [
+            "01-03"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement security for storage accounts",
+      "title": "Implement security for Azure Storage for the cloud and AI security engineer",
+      "url": "https://learn.microsoft.com/en-us/training/paths/implement-azure-storage-security/",
+      "uid": "learn.wwl.implement-azure-storage-security",
+      "modules": 4,
+      "module_list": [
+        {
+          "uid": "learn.wwl.describe-azure-storage-services",
+          "title": "Describe Azure storage services",
+          "url": "https://learn.microsoft.com/en-us/training/modules/describe-azure-storage-services/",
+          "lessons": [
+            "02-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-storage-account-security",
+          "title": "Implement security and manage access for Azure Storage",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-storage-account-security/",
+          "lessons": [
+            "02-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.configure-network-security-azure-storage",
+          "title": "Configure network security for Azure Storage",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-network-security-azure-storage/",
+          "lessons": [
+            "02-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-defender-storage",
+          "title": "Implement Microsoft Defender for Storage",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-defender-storage/",
+          "lessons": [
+            "02-01"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement security for databases",
+      "title": "Implement security for Azure SQL databases",
+      "url": "https://learn.microsoft.com/en-us/training/paths/implement-azure-sql-database-security/",
+      "uid": "learn.wwl.implement-azure-sql-database-security",
+      "modules": 3,
+      "module_list": [
+        {
+          "uid": "learn.wwl.configure-azure-sql-platform-security",
+          "title": "Configure platform-level security for Azure SQL",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-azure-sql-platform-security/",
+          "lessons": [
+            "02-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.configure-azure-sql-auditing",
+          "title": "Configure auditing for Azure SQL Database and SQL Managed Instance",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-azure-sql-auditing/",
+          "lessons": [
+            "02-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-defender-databases",
+          "title": "Implement Microsoft Defender for Databases",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-defender-databases/",
+          "lessons": [
+            "02-02"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement security for Azure network services",
+      "title": "Implement network security controls in Azure",
+      "url": "https://learn.microsoft.com/en-us/training/paths/implement-network-security-controls-azure/",
+      "uid": "learn.wwl.implement-network-security-controls-azure",
+      "modules": 4,
+      "module_list": [
+        {
+          "uid": "learn.wwl.segment-isolate-workloads-network-security-controls",
+          "title": "Segment and isolate Azure workloads using network security controls",
+          "url": "https://learn.microsoft.com/en-us/training/modules/segment-isolate-workloads-network-security-controls/",
+          "lessons": [
+            "02-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.centralize-traffic-inspection-azure-firewall",
+          "title": "Centralize and enforce traffic inspection using Azure Firewall",
+          "url": "https://learn.microsoft.com/en-us/training/modules/centralize-traffic-inspection-azure-firewall/",
+          "lessons": [
+            "02-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.secure-hybrid-connectivity-azure",
+          "title": "Secure remote and hybrid connectivity using VPN gateways and Microsoft Entra Private Access",
+          "url": "https://learn.microsoft.com/en-us/training/modules/secure-hybrid-connectivity-azure/",
+          "lessons": [
+            "02-03",
+            "02-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.eliminate-public-exposure-paas-private-link",
+          "title": "Eliminate public network exposure of Azure PaaS services",
+          "url": "https://learn.microsoft.com/en-us/training/modules/eliminate-public-exposure-paas-private-link/",
+          "lessons": [
+            "02-04"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement security for AI",
+      "title": "Implement security for AI",
+      "url": "https://learn.microsoft.com/en-us/training/paths/implement-ai-security/",
+      "uid": "learn.wwl.implement-ai-security",
+      "modules": 9,
+      "module_list": [
+        {
+          "uid": "learn.wwl.secure-access-entra-agent-identity",
+          "title": "Secure access for Microsoft Entra Agent Identity",
+          "url": "https://learn.microsoft.com/en-us/training/modules/secure-access-entra-agent-identity/",
+          "lessons": [
+            "03-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.analyze-ai-identity-risks-defender-xdr",
+          "title": "Analyze AI identity risks using Microsoft Defender XDR",
+          "url": "https://learn.microsoft.com/en-us/training/modules/analyze-ai-identity-risks-defender-xdr/",
+          "lessons": [
+            "03-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.enable-realtime-protection-copilot-studio-agents",
+          "title": "Enable real-time protection for Copilot Studio agents",
+          "url": "https://learn.microsoft.com/en-us/training/modules/enable-protection-copilot-studio-agents/",
+          "lessons": [
+            "03-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.configure-ai-gateway-security-foundry",
+          "title": "Configure AI Gateway security in Microsoft Foundry",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-ai-gateway-security-foundry/",
+          "lessons": [
+            "03-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.azure-ai-foundry-configure-manage-guardrails",
+          "title": "Configure and manage guardrails in Microsoft Foundry",
+          "url": "https://learn.microsoft.com/en-us/training/modules/azure-ai-foundry-configure-manage-guardrails/",
+          "lessons": [
+            "03-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.defender-for-cloud-ai-protect-workloads",
+          "title": "Protect AI workloads with Microsoft Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/defender-for-cloud-ai-protect-workloads/",
+          "lessons": [
+            "03-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-defender-cloud-ai-services",
+          "title": "Enable Defender for AI Services workload protection in Microsoft Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-defender-cloud-ai-services/",
+          "lessons": [
+            "03-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-agents-microsoft-agent-365",
+          "title": "Manage agents using Microsoft Agent 365",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-agents-microsoft-agent-365/",
+          "lessons": [
+            "03-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.identify-ai-data-risks-purview",
+          "title": "Identify AI data risks using Microsoft Purview Data Security Posture Management",
+          "url": "https://learn.microsoft.com/en-us/training/modules/identify-ai-data-risks-purview/",
+          "lessons": [
+            "03-01"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement security for servers and virtual machines (VMs)",
+      "title": "Implement security for servers and virtual machines",
+      "url": "https://learn.microsoft.com/en-us/training/paths/server-vm-security/",
+      "uid": "learn.wwl.server-vm-security",
+      "modules": 7,
+      "module_list": [
+        {
+          "uid": "learn.wwl.implement-disk-encryption-azure-virtual-machines",
+          "title": "Implement disk encryption for Azure virtual machines",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-disk-encryption-azure-virtual-machines/",
+          "lessons": [
+            "03-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.configure-trusted-launch-azure-virtual-machines",
+          "title": "Configure trusted launch security features for Azure virtual machines",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-trusted-launch-azure-virtual-machines/",
+          "lessons": [
+            "03-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.plan-implement-azure-bastion",
+          "title": "Plan and implement Azure Bastion",
+          "url": "https://learn.microsoft.com/en-us/training/modules/plan-implement-azure-bastion/",
+          "lessons": [
+            "03-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-security-azure-arc-servers",
+          "title": "Manage security for Arc-enabled hybrid servers",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-security-azure-arc-servers/",
+          "lessons": [
+            "03-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-microsoft-defender-servers",
+          "title": "Implement Microsoft Defender for Servers",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-microsoft-defender-servers/",
+          "lessons": [
+            "03-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.enable-enforce-just-in-time-vm-access",
+          "title": "Enable and enforce just-in-time VM access",
+          "url": "https://learn.microsoft.com/en-us/training/modules/enable-enforce-just-in-time-vm-access/",
+          "lessons": [
+            "03-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.enforce-vm-security-machine-configuration",
+          "title": "Enforce VM security configuration with Azure Machine Configuration",
+          "url": "https://learn.microsoft.com/en-us/training/modules/enforce-vm-security-machine-configuration/",
+          "lessons": [
+            "03-04"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement security for application platform services",
+      "title": "Secure Azure application platform services for the cloud and AI security engineer",
+      "url": "https://learn.microsoft.com/en-us/training/paths/secure-application-platform-services/",
+      "uid": "learn.wwl.secure-application-platform-services",
+      "modules": 6,
+      "module_list": [
+        {
+          "uid": "learn.wwl.detect-container-risks-defender-containers",
+          "title": "Detect container risks using Microsoft Defender for Containers",
+          "url": "https://learn.microsoft.com/en-us/training/modules/detect-container-risks-defender-containers/",
+          "lessons": [
+            "03-05"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-security-controls-aks",
+          "title": "Implement security controls for Azure Kubernetes Service",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-security-controls-kubernetes/",
+          "lessons": [
+            "03-05"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-security-controls-containers",
+          "title": "Implement security controls for Azure Container Registry, Container Instances, and Container Apps",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-security-controls-containers/",
+          "lessons": [
+            "03-05"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-security-controls-function-logic-apps",
+          "title": "Implement security controls for Azure Function apps and Logic apps",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-security-controls-function-logic-apps/",
+          "lessons": [
+            "03-06"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-security-web-application-firewall",
+          "title": "Implement security controls for Azure App Services and Web Application Firewall",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-security-web-application-firewall/",
+          "lessons": [
+            "03-06"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-api-security-api-management",
+          "title": "Implement API backend security using Azure API Management",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-application-interface-security-management/",
+          "lessons": [
+            "03-06"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Manage security posture by using Defender for Cloud",
+      "title": "Manage security posture by using Microsoft Defender for Cloud",
+      "url": "https://learn.microsoft.com/en-us/training/paths/manage-security-posture-defender-cloud/",
+      "uid": "learn.wwl.manage-security-posture-defender-cloud",
+      "modules": 6,
+      "module_list": [
+        {
+          "uid": "learn.wwl.connect-hybrid-multicloud-environments-defender",
+          "title": "Connect hybrid and multicloud environments to Microsoft Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/connect-hybrid-multicloud-environments-defender/",
+          "lessons": [
+            "04-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.identify-security-risks-posture-management",
+          "title": "Identify security risks by using Cloud Security Posture Management",
+          "url": "https://learn.microsoft.com/en-us/training/modules/identify-security-risks-posture-management/",
+          "lessons": [
+            "04-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.discover-external-assets-vulnerabilities",
+          "title": "Discover unprotected assets and vulnerabilities by using Microsoft Defender External Attack Surface Management",
+          "url": "https://learn.microsoft.com/en-us/training/modules/discover-external-assets-vulnerabilities/",
+          "lessons": [
+            "04-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.evaluate-regulatory-compliance",
+          "title": "Evaluate regulatory compliance in Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/evaluate-regulatory-compliance/",
+          "lessons": [
+            "04-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.enable-configure-workload-protection-plans",
+          "title": "Enable and configure workload protection plans in Microsoft Defender for Cloud",
+          "url": "https://learn.microsoft.com/en-us/training/modules/enable-configure-workload-protection-plans/",
+          "lessons": [
+            "04-01"
+          ]
+        },
+        {
+          "uid": "learn.wwl.configure-defender-vulnerability-management",
+          "title": "Configure Microsoft Defender Vulnerability Management settings for Azure VMs",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-defender-vulnerability-management/",
+          "lessons": [
+            "04-01"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement activity and event collection in Microsoft Sentinel",
+      "title": "Implement activity and event collection in Microsoft Sentinel",
+      "url": "https://learn.microsoft.com/en-us/training/paths/implement-activity-event-collection-sentinel/",
+      "uid": "learn.wwl.implement-activity-event-collection-sentinel",
+      "modules": 8,
+      "module_list": [
+        {
+          "uid": "learn.wwl.create-manage-azure-sentinel-workspaces",
+          "title": "Create and manage Microsoft Sentinel workspaces",
+          "url": "https://learn.microsoft.com/en-us/training/modules/create-manage-azure-sentinel-workspaces/",
+          "lessons": [
+            "04-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-content-microsoft-sentinel",
+          "title": "Manage content in Microsoft Sentinel",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-content-microsoft-sentinel/",
+          "lessons": [
+            "04-02"
+          ]
+        },
+        {
+          "uid": "learn.wwl.connect-microsoft-services-to-azure-sentinel",
+          "title": "Connect Microsoft services to Microsoft Sentinel",
+          "url": "https://learn.microsoft.com/en-us/training/modules/connect-microsoft-services-to-azure-sentinel/",
+          "lessons": [
+            "04-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.connect-syslog-data-sources-to-azure-sentinel",
+          "title": "Connect syslog data sources to Microsoft Sentinel",
+          "url": "https://learn.microsoft.com/en-us/training/modules/connect-syslog-data-sources-to-azure-sentinel/",
+          "lessons": [
+            "04-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.connect-common-event-format-cef-logs-to-azure-sentinel",
+          "title": "Connect Common Event Format logs to Microsoft Sentinel",
+          "url": "https://learn.microsoft.com/en-us/training/modules/connect-common-event-format-logs-to-azure-sentinel/",
+          "lessons": [
+            "04-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.connect-windows-hosts-to-azure-sentinel",
+          "title": "Connect Windows hosts to Microsoft Sentinel",
+          "url": "https://learn.microsoft.com/en-us/training/modules/connect-windows-hosts-to-azure-sentinel/",
+          "lessons": [
+            "04-03"
+          ]
+        },
+        {
+          "uid": "learn.wwl.implement-automation-rules-playbooks-sentinel",
+          "title": "Implement automation rules and playbooks in Microsoft Sentinel",
+          "url": "https://learn.microsoft.com/en-us/training/modules/implement-automation-rules-playbooks-sentinel/",
+          "lessons": [
+            "04-04"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-data-storage-audit-logs-sentinel",
+          "title": "Manage data storage and query audit logs in Microsoft Sentinel",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-data-storage-audit-logs-sentinel/",
+          "lessons": [
+            "04-04"
+          ]
+        }
+      ]
+    },
+    {
+      "objective": "Implement Microsoft Security Copilot",
+      "title": "Deploy and operate Microsoft Security Copilot",
+      "url": "https://learn.microsoft.com/en-us/training/paths/deploy-operate-security-copilot/",
+      "uid": "learn.wwl.deploy-operate-security-copilot",
+      "modules": 3,
+      "module_list": [
+        {
+          "uid": "learn-wwl.security-copilot-getting-started",
+          "title": "Describe Microsoft Security Copilot",
+          "url": "https://learn.microsoft.com/en-us/training/modules/security-copilot-getting-started/",
+          "lessons": [
+            "04-05"
+          ]
+        },
+        {
+          "uid": "learn.wwl.configure-security-copilot-workspaces",
+          "title": "Configure workspaces for Microsoft Security Copilot",
+          "url": "https://learn.microsoft.com/en-us/training/modules/configure-security-copilot-workspaces/",
+          "lessons": [
+            "04-05"
+          ]
+        },
+        {
+          "uid": "learn.wwl.manage-plugins-agents-security-copilot",
+          "title": "Manage plugins and agents in Microsoft Security Copilot",
+          "url": "https://learn.microsoft.com/en-us/training/modules/manage-plugins-agents-security-copilot/",
+          "lessons": [
+            "04-05"
+          ]
+        }
+      ]
+    }
+  ],
+  "labs": [
+    {
+      "objective": "Secure access to resources by using Microsoft Entra ID",
+      "id": "1A",
+      "title": "Configure Privileged Identity Management",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-1A-Configure-PIM.md",
+      "supplemental": false,
+      "lessons": [
+        "01-01"
+      ]
+    },
+    {
+      "objective": "Secure access to resources by using Microsoft Entra ID",
+      "id": "1B",
+      "title": "Enforce MFA with Conditional Access",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Supplemental_Lab-1B-Enforce-CA.md",
+      "supplemental": true,
+      "lessons": [
+        "01-01"
+      ]
+    },
+    {
+      "objective": "Secure secrets and keys by using Azure Key Vault",
+      "id": "1C",
+      "title": "Deploy and Secure Azure Key Vault",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-1C-Secure-KeyVault.md",
+      "supplemental": false,
+      "lessons": [
+        "01-02"
+      ]
+    },
+    {
+      "objective": "Implement governance to enforce security and regulatory compliance",
+      "id": "1D",
+      "title": "Configure Azure Policy and Role-Based Access Control",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-1D-Configure-Policy-RBAC.md",
+      "supplemental": false,
+      "lessons": [
+        "01-03"
+      ]
+    },
+    {
+      "objective": "Implement security for storage accounts",
+      "id": "2A",
+      "title": "Secure Azure Storage",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-2A-Secure-Storage.md",
+      "supplemental": false,
+      "lessons": [
+        "02-01"
+      ]
+    },
+    {
+      "objective": "Implement security for databases",
+      "id": "2B",
+      "title": "Secure Azure SQL Database",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-2B-Secure-Database.md",
+      "supplemental": false,
+      "lessons": [
+        "02-02"
+      ]
+    },
+    {
+      "objective": "Implement security for Azure network services",
+      "id": "2C",
+      "title": "Configure Network Security Controls",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-2C-Configure-Network-Sec.md",
+      "supplemental": false,
+      "lessons": [
+        "02-03",
+        "02-04"
+      ]
+    },
+    {
+      "objective": "Implement security for AI",
+      "id": "3A",
+      "title": "Identify AI Data Risks with Microsoft Purview",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Supplemental_Lab-3A-Purview-AI-Risks.md",
+      "supplemental": true,
+      "lessons": [
+        "03-01"
+      ]
+    },
+    {
+      "objective": "Implement security for AI",
+      "id": "3B",
+      "title": "Secure Microsoft Entra Agent Identities",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Supplemental_Lab-3B-Secure-Entra-AgentID.md",
+      "supplemental": true,
+      "lessons": [
+        "03-02"
+      ]
+    },
+    {
+      "objective": "Implement security for AI",
+      "id": "3C",
+      "title": "Configure AI Gateway and Foundry Security Controls",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-3C-Foundry-Security.md",
+      "supplemental": false,
+      "lessons": [
+        "03-03"
+      ]
+    },
+    {
+      "objective": "Implement security for AI",
+      "id": "3D",
+      "title": "Monitor AI Security with Defender for Cloud",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-3D-Monitor-AI-Security-DfC.md",
+      "supplemental": false,
+      "lessons": [
+        "03-03"
+      ]
+    },
+    {
+      "objective": "Implement security for application platform services",
+      "id": "4B",
+      "title": "Secure Container Workloads with AKS and Defender for Containers",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-4B-Secure-AKS-Defender.md",
+      "supplemental": false,
+      "lessons": [
+        "03-05"
+      ]
+    },
+    {
+      "objective": "Implement security for application platform services",
+      "id": "4C",
+      "title": "Secure Azure App Services and API Management",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-4C-Secure-Azure-Apps-Svc.md",
+      "supplemental": false,
+      "lessons": [
+        "03-06"
+      ]
+    },
+    {
+      "objective": "Manage security posture by using Defender for Cloud",
+      "id": "4D",
+      "title": "Explore Defender for Cloud Security Posture and CSPM",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Lab-4D-Defender-CSPM.md",
+      "supplemental": false,
+      "lessons": [
+        "04-01"
+      ]
+    },
+    {
+      "objective": "Implement activity and event collection in Microsoft Sentinel",
+      "id": "4E",
+      "title": "Configure Microsoft Sentinel Data Collection and Automation",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Supplemental_Lab-4E-Configure-Sentinel-Data.md",
+      "supplemental": true,
+      "lessons": [
+        "04-02",
+        "04-03",
+        "04-04"
+      ]
+    },
+    {
+      "objective": "Implement Microsoft Security Copilot",
+      "id": "4F",
+      "title": "Configure and Use Microsoft Security Copilot",
+      "url": "https://github.com/MicrosoftLearning/mslearn-sec-identity/blob/master/Instructions/Labs/Supplemental_Lab-4F-Configure-Security-Copilot.md",
+      "supplemental": true,
+      "lessons": [
+        "04-05"
+      ]
+    }
+  ]
+}

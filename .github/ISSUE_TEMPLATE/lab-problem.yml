@@ -1,0 +1,48 @@
+name: Lab problem
+description: A lab step fails, costs more than stated, or does not clean up after itself.
+title: "[lab] "
+labels: [lab]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: **run the lab's teardown and the sweep in appendix A2 §6**, so nothing keeps billing while this is looked at.
+        Never paste tenant IDs, subscription IDs, secrets, keys or tokens. Redact them.
+        A step that leaves something **exposed** (public access, standing privilege, an open port) is a security report - use SECURITY.md instead.
+  - type: input
+    id: lab
+    attributes:
+      label: Lab
+      placeholder: 02-04, Part 3, step 3.2
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What went wrong
+      options:
+        - A step fails or the portal/cmdlet has changed
+        - It cost more than the lab's stated estimate
+        - Teardown left something behind
+        - Validation step does not prove what it claims
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: method
+    attributes:
+      label: Method
+      options: [Portal, PowerShell, Both]
+  - type: textarea
+    id: detail
+    attributes:
+      label: What happened, with the exact error text
+    validations:
+      required: true
+  - type: checkboxes
+    id: teardown
+    attributes:
+      label: Teardown
+      options:
+        - label: I have run the lab's teardown and confirmed nothing billable remains.
+          required: true

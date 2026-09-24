@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security problem, including a lab that leaves something exposed
+    url: https://github.com/IronBranded/SC500-Academy/blob/main/SECURITY.md
+    about: Please do not open a public issue for these.
+  - name: The official SC-500 study guide
+    url: https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500
+    about: Microsoft's own list of skills measured. The authority this guide follows.

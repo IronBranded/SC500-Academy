@@ -307,18 +307,24 @@ foreach ($f in $contentFiles) {
         continue
     }
 
-    # Gap 1: required sections were never checked.
-    foreach ($sec in $ContentSections) {
-        if ($fm.Body -notmatch ('(?m)^' + [regex]::Escape($sec) + '\s*$')) {
-            Add-Issue Error $rel "Missing required section: $sec"
-        }
-    }
-    if ($fm.Body -notmatch '\*\*AZ-500 divergence\.\*\*') {
-        Add-Issue Warning $rel 'No AZ-500 divergence note in "How this is tested".'
-    }
-
     $subs = @($d.sub_objectives)
     $isExamModule = $d.domain_weight -ne 'n/a'
+
+    # Gap 1: required sections were never checked.
+    # The exam-module skeleton applies to exam modules only. Module 0 is a
+    # project prerequisite with its own structure; holding it to the exam
+    # skeleton produced 22 errors on every run and kept CI permanently red,
+    # which made the gate useless for catching real regressions.
+    if ($isExamModule) {
+        foreach ($sec in $ContentSections) {
+            if ($fm.Body -notmatch ('(?m)^' + [regex]::Escape($sec) + '\s*$')) {
+                Add-Issue Error $rel "Missing required section: $sec"
+            }
+        }
+        if ($fm.Body -notmatch '\*\*AZ-500 divergence\.\*\*') {
+            Add-Issue Warning $rel 'No AZ-500 divergence note in "How this is tested".'
+        }
+    }
     if ($isExamModule -and $subs.Count -eq 0) {
         Add-Issue Error $rel 'sub_objectives is empty on an exam module.'
     }
@@ -328,6 +334,10 @@ foreach ($f in $contentFiles) {
 
     foreach ($s in $subs) {
         $n = ConvertTo-Norm $s
+        # A Module 0 lesson may double as practice for an exam bullet (00-02
+        # teaches PIM through the lab-access setup). Only a bullet claimed by
+        # two EXAM modules is ambiguous ownership.
+        if (-not $isExamModule) { $allSubObjectives.Add($n); continue }
         if ($subOwner.ContainsKey($n)) {
             Add-Issue Error $rel "Sub-objective also claimed by $($subOwner[$n]): $($n.Substring(0, [Math]::Min(70, $n.Length)))..."
         }
@@ -394,10 +404,21 @@ else {
     else {
         # Bullets wrap across lines in the captured markdown; rejoin them first.
         $block = $skills.Groups[1].Value -replace '\r?\n(?!\s*[-#])', ' '
-        $live = @($block -split "`r?`n" |
-            Where-Object { $_ -match '^\s*-\s+\S' } |
-            ForEach-Object { ConvertTo-Norm ($_ -replace '^\s*-\s+', '') } |
-            Where-Object { $_.Length -gt 12 })
+        # Only bullets under an objective ("#### ...") inside a weighted domain
+        # ("### Name (20-25%)") are skills. The audience profile and "Skills at
+        # a glance" are also bulleted, and counting them produced ten false
+        # "not covered" errors. Mirrors parseSnapshot in assets/js/curriculum.js.
+        $inDomain = $false; $inObjective = $false
+        $live = [System.Collections.Generic.List[string]]::new()
+        foreach ($line in ($block -split "`r?`n")) {
+            if ($line -match '^###\s+.+\(\d+\s*[-\u2013]\s*\d+%\)\s*$') { $inDomain = $true; $inObjective = $false; continue }
+            if ($line -match '^###\s') { $inDomain = $false; $inObjective = $false; continue }
+            if ($line -match '^####\s') { $inObjective = $inDomain; continue }
+            if ($inObjective -and $line -match '^\s*-\s+\S') {
+                $n = ConvertTo-Norm ($line -replace '^\s*-\s+', '')
+                if ($n.Length -gt 12) { $live.Add($n) }
+            }
+        }
 
         $liveSet = [System.Collections.Generic.HashSet[string]]::new(
             [string[]]$live, [System.StringComparer]::OrdinalIgnoreCase)

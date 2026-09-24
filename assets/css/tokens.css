@@ -5,14 +5,45 @@
    Neutrals follow the Azure portal's own dark and light surfaces so the guide
    sits continuously beside the portals it teaches.
 
-   DOMAIN TINTS MAP TO PRODUCT FAMILIES, which is the point of using this palette
-   at all - the colour tells you which part of the stack you are in:
+   DOMAIN COLOURS ARE PART OF THE LEARNING SYSTEM, not decoration. One colour
+   per SC-500 exam domain, used identically on the dashboard, in navigation, in
+   lesson headers, in diagrams and in review results, so the colour itself
+   tells you which quarter of the exam you are in:
 
-     00  neutral          lab safety, not an exam domain
-     01  Entra cyan       identity, access, governance
-     02  Azure blue       storage, databases, networking
-     03  Copilot purple   secure compute and AI
-     04  Defender indigo  posture, Sentinel, Security Copilot
+     00  neutral   Lab safety - a project prerequisite, not an exam domain
+     01  #0078D4   Identity, Access & Governance      (icon: person)
+     02  #008272   Storage, Databases & Networking    (icon: stacked layers)
+     03  #8661C5   Compute Security                   (icon: chip)
+     04  #D83B01   Security Posture & Monitoring      (icon: shield)
+
+   Each domain has three tokens. Use the right one - contrast was measured:
+
+     --d-NN        the brand hex. Borders, indicators, progress fills, icons.
+                   >= 3:1 against every surface in both themes (WCAG 1.4.11).
+     --d-NN-ink    text in the domain colour. >= 4.5:1 on paper and on tint.
+     --d-NN-tint   a subtle background. Never a saturated fill.
+
+   Colour never carries meaning alone: every domain mark is colour + icon +
+   text label (assets/js/domains.js builds all three together).
+
+   RESERVED HUES. A domain colour means that domain and nothing else, so no
+   other token may sit in a domain's hue family:
+     - "caution" (Medium cost, Preview status, Needs review) is one amber-gold,
+       #efd36b dark / #4f3c00 light. It replaced three oranges that sat beside
+       Domain 4's #D83B01; in light mode "Needs review" was indistinguishable
+       from Domain 4 under protanopia (CIEDE2000 0.2), and the Preview badge
+       failed AA at 3.96:1.
+     - "Low cost" is neutral grey. It was #0078d4 in light mode, identical to
+       Domain 1.
+   Values were chosen by measurement: text >= 4.5:1 on paper and raised
+   surfaces, chip text >= 4.5:1, and the largest CIEDE2000 distance from
+   Domain 4 under simulated protanopia and deuteranopia (Machado 2009) that
+   still reads as amber. Dark: 32.7 normal, 14.5 worst-case colour-blind.
+   Light: 28.7 normal, 7.1 worst-case colour-blind.
+   Deliberately unchanged: the accent (links, buttons, focus) stays Azure blue
+   by convention, and syntax-highlight colours apply only inside code blocks.
+
+   --domain-NN is kept as an alias of --d-NN so older rules keep working.
 
    DARK IS THE DEFAULT. Light is opt-in via [data-theme="light"];
    [data-theme="system"] follows the OS.
@@ -39,21 +70,33 @@
 
   /* --- cost signals: Fluent semantic colours ------------------------------ */
   --cost-none:  #54b054;   /* Fluent success, lightened for dark */
-  --cost-low:   #3a96dd;   /* informational */
+  --cost-low:   #a19f9d;   /* neutral: blue belongs to Domain 1 */
   --cost-high:  #f1707b;   /* Fluent danger, lightened */
-  --cost-mid:   #fce100;   /* Fluent warning yellow is illegible as a chip... */
-  --cost-mid:   #f7a23b;   /* ...so warning orange carries "Medium" instead */
+  --cost-mid:   #efd36b;   /* caution amber; chip text is dark here, so yellow reads well */
   --cost-max:   #ff8c8c;
 
   --status-ga:      var(--ink-soft);
-  --status-preview: #f7a23b;   /* preview reads as a caution, not an accent */
+  --status-preview: #efd36b;   /* caution amber: orange belongs to Domain 4 */
 
-  /* --- domain tints: the product families --------------------------------- */
-  --domain-00: #a19f9d;   /* neutral */
-  --domain-01: #4fc3dc;   /* Microsoft Entra */
-  --domain-02: #4ca8f7;   /* Azure core services */
-  --domain-03: #b4a0e8;   /* Copilot / AI */
-  --domain-04: #a78bda;   /* Defender / Sentinel */
+  /* --- exam domains (see the header) --------------------------------------
+     The previous tints put domains 03 and 04 in two near-identical purples
+     (#b4a0e8 / #a78bda), which failed at exactly the job a domain colour has. */
+  --d-00: #a19f9d;  --d-00-ink: #c8c6c4;  --d-00-tint: #2b2a29;
+  --d-01: #0078d4;  --d-01-ink: #4ca0e1;  --d-01-tint: #20303c;
+  --d-02: #008272;  --d-02-ink: #4fa99e;  --d-02-tint: #20312e;
+  --d-03: #8661c5;  --d-03-ink: #a88dd5;  --d-03-tint: #332d3a;
+  --d-04: #d83b01;  --d-04-ink: #e57e57;  --d-04-tint: #3e271e;
+
+  --domain-00: var(--d-00);
+  --domain-01: var(--d-01);
+  --domain-02: var(--d-02);
+  --domain-03: var(--d-03);
+  --domain-04: var(--d-04);
+
+  /* --- learning states: shape + text carry them, colour only reinforces ---- */
+  --state-done:   #54b054;
+  --state-review: #efd36b;
+  --state-todo:   #8a8886;
 
   /* --- syntax --------------------------------------------------------------
      Tuned against the Azure portal's own code surfaces. Muted by design, with
@@ -128,18 +171,22 @@
   --accent-fill: #0078d4;
 
   --cost-none:  #107c10;   /* Fluent success */
-  --cost-low:   #0078d4;
-  --cost-mid:   #8e4600;   /* Fluent warning, darkened to clear AA (was #c26200, 3.96:1) */
+  --cost-low:   #605e5c;   /* neutral: #0078d4 was identical to Domain 1 */
+  --cost-mid:   #4f3c00;   /* caution bronze; see RESERVED HUES above */
   --cost-high:  #c50f1f;   /* Fluent danger */
   --cost-max:   #8a0b16;
 
-  --status-preview: #c26200;
+  --status-preview: #4f3c00;   /* was #c26200: 3.96:1, failed AA */
 
-  --domain-00: #605e5c;
-  --domain-01: #0099bc;    /* Entra */
-  --domain-02: #0078d4;    /* Azure */
-  --domain-03: #8764b8;    /* Copilot / AI */
-  --domain-04: #5c2e91;    /* Defender / Sentinel */
+  --d-00: #605e5c;  --d-00-ink: #484644;  --d-00-tint: #f3f2f1;
+  --d-01: #0078d4;  --d-01-ink: #0062ae;  --d-01-tint: #edf6fc;
+  --d-02: #008272;  --d-02-ink: #006e61;  --d-02-tint: #edf6f5;
+  --d-03: #8661c5;  --d-03-ink: #7151a5;  --d-03-tint: #f7f4fb;
+  --d-04: #d83b01;  --d-04-ink: #b53201;  --d-04-tint: #fcf1ed;
+
+  --state-done:   #107c10;
+  --state-review: #4f3c00;
+  --state-todo:   #605e5c;
 
   --syn-comment:  #6e6e6e;
   --syn-string:   #0451a5;
@@ -164,11 +211,15 @@
     --ink: #201f1e; --ink-soft: #484644; --ink-faint: #605e5c;
     --paper: #faf9f8; --paper-raise: #ffffff; --paper-sink: #f3f2f1; --rule: #e1dfdd;
     --accent: #005a9e; --accent-deep: #004578; --accent-fill: #0078d4;
-    --cost-none: #107c10; --cost-low: #0078d4; --cost-mid: #8e4600;
+    --cost-none: #107c10; --cost-low: #605e5c; --cost-mid: #4f3c00;
     --cost-high: #c50f1f; --cost-max: #8a0b16;
-    --status-preview: #c26200;
-    --domain-00: #605e5c; --domain-01: #0099bc; --domain-02: #0078d4;
-    --domain-03: #8764b8; --domain-04: #5c2e91;
+    --status-preview: #4f3c00;
+    --d-00: #605e5c; --d-00-ink: #484644; --d-00-tint: #f3f2f1;
+    --d-01: #0078d4; --d-01-ink: #0062ae; --d-01-tint: #edf6fc;
+    --d-02: #008272; --d-02-ink: #006e61; --d-02-tint: #edf6f5;
+    --d-03: #8661c5; --d-03-ink: #7151a5; --d-03-tint: #f7f4fb;
+    --d-04: #d83b01; --d-04-ink: #b53201; --d-04-tint: #fcf1ed;
+    --state-done: #107c10; --state-review: #4f3c00; --state-todo: #605e5c;
     --syn-comment: #6e6e6e; --syn-string: #0451a5; --syn-keyword: #5c2e91;
     --syn-fn: #0f6b73; --syn-variable: #a4501b; --syn-param: #484644;
     --syn-number: #107c10; --syn-danger: #c50f1f;
@@ -183,4 +234,12 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* --- Windows high contrast / forced colours --------------------------------
+   Domain colours are discarded by the browser here, which is fine: every domain
+   mark also carries an icon and a text label. Make sure borders survive. */
+@media (forced-colors: active) {
+  :root { --d-00: CanvasText; --d-01: CanvasText; --d-02: CanvasText;
+          --d-03: CanvasText; --d-04: CanvasText; }
 }

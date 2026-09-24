@@ -237,5 +237,9 @@
     });
   }
 
-  global.SC500Views = { cost: costView, readiness: readinessView };
+  /* Merge rather than assign, so load order between the view files never
+     matters (practice.js, watchlist.js and review.js register here too). */
+  global.SC500Views = global.SC500Views || {};
+  global.SC500Views.cost = costView;
+  global.SC500Views.readiness = readinessView;
 })(window);

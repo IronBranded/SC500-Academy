@@ -3,7 +3,7 @@ name: Outline drift
 # The one check this whole project is organised around, and the only one that
 # currently depends on someone remembering to run it.
 #
-# Two polls, one weekly job, one issue:
+# Three polls, one weekly job, one issue:
 #
 #   1. The skills-measured outline, diffed against docs/SKILLS-MEASURED-SNAPSHOT.md.
 #      Only the "## Skills measured" section is compared - the snapshot's front
@@ -16,6 +16,13 @@ name: Outline drift
 #   2. The certification page's practice-assessment sentence, because appendix A4
 #      states it is unavailable and that is a dated claim with an expiry nobody
 #      controls.
+#
+#   3. The official training the guide links to: every learning path (title and
+#      exact module list) and every lab in content/official-training.json,
+#      checked against Microsoft's public Learn source (MicrosoftDocs/learn) and
+#      the lab repository. Added after the
+#      course was published unnoticed - the first two polls watch only the
+#      certification page, not the training catalogue.
 
 on:
   schedule:
@@ -112,11 +119,65 @@ jobs:
               $report.Add('')
               $report.Add("Check <$certUrl> and update `content/appendix/a4-exam-logistics-and-scoring.md`.")
               $report.Add('')
-              $report.Add('While you are there: the **Prepare for the exam** section was empty as of 2026-09-20, meaning Microsoft had published no learning path for SC-500. If it now lists courses, that changes what this guide is positioned against and belongs in A4 too.')
+              $report.Add('While you are there: Course SC-500T00-A was published on Microsoft Learn (page updated 2026-07-30). If the page now lists anything else under **Prepare for the exam**, record it in A4 and in `content/official-training.json`.')
               $report.Add('')
           }
           else {
               Write-Host 'Practice assessment: still listed as unavailable.'
+          }
+
+          # --- third poll: the official training this guide links to -------
+          # Every learning path in content/official-training.json is checked
+          # against Microsoft's public Learn source, which is plain YAML and
+          # does not depend on scraping a rendered page.
+          $training = Get-Content -LiteralPath './content/official-training.json' -Raw | ConvertFrom-Json
+          $found = [System.Collections.Generic.List[string]]::new()
+
+          foreach ($p in $training.paths) {
+              $slug = ($p.url.TrimEnd('/') -split '/')[-1]
+              $src  = "https://raw.githubusercontent.com/MicrosoftDocs/learn/main/learn-pr/paths/$slug/index.yml"
+              try   { $yml = (Invoke-WebRequest -Uri $src -UseBasicParsing -Headers $headers).Content }
+              catch { $found.Add("- **$($p.title)** - the path definition is gone ($src): renamed or retired."); continue }
+
+              $title = ''
+              if ($yml -match '(?m)^title:\s*(.+?)\s*$') { $title = $Matches[1].Trim([char]39, [char]34) }
+              # Read the modules: list itself - uids do not share one prefix.
+              $uids = @()
+              if ($yml -match '(?ms)^modules:[ \t]*\r?\n((?:[ \t]*-[ \t]*\S[^\r\n]*\r?\n?)+)') {
+                  $uids = @([regex]::Matches($Matches[1], '(?m)^[ \t]*-[ \t]+(\S+)') | ForEach-Object { $_.Groups[1].Value.Trim([char]39, [char]34) })
+              }
+              $modules = $uids.Count
+              # Compare the exact module list, not just its length: a module swapped
+              # for another keeps the count and changes what the lesson links to.
+              if ($p.module_list) {
+                  $recorded = @($p.module_list | ForEach-Object { $_.uid })
+                  $added   = @($uids | Where-Object { $_ -notin $recorded })
+                  $removed = @($recorded | Where-Object { $_ -notin $uids })
+                  if ($added)   { $found.Add("- **$($p.title)** - module(s) added: $($added -join ', ').") }
+                  if ($removed) { $found.Add("- **$($p.title)** - module(s) removed: $($removed -join ', ').") }
+              }
+
+              if ($title -ne $p.title) { $found.Add("- **$($p.title)** - title is now '$title'.") }
+              if ($modules -ne $p.modules) { $found.Add("- **$($p.title)** - $($p.modules) modules recorded, $modules now.") }
+          }
+
+          foreach ($l in $training.labs) {
+              $raw = $l.url -replace '^https://github.com/([^/]+/[^/]+)/blob/', 'https://raw.githubusercontent.com/$1/'
+              try   { $null = Invoke-WebRequest -Uri $raw -UseBasicParsing -Headers $headers -Method Head }
+              catch { $found.Add("- **Lab $($l.id): $($l.title)** - the lab file is gone ($($l.url)).") }
+          }
+
+          if ($found.Count -gt 0) {
+              $changed = $true
+              $report.Add('## Official training linked from the guide has changed')
+              $report.Add('')
+              $report.AddRange($found)
+              $report.Add('')
+              $report.Add('Update `content/official-training.json` and its `verified` date. The guide joins it to objectives by heading text, so a stale entry shows under "Needs maintainer review" on the coverage page.')
+              $report.Add('')
+          }
+          else {
+              Write-Host "Official training: $($training.paths.Count) paths and $($training.labs.Count) labs unchanged."
           }
 
           if ($changed) {

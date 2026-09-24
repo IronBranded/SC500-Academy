@@ -1,0 +1,45 @@
+name: Content is wrong or out of date
+description: A lesson, lab step, question or comparison disagrees with Microsoft's documentation.
+title: "[content] "
+labels: [content]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. This guide is only as good as its sources, so a correction needs the Microsoft Learn page that shows the right behaviour.
+        **Do not paste exam questions, recalled or otherwise.** Questions here are written from the documentation only.
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Lesson or lab id, question id, or the site route (for example 02-04, 02-04-q3, or #/module/02-04).
+      placeholder: 02-04
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What the guide says, and what is actually true
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Microsoft Learn source
+      description: The learn.microsoft.com page that shows the correct behaviour.
+      placeholder: https://learn.microsoft.com/...
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options:
+        - Factual error
+        - Out of date (product changed)
+        - Question has more than one defensible answer
+        - Wrong objective mapping
+        - Broken or moved link
+        - Other
+    validations:
+      required: true

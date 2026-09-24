@@ -165,6 +165,27 @@ organisation, and no application team can override it with an NSG rule, because 
 NSG never gets to run. `AlwaysAllow` is the escape hatch for traffic that must survive
 a local team's over-broad deny - health probes, management traffic.
 
+Inbound traffic to a VM, end to end. Every decision is one stated above: security admin
+rules first, then the subnet NSG, then the NIC NSG, first match wins within each NSG.
+
+```mermaid
+flowchart TD
+  accTitle: Inbound evaluation order for security admin rules and NSGs
+  accDescr: Inbound traffic is evaluated by Virtual Network Manager security admin rules first. Deny blocks and stops evaluation. AlwaysAllow permits and stops evaluation, so NSGs cannot deny it. Allow permits and lets NSGs evaluate. The subnet NSG is evaluated next, then the NIC NSG, each lowest priority number first with first match wins. Traffic must pass both NSGs.
+  P["Inbound packet"] --> AR{"Security admin rule<br/>(Virtual Network Manager)"}:::d02
+  AR -- "Deny" --> B1["Blocked<br/>no NSG can permit it"]
+  AR -- "AlwaysAllow" --> OK1["Delivered<br/>NSGs cannot deny it"]
+  AR -- "Allow" --> SN{"Subnet NSG<br/>lowest number first,<br/>first match wins"}:::d02
+  SN -- "deny" --> B2["Blocked"]
+  SN -- "allow" --> NN{"NIC NSG<br/>lowest number first,<br/>first match wins"}:::d02
+  NN -- "deny" --> B3["Blocked"]
+  NN -- "allow" --> OK2["Delivered<br/>return traffic allowed: NSGs are stateful"]
+```
+
+Outbound runs the NSGs in the opposite order - NIC first, then subnet - and still must
+pass both.
+
+
 Two constraints worth memorising: rules apply at the **virtual network** level (NSGs
 apply at subnet and NIC level), and you can deploy only **one security admin
 configuration per region** - if you need more, add more rule collections inside that

@@ -1,0 +1,39 @@
+name: Site problem
+description: Something in the Academy's interface is broken, inaccessible or confusing.
+title: "[site] "
+labels: [site]
+body:
+  - type: input
+    id: route
+    attributes:
+      label: Route
+      description: The part of the URL after the #.
+      placeholder: "#/domain/02"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did, what you expected, what happened
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Accessibility (keyboard, screen reader, contrast, zoom)
+        - Mobile layout
+        - Progress tracking or import/export
+        - Knowledge check or exam prep
+        - Navigation or search
+        - Diagrams
+        - Offline / stale content after an update
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser, version and device
+      placeholder: Edge 128, Windows 11

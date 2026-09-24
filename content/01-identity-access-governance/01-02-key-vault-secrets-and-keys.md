@@ -109,6 +109,23 @@ Two consequences that appear on exams and in incidents:
    RBAC model, where data-plane permissions are role assignments and only Owner or
    User Access Administrator can create them.
 
+The same two paths as a picture. Nothing here goes beyond the table and the two
+consequences above.
+
+```mermaid
+flowchart TD
+  accTitle: Key Vault control plane and data plane
+  accDescr: A caller reaches Key Vault by two separate paths. Control-plane requests go to Azure Resource Manager, are authorized by Azure RBAC only, and are not filtered by the vault firewall. Data-plane requests go to the vault endpoint, pass the vault firewall, and are authorized by Azure RBAC or, on legacy vaults, access policies. Under the access policy model, control-plane write can grant data-plane access.
+  C["Caller"]
+  C -- "management.azure.com" --> CP["Control plane<br/>create vault, SKU, network rules,<br/>enableRbacAuthorization"]:::d01
+  C -- "&lt;vault&gt;.vault.azure.net" --> FW{"Vault firewall"}
+  FW -- "allowed" --> DP["Data plane<br/>read, write, list keys,<br/>secrets, certificates"]:::d01
+  CP --- R1["Authorized by Azure RBAC only<br/>NOT filtered by the vault firewall"]
+  DP --- R2["Authorized by Azure RBAC<br/>or legacy access policies"]
+  CP -. "access policy model only:<br/>vaults/write can add a policy<br/>granting data-plane access" .-> DP
+```
+
+
 ### The three object types are not interchangeable
 
 | Object | What comes back to the caller | Typical use |

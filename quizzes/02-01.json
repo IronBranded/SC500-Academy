@@ -14,7 +14,13 @@
         "Set the account's SAS expiration policy to one day"
       ],
       "answer": 2,
-      "explanation": "A SAS with no stored access policy carries its permissions inside the signed token, so the only way to kill it early is to rotate the account key - which breaks every other consumer simultaneously. It has no Entra identity to remove, and the SAS expiration policy is a recommendation surface, not enforcement. This is the most common real finding in a storage review."
+      "explanation": "A SAS with no stored access policy carries its permissions inside the signed token, so the only way to kill it early is to rotate the account key - which breaks every other consumer simultaneously. It has no Entra identity to remove, and the SAS expiration policy is a recommendation surface, not enforcement. This is the most common real finding in a storage review.",
+      "why_not": [
+        "This SAS was issued with no stored access policy, so there is none to delete.",
+        "An account-key SAS carries no Entra identity. Removing the contractor's account does not affect it.",
+        null,
+        "The SAS expiration policy is a recommendation surface, not enforcement, and it does not reach back to revoke a token already issued."
+      ]
     },
     {
       "id": "02-01-q2",
@@ -27,7 +33,13 @@
         "A user delegation SAS"
       ],
       "answer": [0, 1, 2],
-      "explanation": "Account SAS and service SAS are both signed with the account key, so disabling shared key kills them along with direct key use. A user delegation SAS is signed with a key Entra issues on behalf of a principal and survives. One switch collapses four authorization systems to two, and closes the listKeys path that makes Contributor a data-plane role."
+      "explanation": "Account SAS and service SAS are both signed with the account key, so disabling shared key kills them along with direct key use. A user delegation SAS is signed with a key Entra issues on behalf of a principal and survives. One switch collapses four authorization systems to two, and closes the listKeys path that makes Contributor a data-plane role.",
+      "why_not": [
+        null,
+        null,
+        null,
+        "A user delegation SAS is signed with a key Entra issues on behalf of a principal, not with the account key, so it keeps working."
+      ]
     },
     {
       "id": "02-01-q3",
@@ -40,7 +52,13 @@
         "Yes - VNet rules apply only to the control plane"
       ],
       "answer": 1,
-      "explanation": "Being on an allowed network does not authorize anything. The firewall decided the request was permitted to arrive; one of the four authorization systems still has to accept it. Reading an allowed network as an implicit grant is the standard misconception here."
+      "explanation": "Being on an allowed network does not authorize anything. The firewall decided the request was permitted to arrive; one of the four authorization systems still has to accept it. Reading an allowed network as an implicit grant is the standard misconception here.",
+      "why_not": [
+        "Network rules only decide whether a request may arrive. The VM holds no role and no key, so nothing authorizes the request.",
+        null,
+        "A virtual network rule needs the service endpoint on the subnet, not a private endpoint as well - and either way the request still needs authorization.",
+        "The storage firewall filters data-plane requests. The 403 is the data plane refusing a request that nothing authorized."
+      ]
     },
     {
       "id": "02-01-q4",
@@ -53,7 +71,13 @@
         "Uploads are blocked once the cap is reached"
       ],
       "answer": 2,
-      "explanation": "The default cap is 10,000 GB per storage account per month. When it is reached, uploads stop being scanned until the next month. Nothing about the storage account looks different, which makes it a detection gap you configured rather than one you were given."
+      "explanation": "The default cap is 10,000 GB per storage account per month. When it is reached, uploads stop being scanned until the next month. Nothing about the storage account looks different, which makes it a detection gap you configured rather than one you were given.",
+      "why_not": [
+        "Nothing throttles. Once the cap is reached, uploads are simply not scanned until the next month.",
+        "The cap is not raised automatically. It stays at its configured value, which defaults to 10,000 GB per account per month.",
+        null,
+        "Uploads are not blocked. They succeed unscanned, which is why the gap is easy to miss."
+      ]
     },
     {
       "id": "02-01-q5",
@@ -66,7 +90,13 @@
         "Any SAS, provided the account has Entra authorization enabled"
       ],
       "answer": 2,
-      "explanation": "Only a user delegation SAS has a principal behind it. It is signed with a key Entra issues on that principal's behalf, cannot exceed their own RBAC, lives at most seven days, and is revocable by revoking the delegation key. It is Blob only."
+      "explanation": "Only a user delegation SAS has a principal behind it. It is signed with a key Entra issues on that principal's behalf, cannot exceed their own RBAC, lives at most seven days, and is revocable by revoking the delegation key. It is Blob only.",
+      "why_not": [
+        "An account SAS is signed with the account key. No principal stands behind it.",
+        "A stored access policy makes a service SAS revocable, but it is still signed with the account key and has no principal behind it.",
+        null,
+        "Only a user delegation SAS is tied to a principal. Enabling Entra authorization on the account does not change how account-key SAS tokens are signed."
+      ]
     }
   ]
 }

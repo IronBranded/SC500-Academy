@@ -14,7 +14,13 @@
         "The workspace was created without role assignments"
       ],
       "answer": 1,
-      "explanation": "Onboarding opens the platform to the directory rather than to the SOC. Note what restricting it does and does not change: it governs who can use the platform, not what they can see once inside."
+      "explanation": "Onboarding opens the platform to the directory rather than to the SOC. Note what restricting it does and does not change: it governs who can use the platform, not what they can see once inside.",
+      "why_not": [
+        "A finance user holds no Entra security role that inherits Copilot owner. Their access comes from Copilot contributor, granted to every user by default.",
+        null,
+        "Platform access is not a licensing entitlement. It comes from the Copilot contributor role, granted to everyone by default until someone restricts it.",
+        "Role assignments exist from onboarding: Copilot contributor covers every user in the tenant by default."
+      ]
     },
     {
       "id": "04-05-q2",
@@ -27,7 +33,13 @@
         "Sentinel data requires a separate SCU allocation"
       ],
       "answer": 1,
-      "explanation": "A Copilot role grants no access to underlying security data. Two analysts running the same prompt legitimately get different answers, and an empty result means no data or no access — a permissions question, not a prompt question."
+      "explanation": "A Copilot role grants no access to underlying security data. Two analysts running the same prompt legitimately get different answers, and an empty result means no data or no access — a permissions question, not a prompt question.",
+      "why_not": [
+        "The plugin's status is not the issue. Copilot inherits the user's permissions, and they have none for Sentinel data.",
+        null,
+        "Several plugins can be enabled together. The empty result is a permissions question.",
+        "Capacity is not per data source. The missing piece is a role on the Sentinel data."
+      ]
     },
     {
       "id": "04-05-q3",
@@ -40,7 +52,13 @@
         "Capacity must be provisioned from the Azure portal, not the Copilot portal"
       ],
       "answer": 1,
-      "explanation": "Provisioning needs Azure Contributor or Owner on the subscription or resource group, plus Security Administrator or higher in the tenant. Neither alone is sufficient, and discovering that after a failed attempt wastes session time you are paying for."
+      "explanation": "Provisioning needs Azure Contributor or Owner on the subscription or resource group, plus Security Administrator or higher in the tenant. Neither alone is sufficient, and discovering that after a failed attempt wastes session time you are paying for.",
+      "why_not": [
+        "Global Administrator satisfies the tenant-side requirement. The missing piece is the Azure role on the subscription or resource group.",
+        null,
+        "Capacity is provisioned as an Azure resource, and the failure is the missing Azure permission.",
+        "The portal used is not the issue. Wherever it is provisioned from, capacity needs Azure Contributor or Owner as well."
+      ]
     },
     {
       "id": "04-05-q4",
@@ -53,7 +71,13 @@
         "Whether custom plugins are calling external APIs"
       ],
       "answer": 1,
-      "explanation": "Agents run defined security work on a schedule and draw from the capacity of the workspace they are assigned to. An agent enabled and forgotten is a recurring charge with nobody watching the output — check agents before people."
+      "explanation": "Agents run defined security work on a schedule and draw from the capacity of the workspace they are assigned to. An agent enabled and forgotten is a recurring charge with nobody watching the output — check agents before people.",
+      "why_not": [
+        "Plugins consume capacity when prompts use them, and analyst usage is unchanged. Scheduled agents consume it with nobody prompting.",
+        null,
+        "Geo is a data residency choice made at workspace creation. It does not explain a tripled bill with unchanged usage.",
+        "Plugins run when prompts use them, and analyst usage is unchanged. Scheduled agents are what consume capacity with nobody prompting."
+      ]
     },
     {
       "id": "04-05-q5",
@@ -66,7 +90,13 @@
         "Separate SCU allocations against a single workspace"
       ],
       "answer": 1,
-      "explanation": "A workspace is the unit of segmentation, and the geo selection is a data residency decision made at creation rather than a performance setting. Capacity can be moved between workspaces afterwards; the geo cannot."
+      "explanation": "A workspace is the unit of segmentation, and the geo selection is a data residency decision made at creation rather than a performance setting. Capacity can be moved between workspaces afterwards; the geo cannot.",
+      "why_not": [
+        "Separate tenants are far heavier than the need. A workspace already segments capacity, plugins, roles and data geo.",
+        null,
+        "Plugin configuration is one of the things a workspace holds. Plugin scopes alone do not separate capacity or data geo.",
+        "A single workspace has one data storage geo, chosen at creation, so it cannot meet different residency requirements."
+      ]
     }
   ]
 }
