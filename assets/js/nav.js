@@ -5,11 +5,14 @@
    Certification-first layout (redesign):
 
      Study        Dashboard, Exam prep, Coverage
+     Start here   Module 0A foundations and Module 0B lab safety: neutral
+                  colour, visibly not exam domains, first in the list because
+                  a beginner starts there
      4 domains    colour + icon + short name + exam weight; each lesson is one
                   row with its lab as a small link on the same row (the old
                   tree listed every title twice); ends with the domain review
-     Module 0     lab safety, neutral colour, visibly not an exam domain
-     Practice     mock exam, flashcards, retention, cost, watchlist
+     Practice     compare controls, mock exam, flashcards, posters, retention, cost,
+                  watchlist
      Appendices
 
    Completed lessons show a check mark and a hidden "(studied)" for screen
@@ -91,7 +94,8 @@
     var top = node('div', 'nav-group__top');
     var name = node('span', 'nav-group__name');
     if (D()) name.appendChild(D().icon(domain.id, 15));
-    name.appendChild(node('span', null, exam && D() ? D().info(domain.id).short : (D() ? 'Module 0 \u00b7 Lab safety' : domain.name)));
+    name.appendChild(node('span', null, exam && D() ? D().info(domain.id).short
+      : (D() ? (domain.label ? domain.label + ' \u00b7 ' : '') + D().info(domain.id).short : domain.name)));
     top.appendChild(name);
     if (exam) top.appendChild(node('span', 'nav-group__weight', String(domain.weight).replace('-', '\u2013')));
     head.appendChild(top);
@@ -132,20 +136,30 @@
     el.appendChild(section('Study', [
       simpleLink('dashboard', 'Dashboard', '#/'),
       simpleLink('prep', 'Exam prep', '#/prep'),
-      simpleLink('coverage', 'Objective coverage', '#/coverage')
+      simpleLink('coverage', 'Objective coverage', '#/coverage'),
+      simpleLink('map', 'Control map', 'map/'),
+      simpleLink('flowcharts', 'Flowcharts', 'flowcharts/')
     ]));
 
-    var zero = null;
+    var starts = [], exams = [];
     manifest.domains.forEach(function (domain) {
       var exam = domain.weight && domain.weight !== 'n/a';
-      var g = group(domain, exam);
-      if (exam) el.appendChild(g); else zero = g;
+      (exam ? exams : starts).push(group(domain, exam));
     });
-    if (zero) el.appendChild(zero);
+    if (starts.length) {
+      el.appendChild(node('p', 'nav-section', 'Start here'));
+      starts.forEach(function (g) { el.appendChild(g); });
+    }
+    if (exams.length) el.appendChild(node('p', 'nav-section', 'SC-500 domains'));
+    exams.forEach(function (g) { el.appendChild(g); });
 
     el.appendChild(section('Practice', [
+      simpleLink('compare', 'Compare controls', '#/compare'),
+      simpleLink('cases', 'Case studies', '#/cases'),
+      simpleLink('drills', 'Break-fix drills', '#/drills'),
       simpleLink('exam', 'Mock exam', '#/exam'),
       simpleLink('cards', 'Flashcards', '#/cards'),
+      simpleLink('posters', 'Study posters', '#/posters'),
       simpleLink('review', 'Retention review', '#/review'),
       simpleLink('readiness', 'Readiness', '#/readiness'),
       simpleLink('cost', 'Cost planner', '#/cost'),

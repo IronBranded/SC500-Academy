@@ -8,7 +8,7 @@ sub_objectives:
 domain: "Secure storage, databases, and networking"
 domain_weight: "25-30%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02", "01-03"]
+prerequisites: ["00-00", "00-01", "00-02", "01-03", "0A-07", "0A-08"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/azure/virtual-network-manager/concept-security-admins"
@@ -45,7 +45,7 @@ forensic_relevance: "Segmentation decides how far an intrusion travels from its 
 > the perimeter - private endpoints, Azure Firewall, Entra Private Access, and
 > Network Watcher diagnostics.
 
-## Why this exists
+## The security problem
 
 Identity decides *whether* a request is allowed. The network decides *how far an
 intruder gets once one host is already theirs.*
@@ -74,6 +74,61 @@ So the four bullets are four answers at four scales:
 
 And note the governance shape of the second row: it exists because the first row is
 owned by people who can turn it off.
+
+## In plain English
+
+Identity decides whether a request is allowed. The network decides **how far an
+attacker can move once they control one machine**. By default, everything inside an
+Azure virtual network can talk to everything else - so one compromised server can reach
+every other server.
+
+This lesson is about drawing walls inside and around your networks. **NSGs** are rule
+lists on subnets and network cards. **Application security groups** let those rules
+name groups of servers ("web servers") instead of addresses. **Azure Virtual Network
+Manager** lets a central team set rules that application teams cannot override.
+**Virtual WAN** connects many sites and networks through managed hubs that can inspect
+traffic. **VPNs** connect offices and remote users securely.
+
+## Words you need to know
+
+- **Network security group (NSG)** - an ordered list of allow/deny rules on address, port
+  and protocol, attached to a subnet or a network interface (0A-07).
+- **Stateful** - return traffic for an allowed connection is allowed automatically.
+- **Service tag** - a Microsoft-maintained name for a set of Azure IP ranges, such as
+  `Storage` or `Internet`.
+- **Application security group (ASG)** - a named group of network interfaces that NSG
+  rules can reference.
+- **Effective security rules** - the combined result of every NSG that applies to a
+  network interface.
+- **Virtual network flow logs** - records of traffic flows through a virtual network; the
+  replacement for NSG flow logs.
+- **Azure Virtual Network Manager (AVNM)** - central management of many virtual networks,
+  including **security admin rules** evaluated before NSGs.
+- **Network group** - the set of virtual networks a configuration applies to; membership
+  can be static or dynamic through Azure Policy.
+- **Virtual WAN / virtual hub** - Microsoft-managed hubs connecting virtual networks,
+  branches and users. A **secured hub** includes a firewall.
+- **Routing intent** - a hub setting that sends private or internet traffic through the
+  hub's firewall for inspection.
+- **Site-to-site / point-to-site VPN** - an encrypted tunnel for a whole network, or for
+  one device (0A-08).
+
+## Mental model
+
+A teaching model: four scales of the same idea - limit what can reach what.
+
+```mermaid
+flowchart TD
+  accTitle: Teaching model - network segmentation at four scales
+  accDescr: At the organisation scale, Virtual Network Manager security admin rules set a floor that applies to every virtual network and cannot be overridden by local teams. At the workload scale, NSGs on subnets and network interfaces, using application security groups, allow only the traffic each tier needs. At the global scale, Virtual WAN secured hubs with routing intent inspect traffic between networks, branches and the internet. At the edge, VPN connections bring offices and remote users in through encrypted tunnels, with Entra ID authentication for users on OpenVPN.
+  ORG["Organisation floor<br/>AVNM security admin rules<br/>(central team, evaluated first)"]:::d02
+  WL["Workload walls<br/>NSGs + ASGs on subnets and NICs<br/>(application team)"]:::d02
+  WAN["Between networks<br/>Virtual WAN secured hub + routing intent"]:::d02
+  EDGE["Into the network<br/>site-to-site and point-to-site VPN"]:::d02
+  ORG --> WL
+  WAN --> WL
+  EDGE --> WAN
+```
 
 ## How it works under the hood
 
@@ -143,8 +198,9 @@ The building blocks:
   when it matches a condition. The dynamic option is the governance pattern from
   [01-03](../01-identity-access-governance/01-03-governance-and-regulatory-compliance.md)
   applied to network membership.
-- **Connectivity configurations** - hub-and-spoke (generally available) or mesh
-  (still in preview at the time of writing - verify before you rely on it).
+- **Connectivity configurations** - hub-and-spoke or mesh. A mesh is regional by
+  default and can be made global; using a Virtual WAN hub as the hub of an AVNM
+  hub-and-spoke configuration is in preview.
 - **Security configurations** containing **rule collections** of **security admin
   rules**.
 - **Deployment** - nothing takes effect until you deploy the configuration to specific
@@ -173,23 +229,27 @@ flowchart TD
   accTitle: Inbound evaluation order for security admin rules and NSGs
   accDescr: Inbound traffic is evaluated by Virtual Network Manager security admin rules first. Deny blocks and stops evaluation. AlwaysAllow permits and stops evaluation, so NSGs cannot deny it. Allow permits and lets NSGs evaluate. The subnet NSG is evaluated next, then the NIC NSG, each lowest priority number first with first match wins. Traffic must pass both NSGs.
   P["Inbound packet"] --> AR{"Security admin rule<br/>(Virtual Network Manager)"}:::d02
-  AR -- "Deny" --> B1["Blocked<br/>no NSG can permit it"]
-  AR -- "AlwaysAllow" --> OK1["Delivered<br/>NSGs cannot deny it"]
+  AR -- "Deny" --> B1["Blocked<br/>no NSG can permit it"]:::stop
+  AR -- "AlwaysAllow" --> OK1["Delivered<br/>NSGs cannot deny it"]:::ok
   AR -- "Allow" --> SN{"Subnet NSG<br/>lowest number first,<br/>first match wins"}:::d02
-  SN -- "deny" --> B2["Blocked"]
+  SN -- "deny" --> B2["Blocked"]:::stop
   SN -- "allow" --> NN{"NIC NSG<br/>lowest number first,<br/>first match wins"}:::d02
-  NN -- "deny" --> B3["Blocked"]
-  NN -- "allow" --> OK2["Delivered<br/>return traffic allowed: NSGs are stateful"]
+  NN -- "deny" --> B3["Blocked"]:::stop
+  NN -- "allow" --> OK2["Delivered<br/>return traffic allowed: NSGs are stateful"]:::ok
 ```
 
 Outbound runs the NSGs in the opposite order - NIC first, then subnet - and still must
 pass both.
 
 
-Two constraints worth memorising: rules apply at the **virtual network** level (NSGs
-apply at subnet and NIC level), and you can deploy only **one security admin
-configuration per region** - if you need more, add more rule collections inside that
-one configuration rather than more configurations.
+Three constraints worth memorising: rules apply at the **virtual network** level (NSGs
+apply at subnet and NIC level); you can have only **one active security admin
+configuration per region** per network manager - if you need more, add more rule
+collections inside that one configuration rather than more configurations; and some
+subnets are **exempt** from security admin rules, including the Azure Firewall, Azure
+Bastion, VPN and ExpressRoute gateway, Application Gateway, Route Server and Virtual WAN
+subnets. Security admin rules use priorities from 1 to 4096 and apply with eventual
+consistency, so newly created resources take a short time to pick them up.
 
 ### Virtual WAN security
 
@@ -209,12 +269,21 @@ declaratively, instead of hand-maintaining route tables:
   ExpressRoute through the hub's security solution. Note that a secured hub advertises
   the RFC 1918 ranges by default, which is the source of a good deal of surprise
   routing.
-- An **internet routing policy** sends internet-bound traffic through it. Two modes:
+- An **internet routing policy** sends internet-bound traffic through the security
+  solution and then straight out to the internet.
 
-| Mode | Where internet traffic goes after inspection |
-| --- | --- |
-| **Direct Access** | Straight out to the internet |
-| **Forced Tunnel** | Via a `0.0.0.0/0` next hop learnt from on-premises, an NVA, or a static route. **If no such route exists, internet-bound traffic is blocked** |
+Where internet traffic goes after inspection is one of two modes, and they are
+configured differently:
+
+| Mode | How it is configured | Where internet traffic goes after inspection |
+| --- | --- | --- |
+| **Direct Access** | An **internet** routing policy (a private policy is optional) | Straight out to the internet |
+| **Forced Tunnel** | A **private** routing policy, `0.0.0.0/0` added to its **additional prefixes**, and **no** internet routing policy | Via the `0.0.0.0/0` route the hub learns from on-premises, an NVA, or a static route on a virtual network connection |
+
+An internet routing policy always means Direct Access: the portal will not add one to
+a hub that is in Forced Tunnel mode. In Forced Tunnel mode with no `0.0.0.0/0` route
+learnt, internet traffic never reaches on-premises - Azure Firewall with no public IP
+drops it, and Azure Firewall with a public IP sends it out through that address.
 
 Routing intent also covers hub-to-hub and branch-to-branch inspection, which is what
 makes "traffic between two on-premises sites must be inspected" a configuration rather
@@ -252,6 +321,30 @@ redirects all internet-bound traffic from the VNet back through on-premises. Vir
 WAN has its own VPN gateways, configured through the hub rather than as standalone
 resources.
 
+## Why security cares
+
+**Without the control**
+
+1. A web server is compromised through an application vulnerability
+2. The virtual network is flat: the default rule lets every subnet reach every other
+3. The attacker scans and reaches the database and management servers directly
+4. One compromised host becomes a whole-environment breach
+
+**With the control**
+
+1. A security admin rule denies inbound RDP and SSH from the internet across every
+   virtual network, and no local NSG can re-open it
+2. NSGs with ASGs allow only web → database on the database port, and deny the rest
+3. The compromised web server can reach the database port and nothing else
+4. Virtual network flow logs record the attempted connections for investigation
+
+**What it does not solve.** Segmentation limits movement; it does not stop an attacker
+using the connections that are allowed (web → database). Database authentication and
+monitoring still matter.
+
+**Depends on.** NSGs actually being associated, security admin configurations actually
+being deployed to each region, and flow logging being enabled before you need it.
+
 ## Configuration surface
 
 | Control | Default | Set it to | Why |
@@ -265,7 +358,7 @@ resources.
 | Security admin rule action | - | `Deny` for the organisational floor, `AlwaysAllow` sparingly | `Allow` still lets an NSG deny it |
 | Security admin configuration | not deployed | **Deployed** to each region in use | Saving is not deploying |
 | Virtual WAN hub | unsecured | Secured hub with routing intent | Otherwise the hub routes without inspecting |
-| Internet routing policy mode | - | Direct Access unless on-premises inspection is required | Forced Tunnel with no default route silently blocks internet traffic |
+| Internet egress mode | - | Direct Access (internet routing policy) unless egress must go through on-premises | Forced Tunnel is a private policy plus `0.0.0.0/0`, never an internet policy; with no learnt default route, egress fails or skips on-premises |
 | P2S tunnel type | - | OpenVPN, if you want Entra authentication | Entra ID authentication requires it |
 | IPsec/IKE policy | negotiated defaults | Custom policy where a standard demands it | Defaults accept weaker combinations than some policies allow |
 
@@ -300,8 +393,13 @@ deny the traffic, so the central guarantee does not hold.
 **Second security admin configuration created for a region.** Only one is permitted;
 use extra rule collections instead.
 
-**Forced Tunnel internet routing policy with no `0.0.0.0/0` route.** Internet traffic
-is blocked rather than routed, and nothing about the configuration looks wrong.
+**Building Forced Tunnel with an internet routing policy.** An internet policy always
+means Direct Access. Forced Tunnel is a private routing policy with `0.0.0.0/0` in
+additional prefixes, and no internet policy.
+
+**Forced Tunnel with no `0.0.0.0/0` route learnt.** Internet traffic never reaches
+on-premises: a firewall with no public IP drops it, one with a public IP sends it
+straight out. Nothing about the routing intent configuration looks wrong.
 
 **Entra authentication attempted on an IKEv2 point-to-site gateway.** Not supported;
 OpenVPN is required.
@@ -309,6 +407,21 @@ OpenVPN is required.
 **A VPN gateway left running after a lab.** It bills hourly from the moment
 provisioning finishes, independent of traffic, and it takes long enough to deploy that
 people leave it up "for next time."
+
+## Hands-on
+
+See [02-03 lab](../../labs/02-storage-databases-networking/02-03-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| NSG / ASG | Only intended flows are allowed | **Effective security rules** on the NIC show the combined result; **IP flow verify** reports allow or deny, and which rule decided, for a specific flow |
+| Security admin rule | The organisational floor cannot be overridden | The configuration shows as deployed to the region; an NSG rule allowing the blocked traffic has no effect |
+| Dynamic network groups | New virtual networks inherit the rules | A newly created virtual network that matches the policy condition appears as a group member |
+| Flow logging | Traffic decisions are recorded | Virtual network flow logs exist for the network and records appear in storage or traffic analytics |
+| Virtual WAN routing intent | Traffic between networks is inspected | Effective routes on the hub point private (and, if configured, internet) traffic to the hub firewall; firewall logs show the flows |
+| Point-to-site VPN | Users are subject to Conditional Access | The gateway uses OpenVPN with Microsoft Entra ID authentication; VPN sign-ins appear in Entra sign-in logs |
 
 ## How this is tested
 
@@ -321,7 +434,7 @@ people leave it up "for next time."
 | "apply to all current and future virtual networks" | Network group with dynamic membership via Azure Policy |
 | "rule is configured but has no effect" | The configuration was never deployed |
 | "inspect traffic between two branches" | Virtual WAN routing intent, private routing policy |
-| "internet traffic must exit through on-premises" | Internet routing policy, Forced Tunnel mode |
+| "internet traffic must exit through on-premises" | Forced Tunnel: private routing policy, `0.0.0.0/0` in additional prefixes, no internet policy |
 | "VPN users must satisfy Conditional Access" | Point-to-site, OpenVPN, Entra ID authentication |
 | "must use a specific cipher and DH group" | Custom IPsec/IKE policy |
 | "log every allowed and denied flow" | Virtual network flow logs |
@@ -332,9 +445,37 @@ arrival; virtual network flow logs replace them. And Azure Virtual Network Manag
 gone from a curiosity to a first-class exam topic, with security admin rules GA and
 explicitly evaluated ahead of NSGs - there is no AZ-500 equivalent of that control.
 
-## Hands-on
+### Choosing a network control
 
-See [02-03 lab](../../labs/02-storage-databases-networking/02-03-lab.md).
+A requirement usually names the layer it cares about. Match its words to the control
+that works at that layer. Azure Firewall and Network Watcher are covered in 02-04; WAF
+and API Management in 03-06.
+
+```mermaid
+flowchart LR
+  %% flowchart: choose-network
+  accTitle: Choosing a network control
+  accDescr: Allow or deny by address, port and protocol: NSGs. A rule application teams can't override: Virtual Network Manager security admin rules. Central egress, FQDNs, threat intelligence, spoke to spoke: Azure Firewall with user-defined routes. Web attacks: WAF. API callers and call rates: API Management. Proving which rule decides: Network Watcher.
+  A(["What does the<br/>requirement ask for?"]):::actor
+  A -->|"Address, port,<br/>protocol on a<br/>subnet or NIC"| N1["NSG, with ASGs<br/>to group VMs"]:::ok
+  A -->|"A rule app teams<br/>can't override"| N2["Virtual Network<br/>Manager security<br/>admin rule"]:::ok
+  A -->|"Central egress, FQDNs,<br/>threat intelligence,<br/>spoke to spoke"| N3["Azure Firewall,<br/>with user-defined<br/>routes to it"]:::ok
+  A -->|"SQL injection,<br/>cross-site scripting,<br/>bots"| N4["WAF on Front Door<br/>or Application<br/>Gateway"]:::ok
+  A -->|"Who may call an<br/>API, and how often"| N5["API Management:<br/>validate-jwt,<br/>rate limits"]:::ok
+  A -->|"Prove which<br/>rule decides"| N6["Network Watcher:<br/>IP flow verify,<br/>next hop"]:::ok
+```
+
+### What SC-500 expects you to do
+
+- **Identify** the scale a requirement belongs to: one workload, the whole organisation,
+  between networks, or into the network.
+- **Distinguish** NSG rules from security admin rules (and `Allow` from `AlwaysAllow`),
+  NSG flow logs from virtual network flow logs, and the point-to-site tunnel types.
+- **Select** ASGs, service tags, routing intent modes or VPN authentication methods for a
+  scenario.
+- **Implement** NSGs and ASGs, AVNM security configurations with dynamic groups, secured
+  Virtual WAN hubs and VPN security settings.
+- **Evaluate** why traffic is allowed or blocked, using effective rules and IP flow verify.
 
 ## Check yourself
 
@@ -347,17 +488,42 @@ See [02-03 lab](../../labs/02-storage-databases-networking/02-03-lab.md).
 3. Your organisation wants every virtual network created next year to inherit a deny
    on inbound RDP, with no per-VNet work. Describe the mechanism end to end, including
    the step people forget.
-4. You enable an internet routing policy in Forced Tunnel mode on a secured hub. All
+4. You configure a secured hub for Forced Tunnel: a private routing policy with
+   `0.0.0.0/0` in additional prefixes. Its Azure Firewall has no public IP. All
    internet access from the spokes stops. Give the most likely cause and how you would
    confirm it.
 5. A requirement says VPN users must be subject to Conditional Access and MFA. State
    the tunnel type, the authentication method, and why the other two tunnel types
    cannot satisfy it.
 
+## Teach it back
+
+Explain to an application team why the central security team's "deny inbound RDP from
+the internet" rule still blocks RDP even though their NSG has an allow rule at priority
+100.
+
+A strong answer covers: security admin rules in Virtual Network Manager are evaluated
+before NSGs; a `Deny` security admin rule stops evaluation, so the NSG never runs; only
+the central team can change it; `AlwaysAllow` is the opposite guarantee.
+
+## Key takeaways
+
+- By default, everything in a virtual network can reach everything else. Segmentation
+  limits blast radius.
+- NSGs: lowest priority number wins, first match stops, stateful, and subnet + NIC must
+  both allow.
+- ASGs let rules follow roles instead of addresses.
+- AVNM security admin rules are evaluated before NSGs; `Deny` and `AlwaysAllow` cannot be
+  overridden locally - and nothing applies until the configuration is deployed.
+- NSG flow logs can no longer be created; use virtual network flow logs.
+- Entra ID authentication for point-to-site VPN requires OpenVPN.
+
 ## Sources
 
 - Microsoft Learn - SC-500 skills measured: <https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500>
 - Security admin rules in Azure Virtual Network Manager: <https://learn.microsoft.com/azure/virtual-network-manager/concept-security-admins>
+- Connectivity configurations in Azure Virtual Network Manager: <https://learn.microsoft.com/azure/virtual-network-manager/concept-connectivity-configuration>
+- Network security groups overview: <https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview>
 - NSG flow logs (retirement notice): <https://learn.microsoft.com/azure/network-watcher/nsg-flow-logging>
 - Migrate from NSG flow logs to virtual network flow logs: <https://learn.microsoft.com/azure/network-watcher/nsg-flow-logs-migrate>
 - Securing internet access with Virtual WAN routing intent: <https://learn.microsoft.com/azure/virtual-wan/about-internet-routing>

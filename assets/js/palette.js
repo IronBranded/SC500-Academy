@@ -1,11 +1,12 @@
 /* palette.js - SC-500 guide
    Command palette, opened with Ctrl/Cmd+K.
 
-   Indexes three different kinds of thing, because they are three different
+   Indexes four different kinds of thing, because they are four different
    questions a reader has:
 
      modules and labs   "take me to 02-04"
      sub-objectives     "which module covers just-in-time VM access?"
+     comparisons        "private endpoint vs service endpoint"
      actions            "reset this page", "jump to teardown", "review pass"
 
    Headings on the current page are added live, so "teardown" reaches the
@@ -61,6 +62,7 @@
     out.push({ kind: 'View', label: 'Exam prep', sub: 'Review by domain, objective, wrong answers, bookmarks', href: '#/prep' });
     out.push({ kind: 'View', label: 'Needs review', sub: 'Sub-objectives whose latest answer was wrong', href: '#/prep/needs-review' });
     out.push({ kind: 'View', label: 'Objective coverage', sub: 'Every official sub-objective and what teaches it', href: '#/coverage' });
+    out.push({ kind: 'View', label: 'Compare controls', sub: 'The pairs SC-500 is built to confuse', href: '#/compare' });
     out.push({ kind: 'View', label: 'Mock exam', sub: 'Timed, weighted, mixed', href: '#/exam' });
     out.push({ kind: 'View', label: 'Flashcards', sub: 'Distinctions, spaced repetition', href: '#/cards' });
     out.push({ kind: 'View', label: 'Cost planner', sub: 'What can I afford to run', href: '#/cost' });
@@ -91,6 +93,14 @@
           }).catch(function () {}));
       });
     });
+    /* The structured comparisons: "pim vs ca" reaches the right table. */
+    jobs.push(fetch('content/comparisons.json', { cache: 'force-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        ((j && j.comparisons) || []).forEach(function (x) {
+          entries.push({ kind: 'Compare', label: x.title, sub: x.question || 'Comparison', href: '#/compare/' + x.id });
+        });
+      }).catch(function () {}));
     return Promise.all(jobs);
   }
 

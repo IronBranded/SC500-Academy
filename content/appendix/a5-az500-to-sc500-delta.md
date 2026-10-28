@@ -81,9 +81,8 @@ turn on what happens when nobody configures anything.
 | **Trusted launch** on new Gen2 VMs | Opt-in enhancement | **Default.** Secure Boot and vTPM are a baseline to verify, not a feature to add | [03-04](../03-secure-compute/03-04-servers-and-virtual-machines.md) |
 | **Container vulnerability assessment engine** | A third-party engine | **Microsoft Defender Vulnerability Management** - different findings, scoring and portal experience | [03-05](../03-secure-compute/03-05-app-platform-containers.md) |
 | **Audit (Standard) retention** | 90 days | **180 days** for records generated on or after 17 October 2023 | [04-04](../04-security-posture/04-04-sentinel-automation-retention-and-audit.md) |
-| **Foundational CSPM** | Enabled by default on every onboarded subscription | **Opt-in for new Azure subscriptions from 27 October 2026.** Still free; existing enabled subscriptions unaffected | [04-01](../04-security-posture/04-01-defender-for-cloud-posture.md) |
 | **Defender for Cloud posture capability** | "Defender for Cloud is enabled" implied attack paths, explorer, governance | Those are **Defender CSPM (paid)**; free tier is assessment, recommendations, secure score, MCSB | [04-01](../04-security-posture/04-01-defender-for-cloud-posture.md) |
-| **WAF managed rule sets** | CRS only | **DRS 2.1 alongside CRS 3.2**, plus a separate **Bot Manager** rule set; Front Door managed rules require **Premium** | [03-06](../03-secure-compute/03-06-app-platform-serverless-web-and-apis.md) |
+| **WAF managed rule sets** | CRS only | **DRS 2.2** recommended (CRS 3.2 legacy), plus a separate **Bot Manager** rule set; Front Door managed rules require **Premium** | [03-06](../03-secure-compute/03-06-app-platform-serverless-web-and-apis.md) |
 | **Azure Firewall configuration model** | Classic rules | **Firewall Policy** and Firewall Manager, with Premium features (IDPS, TLS inspection, URL filtering) weighted far more heavily | [02-04](../02-storage-databases-networking/02-04-private-access-and-perimeter.md) |
 | **Sentinel content delivery** | Per-item galleries | **Content hub** solutions | [04-02](../04-security-posture/04-02-sentinel-workspace-roles-and-content.md) |
 
@@ -99,15 +98,15 @@ documentation is thin.
 | **Microsoft Entra Agent ID** | Agent identity blueprints, agent identities and agent users; Conditional Access for agents; agent risk in Identity Protection; agent governance and sponsorship | [03-02](../03-secure-compute/03-02-ai-agent-identity-and-governance.md) |
 | **Copilot Studio runtime protection** | Built-in XPIA/UPIA defences; advanced real-time protection through an external threat detection system | [03-02](../03-secure-compute/03-02-ai-agent-identity-and-governance.md) |
 | **AI Gateway in API Management** | Token limits and quotas, semantic caching, content safety at the gateway, credential management for model backends | [03-03](../03-secure-compute/03-03-ai-platform-and-workload-protection.md) |
-| **Microsoft Foundry guardrails** | Content filters, Prompt Shields, groundedness detection, blocklists | [03-03](../03-secure-compute/03-03-ai-platform-and-workload-protection.md) |
-| **Defender for Cloud AI workloads plan** | Threat protection for AI workloads, suspicious prompt evidence, Data and AI security dashboard | [03-03](../03-secure-compute/03-03-ai-platform-and-workload-protection.md), [04-01](../04-security-posture/04-01-defender-for-cloud-posture.md) |
+| **Microsoft Foundry guardrails** | Controls (risk + intervention point + action): harm categories, user prompt and indirect attacks, blocklists; agent guardrails with tool call and tool response scanning | [03-03](../03-secure-compute/03-03-ai-platform-and-workload-protection.md) |
+| **Defender for AI Services plan** | Runtime threat protection for AI services, suspicious prompt evidence, Data and AI security dashboard (with Defender CSPM for AI discovery) | [03-03](../03-secure-compute/03-03-ai-platform-and-workload-protection.md), [04-01](../04-security-posture/04-01-defender-for-cloud-posture.md) |
 | **Microsoft Entra Private Access** | Per-application private access through Global Secure Access, published as enterprise applications so Conditional Access applies | [02-04](../02-storage-databases-networking/02-04-private-access-and-perimeter.md) |
 | **Azure Virtual Network Manager security admin rules** | Organisation-wide rules **evaluated before NSGs**, which application teams cannot override | [02-03](../02-storage-databases-networking/02-03-network-segmentation-and-connectivity.md) |
 | **Defender CSPM secret scanning** | Agentless discovery of credentials sitting outside the vault | [01-02](../01-identity-access-governance/01-02-key-vault-secrets-and-keys.md) |
 | **Agentless scanning for machines** | Disk-snapshot assessment with no agent, no connectivity, no performance cost | [03-04](../03-secure-compute/03-04-servers-and-virtual-machines.md) |
 | **Defender sensor, binary drift detection and blocking** | eBPF-based container runtime detection of processes that did not come from the image | [03-05](../03-secure-compute/03-05-app-platform-containers.md) |
 | **Microsoft Security Copilot** | Workspaces, SCU capacity, Copilot owner/contributor roles, plugins, Microsoft and Security Store agents | [04-05](../04-security-posture/04-05-security-copilot.md) |
-| **Sentinel data lake and table plans** | Cheap long-horizon storage; Analytics vs Basic/Auxiliary tiers; DCR transformations | [04-03](../04-security-posture/04-03-sentinel-data-connectors-and-collection.md) |
+| **Sentinel data lake and table plans** | Cheap long-horizon storage; analytics tier vs data lake tier (Basic and Auxiliary being folded in); DCR transformations | [04-03](../04-security-posture/04-03-sentinel-data-connectors-and-collection.md) |
 
 ## 4. Renamed or relocated
 
@@ -135,15 +134,17 @@ One table, because dates are what make a change checkable rather than arguable.
 | 1 Oct 2025 | **Entra Permissions Management retired** (support ended 1 Nov 2025) |
 | Feb 2026 | Sentinel Azure portal retirement **extended** from 1 Jul 2026 to 31 Mar 2027 |
 | Key Vault API **2026-02-01** | New vaults default to the **Azure RBAC** permission model |
+| 1 Jul 2026 | Defender security for Copilot Studio and Foundry **agents** requires **Microsoft Agent 365** |
 | 31 Jul 2026 | **Restricted SharePoint Search**: new enablement blocked |
 | 31 Aug 2026 | **AZ-500 retires**, no automatic credential upgrade path |
-| **27 Oct 2026** | **Foundational CSPM becomes opt-in** for new Azure subscriptions |
 | 31 Mar 2027 | **Microsoft Sentinel in the Azure portal retires** |
 | 30 Sep 2027 | **NSG flow logs retire** completely |
+| 31 Mar 2028 | **Docker Content Trust** removed from Azure Container Registry |
+| 15 Sep 2028 | **Azure Disk Encryption** retires - migrate to encryption at host |
 
-> **Verify the last three before the exam.** They are the ones still in the future at the time
-> this appendix was written, and dates in this space have moved before - the Sentinel retirement
-> moved by nine months.
+> **Verify the last four before the exam.** They are the ones still in the future at the time
+> this appendix was last checked (October 2026), and dates in this space have moved before - the
+> Sentinel retirement moved by nine months.
 
 ## 6. Using AZ-500 material safely
 

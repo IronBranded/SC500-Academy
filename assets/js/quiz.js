@@ -10,7 +10,8 @@
    - Each question is answered and explained on its own, immediately, rather
      than all at once at the end. Feedback is structured the same way every
      time: CORRECT ANSWER, WHY, WHY NOT THE OTHERS (when the question file
-     provides per-option notes), and the OBJECTIVE being tested.
+     provides per-option notes), the SCENARIO CLUE, the MISCONCEPTION tested,
+     and the OBJECTIVE.
    - Every answer is recorded per question (progress.js recordAnswer), which is
      what lets the dashboard report "knowledge checked" per official
      sub-objective and lets Exam prep replay only the questions you got wrong.
@@ -24,6 +25,9 @@
      difficulty     "foundation" | "applied" | "scenario"
      concept        short label, e.g. "Conditional Access evaluation"
      misconception  the wrong belief the question is built to expose
+     scenario_clue  the words in the stem that decide the answer (beginner-
+                    first redesign, 2026-10): learning to spot the deciding
+                    constraint is the transferable skill
 
    Options stay in file order on the lesson page, because several explanations
    refer to options by position. Exam prep shuffles only questions that set
@@ -227,6 +231,13 @@
           wl.appendChild(li);
         });
         fb.appendChild(wl);
+      }
+
+      if (q.scenario_clue) {
+        var sc = node('div', 'kc__clue');
+        sc.appendChild(node('h4', 'kc__h', 'Scenario clue'));
+        sc.appendChild(node('p', null, q.scenario_clue));
+        fb.appendChild(sc);
       }
 
       if (q.misconception) {

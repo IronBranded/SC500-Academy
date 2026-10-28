@@ -7,14 +7,14 @@ sub_objectives:
 domain: "Manage and monitor security posture"
 domain_weight: "20-25%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02", "01-03", "04-01"]
+prerequisites: ["00-00", "00-01", "00-02", "01-03", "04-01", "0A-11", "0A-03"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/azure/sentinel/best-practices"
   - "https://learn.microsoft.com/azure/sentinel/whats-new"
   - "https://learn.microsoft.com/unified-secops/whats-new"
   - "https://learn.microsoft.com/azure/sentinel/billing-reduce-costs"
-last_verified: "2026-09-17"
+last_verified: "2026-10-20"
 portal: "Microsoft Defender portal > Microsoft Sentinel"
 powershell_module: "Az.OperationalInsights, Az.SecurityInsights"
 az_cli_command: "az sentinel onboarding-state create"
@@ -47,7 +47,7 @@ forensic_relevance: "Workspace design decides what an investigation can see. A w
 > carry the older July 2026 wording. Assume the Defender portal for anything you build now,
 > and check the retirement timeline page before the exam.
 
-## Why this exists
+## The security problem
 
 Three domains of controls have been generating signal. This one is about where it goes and
 who may look at it - and the decisions here are unusually hard to reverse.
@@ -66,7 +66,82 @@ And underneath all three is the constraint that shapes every Sentinel decision: 
 the gigabyte.** Ingest everything and the bill is unmanageable. Ingest too little and the
 investigation fails. Nearly every design pattern in Sentinel exists to resolve that tension.
 
+## In plain English
+
+Every control in this Academy produces records - sign-ins, alerts, configuration changes,
+network flows. **Microsoft Sentinel** is where those records are collected, kept, searched
+and turned into detections. It is a **SIEM** (security information and event management).
+
+Before anything is collected, three decisions have to be made, and they are hard to undo:
+**where the data lives** (a Log Analytics **workspace**, in a region), **how long it is kept
+and at what price** (the **analytics tier** for fast, frequent use; the cheaper **data lake
+tier** for long-term storage), and **who can see and do what** (Sentinel roles, plus
+finer-grained access to particular tables or resources). Then **content hub** supplies
+ready-made connectors, detections and workbooks.
+
+## Words you need to know
+
+- **SIEM** - a system that collects security records from many sources so they can be
+  searched, correlated and alerted on (0A-11).
+- **Log Analytics workspace** - the Azure resource that stores the data Sentinel uses; it
+  has a region and a retention configuration.
+- **Microsoft Defender portal** - where Sentinel is now used, alongside Defender XDR; the
+  Azure portal experience retires on 31 March 2027.
+- **Primary / secondary workspace** - in the Defender portal, one workspace is primary
+  (its data correlates with Defender XDR incidents); others can be secondary.
+- **Analytics tier** - fast, fully featured storage for detections and hunting.
+- **Data lake tier** - low-cost long-term storage, queried with KQL jobs or notebooks rather
+  than real-time rules.
+- **Commitment tier** - a pre-purchased daily ingestion volume at a lower price.
+- **Microsoft Sentinel Reader / Responder / Contributor** - read; read and manage incidents;
+  and create detections and other content.
+- **Resource-context RBAC** - users see log rows about the Azure resources they can access,
+  without workspace-wide access.
+- **Table-level RBAC** - access to specific tables only.
+- **Content hub / solution** - the catalogue of packaged Sentinel content; a solution
+  bundles connectors, analytics rule templates, workbooks and more.
+
+## Mental model
+
+A teaching model: three design decisions before the first log arrives.
+
+```mermaid
+flowchart TD
+  accTitle: Teaching model - Sentinel design decisions
+  accDescr: Security data from many sources flows into a Log Analytics workspace enabled for Microsoft Sentinel and used in the Microsoft Defender portal. Three decisions shape it. Where: one workspace unless residency or tenancy forces more, in the region the data must stay in. How long: the analytics tier for data used by detections and hunting, the data lake tier for cheap long-term retention. Who: Sentinel Reader, Responder and Contributor roles, resource-context and table-level access for narrower needs, and Logic Apps permissions for playbook authors. Content hub solutions then supply connectors and rule templates, which must be turned into active rules.
+  SRC["Signals from Azure, M365,<br/>servers, partners"]:::d00 --> WS["Sentinel workspace<br/>(Defender portal)"]:::d04
+  WS --> WHERE["WHERE<br/>workspace count + region"]:::d04
+  WS --> LONG["HOW LONG<br/>analytics tier vs data lake"]:::d04
+  WS --> WHO["WHO<br/>Reader / Responder / Contributor,<br/>resource-context, table-level"]:::d01
+  HUB["Content hub<br/>templates -> active rules"]:::d04 -.-> WS
+```
+
 ## How it works under the hood
+
+### Where the signals come from
+
+Before the workspace design, the whole route. Defender products send alerts to Defender
+XDR; logs reach the Sentinel workspace through connectors, diagnostic settings or the
+Azure Monitor Agent, and each route lands in its own table. 04-03 takes the routes one
+at a time.
+
+```mermaid
+flowchart LR
+  %% flowchart: signals
+  accTitle: Where security signals go
+  accDescr: Defender product alerts go to Defender XDR. Entra ID logs, the Azure activity log, diagnostic logs, Windows events and appliance logs reach the Sentinel workspace by different routes and land in different tables. Microsoft 365 activity goes to Purview Audit, searched in the Defender portal. Sentinel analytics rules raise incidents in Defender XDR, next to the Defender alerts.
+  MDE["Defender for Endpoint,<br/>Identity, Office 365"]:::d04 -->|alerts| XDR
+  DFC["Defender for Cloud<br/>plans: Servers, Storage,<br/>Databases, Key Vault,<br/>Containers, AI"]:::d04 -->|alerts| XDR
+  ENT["Entra ID sign-in and<br/>audit logs, through<br/>a data connector"]:::d01 --> LAW
+  AZ["Azure activity log,<br/>through a free<br/>connector"]:::d01 --> LAW
+  DIAG["Firewall, WAF and<br/>SQL logs, through<br/>diagnostic settings"]:::d02 --> LAW
+  WIN["Windows Security events<br/>via AMA and a DCR:<br/>table SecurityEvent"]:::d03 --> LAW
+  WEF["Windows Event<br/>Forwarding collector,<br/>via AMA and a DCR:<br/>table WindowsEvent"]:::d03 --> LAW
+  SYS["Syslog and CEF from<br/>appliances, via a Linux<br/>forwarder with AMA:<br/>Syslog or<br/>CommonSecurityLog"]:::d02 --> LAW
+  M365["Microsoft 365<br/>activity, Copilot too"]:::d03 --> AUD["Purview Audit"]:::d04
+  AUD -->|"searched in the<br/>Defender portal"| XDR
+  LAW["Sentinel workspace<br/>analytics and<br/>data lake tiers"]:::d04 -->|analytics rules| XDR["Defender XDR<br/>unified incidents"]:::d04
+```
 
 ### Workspaces
 
@@ -88,27 +163,55 @@ Drivers for multiple workspaces are usually **regulatory** (data must stay in a 
 workspace and awkward across them.
 
 Where multiple workspaces are unavoidable, the tools are **cross-workspace queries**, the
-**workspace manager** for pushing content centrally from one workspace to members, and **Azure
-Lighthouse** for managing workspaces in other tenants.
+**workspace manager** for pushing content centrally from one workspace to members, and - for
+other tenants - **Azure Lighthouse** in the Azure portal or **Defender multitenant management**
+in the Defender portal.
 
-**Retention and tiers** are where cost design happens:
+**Retention and tiers** are where cost design happens. Each table lives in one of two tiers:
 
-- **Interactive retention** - queryable at full speed, the default and the expensive one
-- **Cheaper ingestion and storage tiers** for high-volume, low-value telemetry that you need to
-  have but rarely query
-- **Long-term retention** for compliance, priced for storage rather than for querying
-- The **Microsoft Sentinel data lake**, which offers affordable long-term storage with a
-  unified query experience, and is the current answer to "keep everything for years without
-  paying analytics prices"
+| | Analytics tier | Data lake tier |
+| --- | --- | --- |
+| Use | Analytics rules, hunting, workbooks, every real-time feature | Compliance retention, historical investigation, high-volume low-value logs |
+| Ingestion cost | Standard | Minimal |
+| Querying | Fast, included in price | Slower; KQL jobs, Spark jobs, notebooks, search jobs; charged by data scanned |
+| Retention | 30 days by default; Sentinel solution tables extend to **90 days** at no extra storage charge, any table to 2 years | Up to **12 years** total |
+
+Data in the analytics tier is **mirrored to the data lake** by default, and **total
+retention** can run past analytics retention so older data stays queryable in the lake at
+low cost. Shortening total retention has a 30-day grace period before data is removed.
+Configure all of it per table under **Microsoft Sentinel → Configuration → Tables**. (Defender XDR advanced
+hunting data is separate: 30 days in the XDR default tier, which you can extend into the
+Sentinel tiers.)
+
+> **Watch the default.** Microsoft's pages describe the analytics-tier default both as 30
+> days and as 90 days. What is consistent is that **Microsoft Sentinel solution tables can
+> keep 90 days of analytics retention at no extra storage charge** - so check each important
+> table actually has it.
 
 **Pricing** is pay-as-you-go or **commitment tiers**, billed daily. The asymmetry matters
 operationally: you can **increase** a commitment tier at any time, which **restarts the 31-day
 commitment period**, but to move down a tier or back to pay-as-you-go you must **wait out the
-31 days**. Commit cautiously in a lab and in a new deployment.
+31 days** - the one exception is a 6-hour window after a change, to undo a mistake. Commit
+cautiously in a lab and in a new deployment.
 
-One more, which saves real money and appears as a scenario: after enabling the **Defender XDR
-connector**, disable the individual Defender product connectors. Otherwise you ingest the same
-data twice and pay for it twice.
+One more, which appears as a scenario: the **Defender XDR connector** (turned on
+automatically when you onboard Sentinel to the Defender portal) replaces the individual
+Defender product alert connectors. Microsoft disconnects those for you - they can still look
+connected, but no data flows through them. Alerts and incidents from Defender XDR are ingested
+**at no charge**; the raw advanced hunting tables (`DeviceEvents`, `EmailEvents` and so on) are
+billed if you choose to stream them. The real trap is **duplicate incidents**: turn off the
+**Microsoft incident creation rules** for those products (the connector page offers it),
+because Defender XDR now groups their alerts into incidents itself.
+
+**In the Defender portal**, one workspace is the **primary** workspace - its data is correlated
+with Defender XDR into unified incidents - and others can be added as **secondary**. Onboarding
+(**System → Settings → Microsoft Sentinel → Connect a workspace**) needs **Security
+Administrator** in Microsoft Entra ID plus, in Azure, either **Owner** - an unconditional
+assignment at subscription scope - or **User Access Administrator** with **Microsoft Sentinel
+Contributor**. Cross-tenant management in the Defender portal uses **Microsoft Entra B2B**
+and Defender multitenant management; GDAP with Azure Lighthouse is not supported for
+Sentinel data there, although Lighthouse still lets advanced hunting and analytics rules
+query another tenant's workspace with `workspace()`.
 
 ### Roles
 
@@ -122,6 +225,15 @@ in practice:
 | **Microsoft Sentinel Contributor** | Everything Responder can, plus create and edit analytics rules, workbooks, and other content |
 | **Microsoft Sentinel Playbook Operator** | List, view, and manually run playbooks |
 | **Microsoft Sentinel Automation Contributor** | Allows Sentinel itself to add playbooks to automation rules - assigned to the service, **not to people** |
+| **Microsoft Sentinel Workbook Contributor** | Save and edit workbooks |
+
+**Unified RBAC in the Defender portal.** Once Sentinel is onboarded, you can manage its access
+through **Microsoft Defender unified RBAC**, where Reader, Responder and Contributor map to
+unified roles and **scoping** gives row-level access by scope tags. When it is activated,
+unified RBAC becomes the source of permissions (Azure RBAC still applies in parallel). Playbook
+Operator, Automation Contributor and Workbook Contributor are not available there and stay in
+Azure RBAC. Data lake access uses Microsoft Entra roles and unified RBAC permissions rather than
+the workspace roles.
 
 Two things these roles do **not** cover, and both are exam-relevant:
 
@@ -140,7 +252,8 @@ The least-privilege pattern is straightforward once you see the shape: analysts 
 
 The **content hub** has its own requirement worth memorising: installing, updating, and
 deleting solutions or standalone content needs **Microsoft Sentinel Contributor at the
-resource group level.** Configuring a data connector needs read and write on the workspace.
+resource group level** (some solution packages also need **Template Spec Contributor**).
+Configuring a data connector needs read and write on the workspace.
 
 ### Content hub
 
@@ -169,6 +282,34 @@ connect Sentinel to the Defender portal → install content hub solutions → co
 connectors → enable analytics rules from the templates. Installing solutions before deciding
 what you will ingest produces a catalogue matched to nothing.
 
+## Why security cares
+
+**Without the control**
+
+1. Each subscription gets its own workspace "to keep things tidy"
+2. Retention is left at the default; nobody checks whether the free 90 days are being used
+3. Every analyst is given Contributor
+4. An intrusion is discovered four months after it began: the early sign-ins have aged out,
+   and the evidence is spread across six workspaces; meanwhile an analyst has accidentally
+   disabled a detection rule
+
+**With the control**
+
+1. One workspace (plus a second only where data must stay in another region), onboarded to
+   the Defender portal
+2. Detection and hunting tables kept in the analytics tier; long-term evidence retained
+   cheaply in the data lake for the period the organisation needs
+3. Analysts get Responder, detection engineers get Contributor, workload owners get
+   resource-context access
+4. The investigation queries one place, across the whole timeline, and nobody without the
+   right role can change detection logic
+
+**What it does not solve.** A well-designed workspace only holds what you connect to it (04-03)
+and only alerts on rules you actually enable.
+
+**Depends on.** Data residency requirements, a daily cap or cost alerts before connecting
+sources, and role assignments reviewed like any other privileged access.
+
 ## Configuration surface
 
 | Setting | Default | Set it to | Why |
@@ -177,9 +318,10 @@ what you will ingest produces a catalogue matched to nothing.
 | Workspace count | one | One, unless residency or tenancy forces more | Correlation is easy inside a workspace |
 | Workspace region | your choice | Where the data is required to live | Not changeable afterwards |
 | Daily cap | none | **Set one before connecting anything** | The only hard stop on ingestion spend |
-| Pricing tier | pay-as-you-go | Commitment tier once volume is known | Increases restart the 31-day period; decreases must wait it out |
-| Retention | workspace default | Interactive short, long-term or data lake for the rest | Retention is the second-largest bill line |
-| Defender XDR connector | off | On - **and disable the individual product connectors** | Otherwise you pay twice for the same data |
+| Pricing tier | pay-as-you-go | Commitment tier once volume is known | Increases restart the 31-day period; decreases must wait it out (except within 6 hours of a change) |
+| Retention | check per table | At least the included 90 days in the analytics tier for key tables; total retention in the data lake for the rest | Retention is the second-largest bill line |
+| Defender XDR connector | on after Defender portal onboarding | On - **with Microsoft incident creation rules for its products turned off** | Otherwise the same alerts raise duplicate incidents. The per-product alert connectors are disconnected for you |
+| Access management | Azure RBAC | Azure RBAC, or Defender unified RBAC once activated | Unified RBAC adds scoping by tag |
 | Analyst access | none | Microsoft Sentinel **Responder** | Read plus incident management |
 | Detection engineer access | none | Microsoft Sentinel **Contributor** | Create and edit rules |
 | Workload owner access | none | **Resource-context RBAC** | Their own resources, not the whole workspace |
@@ -202,8 +344,9 @@ you learn about it late.
 **Commitment tier raised to "save money" in a new deployment.** The 31-day period restarts on
 every increase and you cannot come back down until it completes.
 
-**Defender XDR connector plus individual product connectors.** Duplicate ingestion, duplicate
-bill, duplicate rows in every query.
+**Microsoft incident creation rules left on beside the Defender XDR connector.** The same
+alerts raise two incidents. (The per-product connectors are not the problem: enabling the XDR
+connector disconnects them.)
 
 **Solutions installed, no active rules created.** Templates are not detections.
 
@@ -213,10 +356,27 @@ analyst role.
 **Playbook Operator granted to someone expected to build playbooks.** They can run them and not
 create them.
 
-**Retention set to 30 days because it is the default.** Median attacker dwell time is
-comfortably longer than that, so the earliest evidence expires before the investigation starts.
+**Retention left at 30 days on key tables.** Ninety days are included for Sentinel-enabled
+workspaces, and attacker dwell time is often longer than 30 days, so the earliest evidence
+expires before the investigation starts. Use total retention in the data lake for longer.
 
 **Building in the Azure portal now.** It works until it does not, and the deadline is fixed.
+
+## Hands-on
+
+See [04-02 lab](../../labs/04-security-posture/04-02-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| Workspace design | Data lives where it must, in as few workspaces as possible | Workspace region matches the residency requirement; the Defender portal shows the primary (and any secondary) workspace |
+| Defender portal onboarding | Sentinel and Defender XDR incidents correlate | Sentinel incidents appear in the Defender portal incident queue; the Defender XDR connector shows connected |
+| Retention | Evidence is kept as long as required | **Microsoft Sentinel → Configuration → Tables** shows analytics and total retention per table; long-term tables use the data lake |
+| Cost guardrails | Ingestion cannot run away silently | A daily cap or cost alert exists; commitment tier matches observed volume |
+| Least-privilege roles | Analysts can triage but not change detections | An analyst with Responder can close an incident but cannot edit an analytics rule |
+| Workload owner access | Owners see only their resources' logs | A user with resource-context access sees rows for their resources and nothing else |
+| Content hub | Installed content is actually detecting | Analytics rules created from solution templates appear as **enabled** active rules |
 
 ## How this is tested
 
@@ -229,12 +389,13 @@ comfortably longer than that, so the earliest evidence expires before the invest
 | "team sees only logs from their own servers" | Resource-context RBAC |
 | "restrict access to one table" | Table-level RBAC |
 | "data must remain in a specific country" | Separate workspace in that region |
-| "manage workspaces in a customer tenant" | Azure Lighthouse |
+| "manage workspaces in a customer tenant" | Azure Lighthouse (Azure portal) or Defender multitenant management with B2B (Defender portal) |
 | "push content to multiple workspaces centrally" | Workspace manager |
 | "install a vendor's connectors, rules and workbooks together" | Content hub solution |
 | "install solutions" | Sentinel Contributor at resource group scope |
-| "reduce cost for high-volume, rarely queried logs" | Cheaper tier, long-term retention, or the data lake |
-| "avoid paying twice for Defender data" | Disable individual product connectors after enabling the XDR connector |
+| "reduce cost for high-volume, rarely queried logs" | Data lake tier for that table |
+| "keep logs for seven years for compliance at low cost" | Total retention in the data lake |
+| "avoid duplicate incidents for Defender alerts" | Turn off Microsoft incident creation rules when you connect Defender XDR |
 
 **AZ-500 divergence.** The portal moved. Sentinel is GA in the Defender portal and the Azure
 portal experience retires on **31 March 2027** - extended from 1 July 2026, and some
@@ -242,9 +403,17 @@ documentation still shows the old date. Content hub also replaced the older per-
 as the way content is delivered, and the data lake is new as a cost-management answer. An
 AZ-500-era walkthrough will navigate a portal that is on a countdown.
 
-## Hands-on
+### What SC-500 expects you to do
 
-See [04-02 lab](../../labs/04-security-posture/04-02-lab.md).
+- **Identify** whether a requirement is about workspace placement, retention and cost, or
+  access.
+- **Distinguish** the analytics tier from the data lake tier, Responder from Contributor,
+  Playbook Operator from Logic Apps permissions, resource-context from table-level access,
+  and an installed solution from an active rule.
+- **Select** the workspace design, retention configuration or role that meets a scenario.
+- **Implement** a workspace onboarded to Sentinel and the Defender portal, role assignments,
+  and content hub solutions with active rules.
+- **Evaluate** whether a design will keep the evidence an investigation needs.
 
 ## Check yourself
 
@@ -255,10 +424,35 @@ See [04-02 lab](../../labs/04-security-posture/04-02-lab.md).
    role they need and one role you would **not** give them, with the reason.
 3. A team installs 40 content hub solutions in an afternoon and reports that Sentinel is
    "deployed." What is missing, and what would you check first to confirm?
-4. Explain what happens to your bill when you enable the Defender XDR connector while individual
-   Defender product connectors remain enabled.
+4. You enable the Defender XDR connector. What happens to the individual Defender product
+   connectors, what does the alert data cost, and what do you still have to turn off?
 5. You set a commitment tier too high in week one. Describe precisely what you can and cannot
    do about it, and when.
+
+## Teach it back
+
+A SOC lead asks why you won't give every analyst Microsoft Sentinel Contributor "so they
+aren't blocked". Explain the difference between Responder and Contributor, and who else needs
+what.
+
+A strong answer covers: Responder can view data and manage incidents (assign, change
+severity, close); Contributor can also create, edit and delete analytics rules and other
+content; analysts need Responder, detection engineers Contributor; building playbooks needs
+Logic Apps permissions; workload owners need resource-context access; installing content hub
+solutions needs Contributor at resource group scope.
+
+## Key takeaways
+
+- Sentinel sits on a Log Analytics workspace; use it in the Defender portal - the Azure portal
+  experience retires on 31 March 2027.
+- Fewer workspaces correlate better; split only for residency, tenancy or genuinely separate
+  SOCs. Region cannot be changed later.
+- Analytics tier for detections and hunting; data lake tier for cheap long-term retention (up
+  to 12 years total).
+- Responder = triage; Contributor = detection engineering; Playbook Operator = run playbooks
+  only.
+- Resource-context RBAC for workload owners; table-level RBAC for specific tables.
+- Installing a solution adds templates - you still create active rules.
 
 ## Sources
 
@@ -267,3 +461,7 @@ See [04-02 lab](../../labs/04-security-posture/04-02-lab.md).
 - What's new in Microsoft Sentinel: <https://learn.microsoft.com/azure/sentinel/whats-new>
 - What's new in unified security operations: <https://learn.microsoft.com/unified-secops/whats-new>
 - Reduce costs for Microsoft Sentinel: <https://learn.microsoft.com/azure/sentinel/billing-reduce-costs>
+- Manage data tiers and retention in Microsoft Sentinel: <https://learn.microsoft.com/azure/sentinel/manage-data-overview>
+- Connect Microsoft Sentinel to the Microsoft Defender portal: <https://learn.microsoft.com/azure/sentinel/microsoft-sentinel-onboard>
+- Map existing RBAC permissions to Microsoft Defender unified RBAC: <https://learn.microsoft.com/defender-xdr/compare-rbac-roles>
+- Discover and manage Microsoft Sentinel out-of-the-box content: <https://learn.microsoft.com/azure/sentinel/sentinel-solutions-deploy>

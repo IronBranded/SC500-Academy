@@ -2,9 +2,14 @@
    The home page, as a learning dashboard rather than a table of contents.
 
    It answers, in this order:
-     1. What should I study next?            Continue learning
-     2. How much of each domain have I done? Domain cards
-     3. What needs another look?             Review queue counts
+     1. Which SC-500 objective should I study next?   Continue learning
+     2. Where do I start?                             Start here: Module 0A
+                                                      foundations and Module 0B
+                                                      lab safety, with a choice
+                                                      of beginner or experienced
+                                                      path
+     3. How much of each domain have I done?          Domain cards
+     4. What needs another look?                      Review queue counts
 
    Every number on this page is an observable count - sub-objectives studied,
    labs completed, sub-objectives whose questions you answered correctly. There
@@ -16,7 +21,12 @@
      Practised          labs completed / labs that exist in the domain
      Knowledge checked  sub-objectives whose questions were all answered
                         correctly on their latest attempt, out of those that
-                        have questions (the rest are reported, not hidden) */
+                        have questions (the rest are reported, not hidden)
+     Applied            questions answered correctly in a mixed set - domain
+                        review, Exam prep or the mock exam - out of the
+                        domain's questions
+     Retained           questions answered correctly again 7+ days after the
+                        first correct answer */
 
 (function (global) {
   'use strict';
@@ -56,17 +66,33 @@
       if (st.check === 'checked') m.checked++;
       if (st.check === 'review') m.review++;
     });
+    var qids = [];
     dom.lessonIds.forEach(function (id) {
       var l = model.lessons[id];
       if (l && l.hasLab) { m.labs++; if (P().isComplete('lab', id)) m.labsDone++; }
+      if (l) qids = qids.concat(l.questionIds);
+    });
+    var dp = P().depth ? P().depth(qids) : { applied: 0, retained: 0, total: qids.length };
+    m.questions = qids.length;
+    m.applied = dp.applied;
+    m.retained = dp.retained;
+    /* Case-study questions and drills on this domain's sub-objectives:
+       how many the learner's latest answer got right. */
+    m.scenarios = 0; m.scenariosRight = 0;
+    Object.keys(model.scenarios || {}).forEach(function (k) {
+      if (model.scenarios[k].domainId !== dom.id) return;
+      m.scenarios++;
+      var a = P().answer ? P().answer(k) : null;
+      if (a && a.ok) m.scenariosRight++;
     });
     return m;
   }
 
   function lessonLeft(model, l) {
     var left = [];
-    if (!P().isComplete('module', l.id)) left.push('lesson');
+    if (!P().isComplete('module', l.id)) left.push(l.foundation ? 'primer' : 'lesson');
     if (l.hasLab && !P().isComplete('lab', l.id)) left.push('lab');
+    if (!l.exam) return left;
     var c = P().lessonCheck(l.id, l.questionIds);
     if (c !== 'checked' && c !== 'noq') left.push(c === 'review' ? 'review' : 'check');
     return left;
@@ -74,6 +100,8 @@
 
   /* The single recommendation. Last-visited first, so a learner returning to
      the site lands where they stopped; then study order. */
+  function experienced() { return P().pref && P().pref('path') === 'experienced'; }
+
   function recommend(model) {
     var last = P().lastVisit();
     if (last && model.lessons[last.id]) {
@@ -81,8 +109,13 @@
       var left = lessonLeft(model, l);
       if (left.length) return { lesson: l, kind: 'continue', left: left, via: last.kind };
     }
+    /* Beginner path (the default): Module 0A in order, then 0B, then the
+       domains. Experienced path: foundations are offered just-in-time, from
+       each lesson's prerequisites, instead of recommended in sequence. */
+    var skip = experienced();
     for (var i = 0; i < model.order.length; i++) {
       var x = model.lessons[model.order[i]];
+      if (skip && x.foundation) continue;
       if (!P().isComplete('module', x.id)) return { lesson: x, kind: 'next', left: lessonLeft(model, x) };
     }
     for (var j = 0; j < model.order.length; j++) {
@@ -94,6 +127,7 @@
   }
 
   var LEFT_TEXT = {
+    primer: 'Primer not marked studied',
     lesson: 'Lesson not marked studied',
     lab: 'Lab not complete',
     check: 'Knowledge check not passed yet',
@@ -187,7 +221,7 @@
     var sec = node('section', 'continue');
     sec.setAttribute('aria-labelledby', 'continue-title');
     var r = recommend(model);
-    var h = node('h2', null, r && r.kind === 'continue' ? 'Continue learning' : r && r.kind === 'check' ? 'Check what you studied' : 'Start here');
+    var h = node('h2', null, r && r.kind === 'continue' ? 'Continue learning' : r && r.kind === 'check' ? 'Check what you studied' : 'What to study next');
     h.id = 'continue-title';
     sec.appendChild(h);
 
@@ -206,9 +240,22 @@
     top.appendChild(D().badge(l.domainId, { weight: l.weight }));
     if (l.objectiveId) top.appendChild(node('span', 'obj-chip', l.objectiveId));
     card.appendChild(top);
-    card.appendChild(node('p', 'continue__title', l.title));
-    if (l.objectiveText && l.exam) card.appendChild(node('p', 'continue__obj', l.objectiveText));
-    else if (!l.exam) card.appendChild(node('p', 'continue__obj', 'Module 0 \u00b7 project prerequisite, not exam content. Do it before any billable lab.'));
+    /* The question this card answers is "which objective next?", so the
+       official objective leads and the lesson title follows. */
+    var o = l.objectiveId ? model.objectiveById[l.objectiveId] : null;
+    if (o && l.exam) {
+      card.appendChild(node('p', 'continue__kicker', 'Study next \u00b7 official objective ' + o.id));
+      card.appendChild(node('p', 'continue__title', o.text));
+      card.appendChild(node('p', 'continue__obj', 'Lesson ' + l.id + ' \u00b7 ' + l.title + ' \u00b7 ' + l.bulletIds.length + ' of the objective\u2019s sub-objectives'));
+    } else if (l.foundation) {
+      card.appendChild(node('p', 'continue__kicker', 'Foundation primer ' + l.id + ' \u00b7 not exam content'));
+      card.appendChild(node('p', 'continue__title', l.title));
+      card.appendChild(node('p', 'continue__obj', 'Supports objectives ' + (l.supports.join(', ') || '\u2013') + '. Read it so the exam lessons make sense the first time.'));
+    } else {
+      card.appendChild(node('p', 'continue__kicker', (l.label || 'Module 0B') + ' \u00b7 lab safety'));
+      card.appendChild(node('p', 'continue__title', l.title));
+      card.appendChild(node('p', 'continue__obj', 'Project prerequisite, not exam content. Do it before any billable lab.'));
+    }
 
     if (r.left.length) {
       var ul = node('ul', 'continue__left');
@@ -265,6 +312,12 @@
     if (m.review) notes.push(m.review + ' need review');
     if (m.noQ) notes.push(m.noQ + ' have no questions yet');
     card.appendChild(meter('Knowledge checked', m.checked, m.withQ, notes.join(' \u00b7 ') || null));
+    var deep = node('p', 'dcard__depth');
+    deep.appendChild(node('span', null, 'Applied in mixed sets: ' + m.applied + ' / ' + m.questions + ' questions'));
+    deep.appendChild(node('span', null, 'Retained after 7+ days: ' + m.retained + ' / ' + m.questions));
+    if (m.scenarios) deep.appendChild(node('span', null, 'Case studies and drills: ' + m.scenariosRight + ' / ' + m.scenarios + ' right'));
+    deep.title = 'Applied: answered correctly outside the lesson, in a domain review, Exam prep or the mock exam. Retained: answered correctly again at least seven days after the first correct answer. Case studies and drills: case questions and whole drills on this domain\'s sub-objectives that your latest answer got right.';
+    card.appendChild(deep);
 
     var actions = node('div', 'dcard__actions');
     actions.appendChild(link('Domain review', '#/domain/' + dom.id, 'btn'));
@@ -288,36 +341,95 @@
     return card;
   }
 
-  function moduleZero(model) {
-    var ids = model.order.filter(function (id) { return id.indexOf('00-') === 0; });
+  /* START HERE: Module 0A (foundations) and Module 0B (lab safety), and the
+     one choice that changes recommendations - beginner or experienced path.
+     Neither module is exam content; both are shown before the domains until
+     they are done, so a newcomer's first screen says where to begin. */
+  function moduleBox(model, prefix, title, blurbTodo, blurbDone) {
+    var ids = model.order.filter(function (id) { return id.toUpperCase().indexOf(prefix) === 0; });
     if (!ids.length) return null;
     var studied = ids.filter(function (id) { return P().isComplete('module', id); }).length;
     var labs = ids.filter(function (id) { return model.lessons[id].hasLab; });
     var labsDone = labs.filter(function (id) { return P().isComplete('lab', id); }).length;
     var done = studied === ids.length && labsDone === labs.length;
-
+    var dom = model.lessons[ids[0]].domainId;
     var box = node('section', 'm0');
-    D().paint(box, '00');
+    D().paint(box, dom);
     box.dataset.done = done ? 'true' : 'false';
-    var h = node('h2', 'm0__title');
-    h.appendChild(D().icon('00', 16));
-    h.appendChild(node('span', null, 'Module 0 \u00b7 Lab safety'));
+    var h = node('h3', 'm0__title');
+    h.appendChild(D().icon(dom, 16));
+    h.appendChild(node('span', null, title));
     box.appendChild(h);
-    box.appendChild(node('p', null, done
-      ? 'Budget guardrails, just-in-time access and the teardown template are in place.'
-      : 'Not exam content, and not optional: budget alerts, PIM-based access and the teardown template come before any billable lab.'));
-    box.appendChild(node('p', 'm0__counts', studied + ' / ' + ids.length + ' lessons studied \u00b7 ' + labsDone + ' / ' + labs.length + ' labs complete'));
-    if (!done) {
-      var first = ids.filter(function (id) { return !P().isComplete('module', id); })[0] || ids[0];
-      box.appendChild(link('Open Module 0', '#/module/' + first, 'btn'));
-    }
-    return box;
+    box.appendChild(node('p', null, done ? blurbDone : blurbTodo));
+    box.appendChild(node('p', 'm0__counts', studied + ' / ' + ids.length + (prefix === '0A' ? ' primers studied' : ' lessons studied') +
+      (labs.length ? ' · ' + labsDone + ' / ' + labs.length + ' labs complete' : '')));
+    var first = ids.filter(function (id) { return !P().isComplete('module', id); })[0] || ids[0];
+    box.appendChild(link(done ? 'Review ' + title.split(' · ')[0] : (studied ? 'Continue' : 'Open') + ' ' + title.split(' · ')[0], '#/module/' + first, 'btn'));
+    return { box: box, done: done };
+  }
+
+  function pathChooser(model, root, manifest) {
+    var fs = document.createElement('fieldset');
+    fs.className = 'pathpick';
+    fs.appendChild(node('legend', 'pathpick__legend', 'How do you want to start?'));
+    var cur = experienced() ? 'experienced' : 'beginner';
+    [['beginner', 'I am new to cloud or AI', 'Walk me through the 17 foundation primers first, then lab safety, then the four domains.'],
+     ['experienced', 'I already work with Azure and Microsoft 365', 'Go straight to lab safety and Domain 1. Each lesson still links the primers it relies on, just in time.']
+    ].forEach(function (o) {
+      var id = 'path-' + o[0];
+      var row = node('div', 'pathpick__opt');
+      var input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'study-path';
+      input.id = id;
+      input.value = o[0];
+      input.checked = cur === o[0];
+      input.addEventListener('change', function () {
+        P().pref('path', o[0]);
+        mount(root, manifest);
+      });
+      var label = document.createElement('label');
+      label.htmlFor = id;
+      label.appendChild(node('strong', null, o[1]));
+      label.appendChild(node('span', 'pathpick__desc', o[2]));
+      row.appendChild(input);
+      row.appendChild(label);
+      fs.appendChild(row);
+    });
+    fs.appendChild(node('p', 'pathpick__note', 'This only changes what is recommended next. Every primer stays available, and nothing counts against you either way.'));
+    return fs;
+  }
+
+  function startHere(model, root, manifest) {
+    var a = moduleBox(model, '0A', 'Module 0A · Before we secure the cloud',
+      'Seventeen short primers: cloud, identity, networks, data, logs, control types, and how generative AI and AI agents work. Not exam content; each names the SC-500 objectives it supports.',
+      'Foundations studied. Revisit any primer from a lesson’s prerequisites when a term feels unfamiliar.');
+    var b = moduleBox(model, '00-', 'Module 0B · Safe lab foundations',
+      'Not exam content, and not optional: budget alerts, just-in-time access through PIM, and the teardown checklist come before any billable lab.',
+      'Budget guardrails, just-in-time access and the teardown template are in place.');
+    var sec = node('section', 'starthere');
+    sec.setAttribute('aria-labelledby', 'starthere-title');
+    var h2 = node('h2', null, 'Start here');
+    h2.id = 'starthere-title';
+    sec.appendChild(h2);
+    sec.appendChild(pathChooser(model, root, manifest));
+    var grid = node('div', 'starthere__grid');
+    if (a) grid.appendChild(a.box);
+    if (b) grid.appendChild(b.box);
+    sec.appendChild(grid);
+    sec.dataset.done = (!a || a.done || experienced()) && (!b || b.done) ? 'true' : 'false';
+    return sec;
   }
 
   function toolsRow() {
     var nav = node('nav', 'tools-row');
     nav.setAttribute('aria-label', 'Study tools');
-    [['Exam prep', '#/prep', 'Review by domain, objective, wrong answers and bookmarks'],
+    [['Control map', 'map/', 'Every control on one map, with walkthroughs of real requests'],
+     ['Flowcharts', 'flowcharts/', 'Requests step by step, which-control trees, and who wins'],
+     ['Compare controls', '#/compare', 'The look-alike controls, answered on the same nine questions'],
+     ['Case studies', '#/cases', 'One design, many requirements: find the conflicts'],
+     ['Break-fix drills', '#/drills', 'A ticket and the evidence: find the cause, fix it, prove it'],
+     ['Exam prep', '#/prep', 'Review by domain, objective, wrong answers and bookmarks'],
      ['Mock exam', '#/exam', 'Timed, weighted, mixed across every quiz'],
      ['Flashcards', '#/cards', 'Distinctions, spaced repetition'],
      ['Coverage', '#/coverage', 'Every official sub-objective and what teaches it'],
@@ -338,10 +450,10 @@
     var head = node('header', 'dash-head');
     head.appendChild(node('h1', null, 'SC500 Academy'));
     head.appendChild(node('p', 'dash-head__sub',
-      'Certification-first study for Exam SC-500: Implementing End-to-End Security Controls for Cloud and AI Workloads. Built from Microsoft Learn documentation, mapped to the official skills outline.'));
+      'Beginner-first in how it explains cloud and AI security; certification-first in what it teaches. Every lesson starts from the security problem, builds to Microsoft’s control, proves the outcome in a lab, and ends with how SC-500 tests it. Built from Microsoft Learn and mapped to the official skills outline.'));
     root.appendChild(head);
 
-    var loading = node('p', 'loading', 'Loading the curriculum\u2026');
+    var loading = node('p', 'loading', 'Loading the curriculum…');
     root.appendChild(loading);
 
     return global.SC500Curriculum.load(manifest).then(function (model) {
@@ -351,7 +463,7 @@
           'docs/SKILLS-MEASURED-SNAPSHOT.md could not be read, so objective-level progress is unavailable. Lessons still work from the sidebar.'));
       }
       root.appendChild(continueCard(model));
-      var m0 = moduleZero(model);
+      var start = startHere(model, root, manifest);
 
       var ds = node('section', 'domains');
       ds.setAttribute('aria-labelledby', 'domains-title');
@@ -359,18 +471,15 @@
       h2.id = 'domains-title';
       ds.appendChild(h2);
       ds.appendChild(node('p', 'lede',
-        'Counts are observable: a sub-objective is studied when its lesson is marked studied, practised when its lab (teardown included) is complete, and checked when every question on it was answered correctly on the latest attempt.'));
+        'Counts are observable: a sub-objective is studied when its lesson is marked studied, practised when its lab (outcome validated, teardown included) is complete, and checked when every question on it was answered correctly on the latest attempt. Applied and retained count questions answered correctly in mixed sets and again a week later. There is no readiness percentage: the exam is scaled, and a single number would hide the gaps.'));
       var grid = node('div', 'dgrid');
       model.domains.forEach(function (d) { grid.appendChild(domainCard(model, d)); });
       ds.appendChild(grid);
 
-      /* Module 0 sits above the domains until it is done - unless the
-         Continue card is already pointing into it, which says the same. */
-      var r = recommend(model);
-      var zeroFirst = m0 && m0.dataset.done !== 'true' && !(r && !r.lesson.exam);
-      if (zeroFirst) root.appendChild(m0);
+      /* Start here sits above the domains until it is done. */
+      if (start.dataset.done !== 'true') root.appendChild(start);
       root.appendChild(ds);
-      if (m0 && !zeroFirst) root.appendChild(m0);
+      if (start.dataset.done === 'true') root.appendChild(start);
       root.appendChild(toolsRow());
       root.appendChild(P().controls(manifest));
     }).catch(function (e) {

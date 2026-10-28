@@ -10,6 +10,7 @@
    lesson headers, in diagrams and in review results, so the colour itself
    tells you which quarter of the exam you are in:
 
+     0A  neutral   Foundations - beginner primers, not an exam domain (icon: open book)
      00  neutral   Lab safety - a project prerequisite, not an exam domain
      01  #0078D4   Identity, Access & Governance      (icon: person)
      02  #008272   Storage, Databases & Networking    (icon: stacked layers)
@@ -87,6 +88,10 @@
   --d-03: #8661c5;  --d-03-ink: #a88dd5;  --d-03-tint: #332d3a;
   --d-04: #d83b01;  --d-04-ink: #e57e57;  --d-04-tint: #3e271e;
 
+  /* Module 0A (foundations) shares Module 0B's neutral: neither is an exam
+     domain, and the open-book icon tells them apart. */
+  --d-0A: var(--d-00);  --d-0A-ink: var(--d-00-ink);  --d-0A-tint: var(--d-00-tint);
+
   --domain-00: var(--d-00);
   --domain-01: var(--d-01);
   --domain-02: var(--d-02);
@@ -115,6 +120,12 @@
   --call-warn:     #f1707b;   /* Fluent danger: misconfiguration, cost, irreversible */
   --call-tactical: #54b054;   /* Fluent success: how it lands in an investigation */
   --call-note:     #a19f9d;
+
+  /* --- flowchart outcomes (flowcharts/ and lesson flowcharts) -------------
+     Outline plus tint; the key under each diagram names them in words. */
+  --flow-stop: #f1707b;  --flow-stop-tint: #3b2224;
+  --flow-ok:   #54b054;  --flow-ok-tint:   #1f3320;
+  --flow-warn: #efd36b;  --flow-warn-tint: #3a3220;
 
   /* --- type ---------------------------------------------------------------- */
   --face-ui:   "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui,
@@ -202,6 +213,10 @@
   --call-tactical: #107c10;
   --call-note:     #605e5c;
 
+  --flow-stop: #c50f1f;  --flow-stop-tint: #fdf3f4;
+  --flow-ok:   #107c10;  --flow-ok-tint:   #f1faf1;
+  --flow-warn: #8a6a00;  --flow-warn-tint: #fffaeb;
+
   color-scheme: light;
 }
 
@@ -224,6 +239,8 @@
     --syn-fn: #0f6b73; --syn-variable: #a4501b; --syn-param: #484644;
     --syn-number: #107c10; --syn-danger: #c50f1f;
     --call-exam: #0078d4; --call-warn: #c50f1f; --call-tactical: #107c10; --call-note: #605e5c;
+    --flow-stop: #c50f1f; --flow-stop-tint: #fdf3f4; --flow-ok: #107c10; --flow-ok-tint: #f1faf1;
+    --flow-warn: #8a6a00; --flow-warn-tint: #fffaeb;
     color-scheme: light;
   }
 }
@@ -241,5 +258,6 @@
    mark also carries an icon and a text label. Make sure borders survive. */
 @media (forced-colors: active) {
   :root { --d-00: CanvasText; --d-01: CanvasText; --d-02: CanvasText;
-          --d-03: CanvasText; --d-04: CanvasText; }
+          --d-03: CanvasText; --d-04: CanvasText;
+          --flow-stop: CanvasText; --flow-ok: CanvasText; --flow-warn: CanvasText; }
 }

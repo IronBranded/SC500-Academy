@@ -1,0 +1,1101 @@
+{
+  "schema": 1,
+  "comparisons": [
+    {
+      "id": "managed-identity-vs-service-principal",
+      "title": "Managed identity vs service principal",
+      "question": "An application needs to call an Azure service. Which identity should it use?",
+      "objectives": [
+        "1.1.4",
+        "1.1.6"
+      ],
+      "lessons": [
+        "01-01",
+        "0A-04"
+      ],
+      "options": [
+        {
+          "name": "Managed identity",
+          "security_problem": "Credentials stored in code or configuration can leak, and someone has to rotate them.",
+          "purpose": "Give an Azure resource its own Microsoft Entra identity whose credentials Azure creates and rotates.",
+          "layer": "Identity (workload identity)",
+          "scope": "Azure resources that support it. System-assigned lives and dies with one resource; user-assigned is a standalone resource you attach to many.",
+          "when_to_use": "The workload runs on an Azure resource that supports managed identities and calls a service that accepts Microsoft Entra tokens.",
+          "major_difference": "Nobody ever sees or stores a credential - the platform obtains tokens for the resource.",
+          "limitation": "The platform-issued credential only works for workloads on supporting Azure resources (or Arc-enabled servers); from outside Azure, a user-assigned managed identity needs a federated credential instead. It still needs least-privilege role assignments - a managed identity with Owner is still Owner.",
+          "dependency": "A supporting Azure resource, and role assignments on the target.",
+          "validation": "The resource shows an identity; the app gets a token without any stored secret; sign-in logs show managed identity sign-ins."
+        },
+        {
+          "name": "Service principal (app registration)",
+          "security_problem": "Something outside Azure, or a multitenant app, needs an identity that Azure cannot manage for it.",
+          "purpose": "The local representation of an application in a tenant, authenticating with a secret, certificate or federated credential.",
+          "layer": "Identity (workload identity)",
+          "scope": "Any workload - inside or outside Azure, including CI/CD pipelines and other clouds.",
+          "when_to_use": "The workload runs outside Azure, or must act across tenants, and cannot use a managed identity.",
+          "major_difference": "You own the credential lifecycle - unless you use workload identity federation, which removes the secret.",
+          "limitation": "Secrets and certificates expire, leak and need rotation; owners and consented permissions must be governed.",
+          "dependency": "An app registration (or enterprise app), a credential or federated credential, and role assignments or API permissions.",
+          "validation": "Credentials listed with expiry dates; federated credentials preferred; sign-in logs show service principal sign-ins."
+        }
+      ],
+      "takeaway": "Prefer a managed identity whenever the workload runs on Azure. Outside Azure, use workload identity federation - on an app registration or a user-assigned managed identity - so no secret exists; a stored secret is the last resort.",
+      "trap": "Treating a managed identity as automatically least-privilege. It removes the credential problem, not the permission problem.",
+      "clues": [
+        {
+          "clue": "no credentials to store or rotate, app runs on an Azure VM / App Service",
+          "points_to": "Managed identity"
+        },
+        {
+          "clue": "GitHub Actions or an on-premises job must authenticate without a secret",
+          "points_to": "Workload identity federation, on an app registration or a user-assigned managed identity"
+        },
+        {
+          "clue": "one identity shared by several resources",
+          "points_to": "User-assigned managed identity"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview",
+        "https://learn.microsoft.com/entra/identity-platform/app-objects-and-service-principals",
+        "https://learn.microsoft.com/entra/workload-id/workload-identity-federation"
+      ]
+    },
+    {
+      "id": "pim-vs-conditional-access",
+      "title": "PIM vs Conditional Access",
+      "question": "Is the requirement about how long someone holds privilege, or about the conditions of a sign-in?",
+      "objectives": [
+        "1.1.1",
+        "1.1.2"
+      ],
+      "lessons": [
+        "01-01"
+      ],
+      "options": [
+        {
+          "name": "Privileged Identity Management (PIM)",
+          "security_problem": "Standing administrative access means a stolen admin account is dangerous every hour of every day.",
+          "purpose": "Make privileged roles eligible rather than permanent, activated just in time with approval, justification and MFA, for a limited duration.",
+          "layer": "Identity governance",
+          "scope": "Microsoft Entra roles, Azure resource roles and PIM for Groups.",
+          "when_to_use": "Privilege should exist only when needed, with an audit trail and time limit.",
+          "major_difference": "Controls *when and for how long* someone holds a role.",
+          "limitation": "Does not evaluate device, location or risk at each sign-in; an activated role is fully usable until it expires.",
+          "dependency": "Microsoft Entra ID P2 (or Governance) licensing; approvers and notification settings.",
+          "validation": "Assignments show as eligible; activation history records who, when, why and for how long."
+        },
+        {
+          "name": "Conditional Access",
+          "security_problem": "A correct password from the wrong device, location or risk level still gets in.",
+          "purpose": "Evaluate signals at sign-in (user, app, device, location, risk) and require controls such as MFA or a compliant device - or block.",
+          "layer": "Identity (access policy)",
+          "scope": "Sign-ins to cloud apps by users, guests, workload identities and agents (with the right licensing).",
+          "when_to_use": "Access must depend on the circumstances of the request.",
+          "major_difference": "Controls *under what conditions* a sign-in gets a token.",
+          "limitation": "Does not remove standing privilege; a compliant admin with permanent Global Administrator is still permanently privileged.",
+          "dependency": "Microsoft Entra ID P1 or higher; policies scoped correctly and tested in report-only.",
+          "validation": "Sign-in logs show which policies applied and their result; What If shows the expected outcome."
+        }
+      ],
+      "takeaway": "PIM reduces how long privilege exists; Conditional Access decides whether a sign-in is allowed. Strong designs use both - for example, require an authentication strength when a role is activated.",
+      "trap": "Answering \"require MFA for admins\" with PIM alone, or \"remove permanent admins\" with Conditional Access.",
+      "clues": [
+        {
+          "clue": "just-in-time, eligible, time-bound, approval to activate",
+          "points_to": "PIM"
+        },
+        {
+          "clue": "compliant device, location, sign-in risk, block legacy authentication",
+          "points_to": "Conditional Access"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/entra/id-governance/privileged-identity-management/pim-configure",
+        "https://learn.microsoft.com/entra/identity/conditional-access/overview"
+      ]
+    },
+    {
+      "id": "rbac-vs-policy",
+      "title": "Azure RBAC vs Azure Policy",
+      "question": "Is the requirement about who can act, or about what any resource is allowed to look like?",
+      "objectives": [
+        "1.3.1",
+        "1.3.5",
+        "1.3.7"
+      ],
+      "lessons": [
+        "01-03",
+        "0A-12"
+      ],
+      "options": [
+        {
+          "name": "Azure RBAC",
+          "security_problem": "People and workloads can do more than their job requires.",
+          "purpose": "Grant a security principal a role (a set of allowed actions) at a scope.",
+          "layer": "Identity / authorization",
+          "scope": "Management group, subscription, resource group or resource; data actions for some services.",
+          "when_to_use": "The question is who may perform an action.",
+          "major_difference": "About the *caller*: decides whether a principal may perform an operation.",
+          "limitation": "Does not stop an authorized person creating a non-compliant resource - an Owner can still create a public storage account.",
+          "dependency": "Correct role choice and scope; reviews to remove overprivileged assignments.",
+          "validation": "Check access and role assignments show the expected principals; denied actions return authorization failures."
+        },
+        {
+          "name": "Azure Policy",
+          "security_problem": "Resources drift from the organisation's rules, whoever creates them.",
+          "purpose": "Evaluate resource properties against rules and audit, deny, modify or deploy configuration.",
+          "layer": "Governance",
+          "scope": "Management group, subscription, resource group; all resource creation and updates in scope (and existing resources on evaluation).",
+          "when_to_use": "The question is what configuration any resource may have, regardless of who creates it.",
+          "major_difference": "About the *resource*: applies to everyone, including Owners.",
+          "limitation": "Does not grant or remove anyone's permissions; Audit effects only report.",
+          "dependency": "Assignments at the right scope, the right effect, and a managed identity for Modify/DeployIfNotExists remediation.",
+          "validation": "Compliance view shows the assignment's results; a non-compliant deployment is denied (Deny) or remediated (DINE/Modify)."
+        }
+      ],
+      "takeaway": "RBAC answers \"who can\", Policy answers \"what is allowed\". Owner plus a Deny policy still cannot create the forbidden resource.",
+      "trap": "Picking a custom role to stop people creating resources in the wrong region - that is a policy (allowed locations).",
+      "clues": [
+        {
+          "clue": "only the network team may manage virtual networks",
+          "points_to": "Azure RBAC"
+        },
+        {
+          "clue": "no storage account may allow public blob access, even for Owners",
+          "points_to": "Azure Policy (Deny)"
+        },
+        {
+          "clue": "add a tag automatically / deploy diagnostic settings when missing",
+          "points_to": "Azure Policy (Modify / DeployIfNotExists)"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/role-based-access-control/overview",
+        "https://learn.microsoft.com/azure/governance/policy/overview"
+      ]
+    },
+    {
+      "id": "private-endpoint-vs-service-endpoint",
+      "title": "Private endpoint vs service endpoint",
+      "question": "Must the service have a private IP address in your network, or is it enough to limit its public endpoint to your subnets?",
+      "objectives": [
+        "2.1.2",
+        "2.3.6"
+      ],
+      "lessons": [
+        "02-01",
+        "02-04",
+        "0A-08"
+      ],
+      "options": [
+        {
+          "name": "Private endpoint",
+          "security_problem": "A platform service reachable on the internet can be attacked or misused from anywhere.",
+          "purpose": "Give one specific resource a private IP in your subnet, through Azure Private Link.",
+          "layer": "Network (private connectivity)",
+          "scope": "One resource (and sub-resource such as blob), reachable from the virtual network, peered networks and on-premises over VPN/ExpressRoute.",
+          "when_to_use": "The service must be reachable privately - including from on-premises - and its public endpoint can be disabled.",
+          "major_difference": "The service gets an address *inside* your network; traffic never needs the public endpoint.",
+          "limitation": "Does not close the public endpoint by itself; it does not authorize anyone - data-plane permissions still apply.",
+          "dependency": "Private DNS so the name resolves to the private IP; public network access disabled.",
+          "validation": "The name resolves to the private IP from inside the network; public network access shows Disabled; requests from outside fail."
+        },
+        {
+          "name": "Service endpoint",
+          "security_problem": "You want the service's public endpoint to accept traffic only from chosen subnets.",
+          "purpose": "Extend the subnet's identity to the service over the Azure backbone so the service firewall can allow that subnet.",
+          "layer": "Network (service firewall)",
+          "scope": "A subnet and a service type (for example Microsoft.Storage, or the cross-region Microsoft.Storage.Global).",
+          "when_to_use": "Traffic is from Azure subnets, and restricting the public endpoint to them is enough.",
+          "major_difference": "The service keeps its *public* endpoint; the subnet is allowed through the service firewall.",
+          "limitation": "Not usable from on-premises by itself; applies to a whole service type, not one resource; no private IP.",
+          "dependency": "Service endpoint on the subnet and a matching virtual network rule on the resource firewall.",
+          "validation": "The resource firewall lists the subnet; traffic from other networks is refused."
+        }
+      ],
+      "takeaway": "A private endpoint puts the resource on your network; a service endpoint lets your subnet through the resource's public front door.",
+      "trap": "Assuming a private endpoint closes public access - you must also disable public network access, and get DNS right.",
+      "clues": [
+        {
+          "clue": "private IP, reachable from on-premises, disable public access",
+          "points_to": "Private endpoint"
+        },
+        {
+          "clue": "allow only these subnets through the storage firewall, no extra cost",
+          "points_to": "Service endpoint"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/private-link/private-endpoint-overview",
+        "https://learn.microsoft.com/azure/virtual-network/virtual-network-service-endpoints-overview"
+      ]
+    },
+    {
+      "id": "nsg-vs-azure-firewall",
+      "title": "NSG vs Azure Firewall vs security admin rule",
+      "question": "Where should this traffic rule live - next to the workload, centrally for inspection, or as an organisation-wide floor?",
+      "objectives": [
+        "2.3.1",
+        "2.3.2",
+        "2.3.8"
+      ],
+      "lessons": [
+        "02-03",
+        "02-04",
+        "0A-07"
+      ],
+      "options": [
+        {
+          "name": "Network security group (NSG)",
+          "security_problem": "Inside a flat network, one compromised machine can reach everything.",
+          "purpose": "Allow or deny traffic by IP, port, protocol, service tag or application security group.",
+          "layer": "Network (layer 3-4, distributed)",
+          "scope": "Subnet or network interface.",
+          "when_to_use": "A workload needs simple, free, stateful filtering close to its resources.",
+          "major_difference": "Distributed and address-based; no FQDN filtering or threat intelligence.",
+          "limitation": "Cannot inspect application traffic or filter by domain name; rules are owned locally and can be changed by the team.",
+          "dependency": "Association with the subnet or NIC; ordered priorities.",
+          "validation": "Effective security rules on the NIC; IP flow verify names the deciding rule."
+        },
+        {
+          "name": "Azure Firewall",
+          "security_problem": "Traffic crossing a boundary needs central control, domain-based rules and threat detection.",
+          "purpose": "A managed, stateful firewall with network, application (FQDN) and DNAT rules, threat intelligence and (Premium) IDPS and TLS inspection.",
+          "layer": "Network (layer 3-7, centralised)",
+          "scope": "A virtual network or secured Virtual WAN hub; traffic routed to it.",
+          "when_to_use": "Outbound internet or cross-network traffic must be filtered by FQDN, logged centrally or inspected.",
+          "major_difference": "Central inspection point with FQDN rules and threat intelligence.",
+          "limitation": "Only sees traffic that is routed through it; costs per hour and per GB.",
+          "dependency": "User-defined routes (or routing intent) sending traffic to it; a Firewall Policy.",
+          "validation": "Next hop shows the firewall; firewall logs show allowed and denied flows; a non-allowed FQDN is denied."
+        },
+        {
+          "name": "Virtual Network Manager security admin rule",
+          "security_problem": "Local teams can open what the organisation forbids.",
+          "purpose": "Centrally enforce allow, deny or always-allow rules across many virtual networks, evaluated before NSGs.",
+          "layer": "Network governance (organisation-wide)",
+          "scope": "Network groups of virtual networks (static or dynamic by policy).",
+          "when_to_use": "A rule must apply everywhere and must not be overridable locally.",
+          "major_difference": "Evaluated before NSGs; Deny and AlwaysAllow cannot be overridden by NSG rules.",
+          "limitation": "Some subnets (such as Azure Firewall, Bastion and gateway subnets) are exempt; nothing applies until the configuration is deployed to the region.",
+          "dependency": "A network manager, network groups and a deployed security admin configuration.",
+          "validation": "The configuration shows as deployed; effective security rules include the admin rule; an NSG allow has no effect on a denied flow."
+        }
+      ],
+      "takeaway": "NSGs segment workloads, Azure Firewall inspects traffic that crosses boundaries, and security admin rules set a floor no local team can lower.",
+      "trap": "Choosing an NSG to filter outbound traffic by domain name - NSGs cannot; Azure Firewall application rules can.",
+      "clues": [
+        {
+          "clue": "allow web tier to reach database tier on 1433 only",
+          "points_to": "NSG with application security groups"
+        },
+        {
+          "clue": "allow outbound only to *.contoso.com, block known malicious IPs",
+          "points_to": "Azure Firewall"
+        },
+        {
+          "clue": "block RDP from the internet in every virtual network, even if a team adds an allow",
+          "points_to": "Security admin rule"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview",
+        "https://learn.microsoft.com/azure/firewall/overview",
+        "https://learn.microsoft.com/azure/virtual-network-manager/concept-security-admins"
+      ]
+    },
+    {
+      "id": "preventive-vs-detective",
+      "title": "Preventive vs detective controls",
+      "question": "Must the bad thing be stopped, or seen and acted on?",
+      "objectives": [
+        "1.3.1",
+        "1.3.3",
+        "4.1.1",
+        "4.1.3"
+      ],
+      "lessons": [
+        "0A-12",
+        "01-03",
+        "04-01"
+      ],
+      "options": [
+        {
+          "name": "Preventive control (for example Azure Policy Deny, Conditional Access block)",
+          "security_problem": "Once a risky change or sign-in happens, the damage may already be done.",
+          "purpose": "Stop the unwanted action before it takes effect.",
+          "layer": "Any - identity, network, governance",
+          "scope": "The requests that pass through the control point.",
+          "when_to_use": "The requirement says \"prevent\", \"block\" or \"must not be possible\".",
+          "major_difference": "Acts before the event; nothing to investigate afterwards.",
+          "limitation": "Only stops what it was configured for; can break legitimate work if too broad.",
+          "dependency": "Being in the path of every request (policy scope, CA assignment, routing).",
+          "validation": "A test of the forbidden action fails with the control's message."
+        },
+        {
+          "name": "Detective control (for example Defender for Cloud recommendations and alerts, Sentinel analytics)",
+          "security_problem": "Some risks cannot be blocked without blocking business - or slip past prevention.",
+          "purpose": "Find the condition or activity and raise it for action.",
+          "layer": "Posture and monitoring",
+          "scope": "What the control can see - assessed resources, ingested logs, protected workloads.",
+          "when_to_use": "The requirement says \"detect\", \"alert\", \"report\" or \"identify\".",
+          "major_difference": "Acts after (or during) the event; produces findings someone must act on.",
+          "limitation": "Does nothing by itself; findings without owners do not get fixed.",
+          "dependency": "Data collection, the right plans enabled, and owners or automation for findings.",
+          "validation": "A test condition produces the recommendation or alert, and it reaches the right person."
+        }
+      ],
+      "takeaway": "Read the verb. \"Prevent\" points to Deny, block or a network control; \"detect\" points to Defender and Sentinel. Corrective controls (remediation, automation) close the loop.",
+      "trap": "Answering a \"prevent\" requirement with Audit, or with a Defender alert.",
+      "clues": [
+        {
+          "clue": "must not be able to create",
+          "points_to": "Preventive (Azure Policy Deny)"
+        },
+        {
+          "clue": "notify the SOC when it happens",
+          "points_to": "Detective (alert / analytics rule)"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/governance/policy/concepts/effect-basics",
+        "https://learn.microsoft.com/azure/defender-for-cloud/defender-for-cloud-introduction"
+      ]
+    },
+    {
+      "id": "cspm-vs-workload-protection",
+      "title": "Posture management vs workload protection",
+      "question": "Is the requirement about how exposed things are, or about attacks happening now?",
+      "objectives": [
+        "4.1.1",
+        "4.1.3"
+      ],
+      "lessons": [
+        "04-01"
+      ],
+      "options": [
+        {
+          "name": "Defender CSPM (posture management)",
+          "security_problem": "Thousands of findings, and no way to know which chains an attacker could actually use.",
+          "purpose": "Assess configuration, connect findings into attack paths, query the security graph, and assign owners.",
+          "layer": "Posture",
+          "scope": "Azure, AWS, GCP and on-premises (Arc) resources in connected scopes.",
+          "when_to_use": "You need prioritisation, attack paths, cloud security explorer, governance rules or agentless scanning.",
+          "major_difference": "Shows what *could* happen.",
+          "limitation": "Does not detect live attacks; agentless scanning needs the plan enabled by a subscription Owner.",
+          "dependency": "Defender CSPM enabled (by an Owner), connectors for other clouds.",
+          "validation": "Attack paths populate; cloud security explorer returns vulnerability data."
+        },
+        {
+          "name": "Workload protection plans (Defender for Servers, Storage, Databases, Containers, AI Services...)",
+          "security_problem": "An attack in progress against a server, storage account or AI service goes unnoticed.",
+          "purpose": "Detect threats against a specific service type and raise alerts.",
+          "layer": "Threat protection",
+          "scope": "Resources of that type in subscriptions where the plan is on.",
+          "when_to_use": "You need alerts about malicious activity on that workload.",
+          "major_difference": "Shows what *is* happening.",
+          "limitation": "Off by default and per subscription; does not prioritise posture findings.",
+          "dependency": "The plan enabled per subscription (ideally by Azure Policy).",
+          "validation": "The plan shows On; a simulated or test alert appears in Defender for Cloud and the Defender portal."
+        }
+      ],
+      "takeaway": "CSPM tells you what is wrong; workload plans tell you what is happening. Good hygiene without workload plans means no detection.",
+      "trap": "Expecting Defender CSPM to raise an alert for malware on a storage account - that is Defender for Storage.",
+      "clues": [
+        {
+          "clue": "prioritise findings, attack path, internet-exposed VM with a critical CVE",
+          "points_to": "Defender CSPM"
+        },
+        {
+          "clue": "alert on suspicious access to a storage account / SQL injection attempt",
+          "points_to": "Workload protection plan"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/defender-for-cloud/concept-cloud-security-posture-management",
+        "https://learn.microsoft.com/azure/defender-for-cloud/defender-for-cloud-introduction"
+      ]
+    },
+    {
+      "id": "secrets-keys-certificates",
+      "title": "Secrets vs keys vs certificates in Key Vault",
+      "question": "What kind of sensitive material is it, and does the application ever need to see it?",
+      "objectives": [
+        "1.2.5"
+      ],
+      "lessons": [
+        "01-02"
+      ],
+      "options": [
+        {
+          "name": "Secret",
+          "security_problem": "Passwords and connection strings in code or configuration leak.",
+          "purpose": "Store any sensitive string and return it to authorised callers.",
+          "layer": "Data protection (secret storage)",
+          "scope": "One vault object, versioned.",
+          "when_to_use": "The application needs the value itself - a password, API key or connection string.",
+          "major_difference": "Key Vault hands the value back to the caller.",
+          "limitation": "Once retrieved, the caller can copy or log it; rotation is your process.",
+          "dependency": "An authorised identity (ideally managed) and data-plane permissions.",
+          "validation": "The app reads the secret at runtime; no copy exists in configuration."
+        },
+        {
+          "name": "Key",
+          "security_problem": "Encryption keys that leave the vault can be stolen.",
+          "purpose": "Perform cryptographic operations (encrypt, decrypt, wrap, sign) with the key staying in the vault or HSM.",
+          "layer": "Data protection (cryptography)",
+          "scope": "One vault object, software- or HSM-protected; rotation policies available.",
+          "when_to_use": "You need encryption or signing - including customer-managed keys for other Azure services.",
+          "major_difference": "The private key material never leaves the vault; callers ask Key Vault to use it.",
+          "limitation": "Losing or deleting the key loses the data it protects - soft delete and purge protection matter.",
+          "dependency": "Key permissions for the calling identity; purge protection for CMK scenarios.",
+          "validation": "The service shows the CMK in use; operations succeed without exporting the key."
+        },
+        {
+          "name": "Certificate",
+          "security_problem": "Expired or unmanaged TLS certificates cause outages and weak trust.",
+          "purpose": "Manage X.509 certificates - issuance, renewal and the private key - as one object.",
+          "layer": "Data protection (PKI lifecycle)",
+          "scope": "One vault object, backed by an underlying key and secret.",
+          "when_to_use": "You need TLS or client-authentication certificates with automatic renewal.",
+          "major_difference": "Bundles lifecycle (issuer, renewal, notifications) with the key pair.",
+          "limitation": "Renewal depends on issuer integration; consumers must pick up the new version.",
+          "dependency": "Certificate permissions, an issuer (or self-signed), lifetime action settings.",
+          "validation": "Certificate shows renewal policy and next expiry; consumers present the current version."
+        }
+      ],
+      "takeaway": "Secrets are returned, keys are used in place, certificates are managed through their lifecycle.",
+      "trap": "Storing an encryption key as a secret so the app can \"use it\" - the point of a key is that it never leaves the vault.",
+      "clues": [
+        {
+          "clue": "connection string, API key, password",
+          "points_to": "Secret"
+        },
+        {
+          "clue": "customer-managed key, encryption at rest, the key must never leave an HSM",
+          "points_to": "Key"
+        },
+        {
+          "clue": "TLS certificate with automatic renewal",
+          "points_to": "Certificate"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/key-vault/general/about-keys-secrets-certificates"
+      ]
+    },
+    {
+      "id": "key-vault-rbac-vs-access-policies",
+      "title": "Key Vault: Azure RBAC vs access policies",
+      "question": "How should data-plane access to a vault be granted?",
+      "objectives": [
+        "1.2.3"
+      ],
+      "lessons": [
+        "01-02"
+      ],
+      "options": [
+        {
+          "name": "Azure RBAC permission model",
+          "security_problem": "Vault access granted outside the normal role system is hard to govern and review.",
+          "purpose": "Grant data-plane access (for example Key Vault Secrets User) as Azure role assignments.",
+          "layer": "Identity / authorization",
+          "scope": "Vault, resource group, subscription - or an individual secret, key or certificate.",
+          "when_to_use": "Always for new vaults - it is the default from API version 2026-02-01.",
+          "major_difference": "Same system as all other Azure access: PIM-eligible, reviewable, scoped down to one object.",
+          "limitation": "Role assignments take a little time to propagate; you must pick data-plane roles, not just management roles.",
+          "dependency": "Vault set to the Azure RBAC permission model; least-privilege built-in roles.",
+          "validation": "Access control shows data-plane role assignments; a user without one is denied the secret."
+        },
+        {
+          "name": "Vault access policies (legacy)",
+          "security_problem": "Older vaults granted access in a vault-specific list.",
+          "purpose": "Grant key, secret and certificate permissions per principal in the vault itself.",
+          "layer": "Identity / authorization (legacy)",
+          "scope": "The whole vault only.",
+          "when_to_use": "Only for existing vaults not yet migrated.",
+          "major_difference": "Vault-wide permissions in a separate list, outside Azure RBAC and PIM.",
+          "limitation": "Cannot scope to a single secret; anyone who can write the vault's access policies (for example Key Vault Contributor) can grant themselves data access.",
+          "dependency": "The vault set to the access policy model.",
+          "validation": "Access policies list; plan migration to Azure RBAC."
+        }
+      ],
+      "takeaway": "Use Azure RBAC for Key Vault data access - it is the default for new vaults and closes the access-policy privilege escalation path.",
+      "trap": "Assuming Key Vault Contributor cannot read secrets - under access policies it can grant itself access.",
+      "clues": [
+        {
+          "clue": "grant an app read access to one specific secret only",
+          "points_to": "Azure RBAC scoped to the secret"
+        },
+        {
+          "clue": "make vault access PIM-eligible and reviewable",
+          "points_to": "Azure RBAC"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/key-vault/general/rbac-guide",
+        "https://learn.microsoft.com/azure/key-vault/general/rbac-access-policy"
+      ]
+    },
+    {
+      "id": "rcd-vs-rac",
+      "title": "Restricted Content Discovery vs Restricted Access Control",
+      "question": "Should overshared content stop appearing in Copilot and search, or should people lose access to it?",
+      "objectives": [
+        "3.1.1"
+      ],
+      "lessons": [
+        "03-01"
+      ],
+      "options": [
+        {
+          "name": "Restricted Content Discovery (RCD)",
+          "security_problem": "Copilot and organisation-wide search surface overshared sites to everyone who technically has access.",
+          "purpose": "Stop a SharePoint site's content surfacing in Microsoft 365 Copilot and org-wide search.",
+          "layer": "Data exposure (discoverability)",
+          "scope": "SharePoint sites (not OneDrive).",
+          "when_to_use": "You need to reduce exposure quickly without disrupting the people who use the site.",
+          "major_difference": "Changes discoverability, not permissions.",
+          "limitation": "Anyone with access can still open files directly, people still find content they own or recently worked on, and propagation can take time on large sites.",
+          "dependency": "SharePoint Advanced Management (included with Microsoft 365 Copilot licensing).",
+          "validation": "After propagation, a Copilot query no longer returns the site's content, but direct access still works."
+        },
+        {
+          "name": "Restricted Access Control (RAC)",
+          "security_problem": "A sensitive site is reachable by far more people than should have it.",
+          "purpose": "Limit a site to members of specified groups, overriding existing permissions and sharing links.",
+          "layer": "Data exposure (access)",
+          "scope": "SharePoint sites and OneDrive.",
+          "when_to_use": "People outside the named groups must lose access.",
+          "major_difference": "Changes who can open the content at all.",
+          "limitation": "Can disrupt legitimate users who were not in the named groups.",
+          "dependency": "SharePoint Advanced Management; the right groups.",
+          "validation": "A user outside the group is denied, even with an old sharing link."
+        }
+      ],
+      "takeaway": "RCD hides content from Copilot and search; RAC removes access. Fixing permissions (or RAC) is the real fix; RCD buys time.",
+      "trap": "Choosing RCD when the requirement is that unauthorised users must not be able to open the files.",
+      "clues": [
+        {
+          "clue": "stop it appearing in Copilot without disrupting the team",
+          "points_to": "RCD"
+        },
+        {
+          "clue": "only the legal group may open the site",
+          "points_to": "RAC"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/sharepoint/restricted-content-discovery",
+        "https://learn.microsoft.com/sharepoint/restricted-access-control"
+      ]
+    },
+    {
+      "id": "ai-gateway-vs-guardrails-vs-defender",
+      "title": "AI gateway vs Foundry guardrails vs Defender for AI Services",
+      "question": "Is the requirement about AI traffic, AI content, or detecting attacks?",
+      "objectives": [
+        "3.1.7",
+        "3.1.8",
+        "3.1.9",
+        "3.1.10"
+      ],
+      "lessons": [
+        "03-03"
+      ],
+      "options": [
+        {
+          "name": "AI gateway (API Management)",
+          "security_problem": "Consumers share token capacity and model keys, and nothing between apps and models can limit or log.",
+          "purpose": "A chokepoint in front of models (and agents, MCP tools) with token limits, content safety checks, logging and credential handling.",
+          "layer": "Network / traffic",
+          "scope": "Calls that are routed through the gateway; in Foundry, projects added to the gateway.",
+          "when_to_use": "You must limit tokens per consumer, centralise keys, or moderate prompts for every app once.",
+          "major_difference": "Acts on requests and responses as traffic.",
+          "limitation": "Only governs traffic that goes through it; existing Foundry projects must be added.",
+          "dependency": "API Management (or the Foundry AI gateway), policies such as llm-token-limit and llm-content-safety.",
+          "validation": "Requests metric rises per call; a throttled consumer gets 429 while another succeeds."
+        },
+        {
+          "name": "Foundry guardrails",
+          "security_problem": "Models and agents receive harmful content or injected instructions, or produce harmful output.",
+          "purpose": "Controls (risk + intervention point + action) that annotate or block content at user input and output, and for agents at tool call and tool response (preview).",
+          "layer": "Content safety",
+          "scope": "Models and Foundry Agent Service agents the guardrail is assigned to.",
+          "when_to_use": "You must block jailbreaks, indirect injection, harmful categories or custom terms.",
+          "major_difference": "Acts on content; an agent's own guardrail replaces its model's.",
+          "limitation": "Classifiers are probabilistic; tool traffic is scanned only if those intervention points have controls; some risks are model-only.",
+          "dependency": "A custom guardrail assigned to the model or agent (defaults cannot be edited).",
+          "validation": "A jailbreak test is blocked; the agent shows its assigned guardrail with tool response controls."
+        },
+        {
+          "name": "Defender for AI Services",
+          "security_problem": "Attacks against AI services happen and nobody is alerted.",
+          "purpose": "Runtime threat detection on prompts and responses, with alerts in Defender for Cloud and the Defender portal.",
+          "layer": "Threat protection",
+          "scope": "AI services in subscriptions where the plan is on (Foundry Models such as Azure OpenAI).",
+          "when_to_use": "You must detect jailbreak, data leakage or credential theft attempts and investigate them.",
+          "major_difference": "Detects and alerts; it does not block the request.",
+          "limitation": "Prompt content is masked unless suspicious prompt evidence is on; Foundry agent protection moved to Agent 365; discovery comes from Defender CSPM.",
+          "dependency": "The plan enabled per subscription; suspicious prompt evidence on.",
+          "validation": "A jailbreak attempt raises an alert with a redacted prompt snippet."
+        }
+      ],
+      "takeaway": "Gateway for traffic, guardrails for content, Defender for detection - three layers, three questions.",
+      "trap": "Expecting Defender for AI Services to block a prompt - it alerts. Blocking is guardrails, the gateway, or Defender real-time protection for agents (preview).",
+      "clues": [
+        {
+          "clue": "one app must not exhaust the token quota",
+          "points_to": "AI gateway (llm-token-limit)"
+        },
+        {
+          "clue": "scan what a tool returns before the agent uses it",
+          "points_to": "Foundry guardrail on tool response"
+        },
+        {
+          "clue": "SOC must be alerted to jailbreak attempts",
+          "points_to": "Defender for AI Services"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/api-management/genai-gateway-capabilities",
+        "https://learn.microsoft.com/azure/foundry/guardrails/guardrails-overview",
+        "https://learn.microsoft.com/azure/defender-for-cloud/ai-threat-protection",
+        "https://learn.microsoft.com/defender-xdr/security-for-ai/ai-agent-real-time-protection"
+      ]
+    },
+    {
+      "id": "bastion-vs-jit",
+      "title": "Azure Bastion vs just-in-time VM access",
+      "question": "Is the requirement to remove the public path to the VM, or to keep management ports closed until needed?",
+      "objectives": [
+        "3.2.2",
+        "3.2.3"
+      ],
+      "lessons": [
+        "03-04"
+      ],
+      "options": [
+        {
+          "name": "Azure Bastion",
+          "security_problem": "Admin access over RDP/SSH needs a public IP and an open port.",
+          "purpose": "A managed jump service that connects administrators to VMs' private IPs over TLS.",
+          "layer": "Network (access path)",
+          "scope": "VMs in the Bastion's virtual network and (Basic and above) peered networks.",
+          "when_to_use": "VMs must have no public IP while admins still connect; recording sessions needs Premium.",
+          "major_difference": "Removes the need for a public IP on the VM.",
+          "limitation": "Does not by itself close other paths - existing public IPs and NSG allows remain until removed.",
+          "dependency": "An AzureBastionSubnet (/26 or larger) for dedicated SKUs; the right SKU for the features needed.",
+          "validation": "A Bastion session to the private IP succeeds; the VM has no public IP."
+        },
+        {
+          "name": "Just-in-time VM access",
+          "security_problem": "Management ports left open all the time are scanned and brute-forced.",
+          "purpose": "Keep management ports closed and open them on request, for a chosen source and duration, with an audit trail.",
+          "layer": "Network (time-bound access)",
+          "scope": "VMs covered by Defender for Servers Plan 2.",
+          "when_to_use": "Ports must be open only when an administrator needs them.",
+          "major_difference": "Removes the *standing* open port; every opening is requested and logged.",
+          "limitation": "Needs Defender for Servers Plan 2; a manual standing NSG allow defeats it.",
+          "dependency": "Defender for Servers Plan 2; JIT policy on the VM.",
+          "validation": "NSG shows deny until a request creates a time-bound allow; request history shows who asked."
+        }
+      ],
+      "takeaway": "Bastion removes the public IP; JIT closes the port when nobody is using it. They are complementary.",
+      "trap": "Picking Bastion for \"ports open only when needed\", or JIT for \"no public IP\".",
+      "clues": [
+        {
+          "clue": "RDP without a public IP, record sessions",
+          "points_to": "Azure Bastion (Premium for recording)"
+        },
+        {
+          "clue": "open port 3389 for one hour from one IP on request",
+          "points_to": "Just-in-time VM access"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/bastion/bastion-sku-comparison",
+        "https://learn.microsoft.com/azure/defender-for-cloud/just-in-time-access-overview"
+      ]
+    },
+    {
+      "id": "agentless-vs-agent-scanning",
+      "title": "Agentless scanning vs the Defender for Endpoint agent",
+      "question": "Do you need findings without installing anything, or real-time detection and response on the machine?",
+      "objectives": [
+        "3.2.6",
+        "3.2.7",
+        "4.1.5"
+      ],
+      "lessons": [
+        "03-04",
+        "04-01"
+      ],
+      "options": [
+        {
+          "name": "Agentless scanning",
+          "security_problem": "Machines without agents (or with broken agents) have no vulnerability or secrets visibility.",
+          "purpose": "Snapshot the disks and scan out of band for vulnerabilities, software inventory, secrets and (Plan 2) malware.",
+          "layer": "Posture / vulnerability management",
+          "scope": "Running machines in subscriptions with Defender for Servers Plan 2 or Defender CSPM.",
+          "when_to_use": "Findings are needed without installing or touching the machine.",
+          "major_difference": "No agent, no connectivity, no performance cost - but scans about every 24 hours.",
+          "limitation": "No real-time behavioural signal - a machine with agentless only has no EDR; stopped machines are not scanned.",
+          "dependency": "Plan 2 or Defender CSPM (enabled by an Owner); Key Vault permissions for CMK-encrypted disks.",
+          "validation": "Software inventory or vulnerability results appear within 24 hours."
+        },
+        {
+          "name": "Defender for Endpoint agent (EDR)",
+          "security_problem": "Attacks on a running machine need to be seen and stopped as they happen.",
+          "purpose": "Endpoint detection and response, next-generation protection and agent-based vulnerability assessment.",
+          "layer": "Threat protection",
+          "scope": "Machines onboarded through Defender for Servers Plan 1 or 2 (auto-provisioned by default).",
+          "when_to_use": "You need real-time detection, investigation and response on the machine.",
+          "major_difference": "Real-time signal from inside the OS.",
+          "limitation": "Requires the agent installed and healthy; it is the agent, so it can be tampered with or missing.",
+          "dependency": "Defender for Servers Plan 1 or 2 with endpoint protection on.",
+          "validation": "The machine appears in Defender for Endpoint; test detections raise alerts."
+        }
+      ],
+      "takeaway": "Agentless and agent-based are complementary: one gives findings without touching the machine, the other gives EDR.",
+      "trap": "Treating agentless scanning as a replacement for EDR.",
+      "clues": [
+        {
+          "clue": "vulnerability findings without installing anything",
+          "points_to": "Agentless scanning"
+        },
+        {
+          "clue": "detect and respond to attacker behaviour on the server",
+          "points_to": "Defender for Endpoint (EDR)"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/defender-for-cloud/concept-agentless-data-collection",
+        "https://learn.microsoft.com/azure/defender-for-cloud/configure-servers-coverage"
+      ]
+    },
+    {
+      "id": "waf-vs-apim",
+      "title": "Web Application Firewall vs API Management",
+      "question": "Is the requirement to block malicious requests, or to control which callers may use an API and how much?",
+      "objectives": [
+        "3.3.8",
+        "3.3.9"
+      ],
+      "lessons": [
+        "03-06"
+      ],
+      "options": [
+        {
+          "name": "Web Application Firewall",
+          "security_problem": "Requests carrying attacks (SQL injection, cross-site scripting, bad bots) reach the application.",
+          "purpose": "Inspect HTTP requests against managed (DRS) and custom rules and block attacks in Prevention mode.",
+          "layer": "Application traffic inspection",
+          "scope": "Application Gateway (regional) or Front Door (global; Premium for managed rules).",
+          "when_to_use": "You must block attack patterns, bots, or rate-limit by client IP.",
+          "major_difference": "Judges whether a request looks like an attack.",
+          "limitation": "Starts in Detection mode (blocks nothing); a well-formed request from an unauthorised caller passes.",
+          "dependency": "WAF policy in Prevention mode, tuned with exclusions; the right SKU/tier.",
+          "validation": "A test SQL injection string returns 403 and WAF logs show the blocking rule."
+        },
+        {
+          "name": "API Management",
+          "security_problem": "Any caller who can reach the backend can call it as often as they like.",
+          "purpose": "A gateway that validates tokens, identifies consumers with subscription keys, applies rate limits and quotas, and holds backend credentials.",
+          "layer": "API access control",
+          "scope": "APIs published through the gateway - only effective if the backend accepts traffic only from it.",
+          "when_to_use": "You must require valid tokens, limit each consumer, or hide backend credentials.",
+          "major_difference": "Judges whether this caller may make this call at this rate.",
+          "limitation": "Advisory if the backend is reachable directly; not an attack-signature engine.",
+          "dependency": "Policies such as validate-jwt and rate limits; the backend locked to the gateway.",
+          "validation": "Invalid token rejected; exceeding the limit returns 429; direct backend calls fail."
+        }
+      ],
+      "takeaway": "WAF inspects for attacks; API Management decides who may call and how often. They are commonly deployed together, WAF in front.",
+      "trap": "Using a WAF to enforce per-consumer quotas or token validation - that is API Management.",
+      "clues": [
+        {
+          "clue": "block SQL injection and XSS",
+          "points_to": "WAF managed rules (Prevention mode)"
+        },
+        {
+          "clue": "callers must present a valid Entra token, each limited independently",
+          "points_to": "API Management (validate-jwt, rate limits)"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/web-application-firewall/overview",
+        "https://learn.microsoft.com/azure/api-management/api-management-key-concepts"
+      ]
+    },
+    {
+      "id": "analytics-tier-vs-data-lake",
+      "title": "Sentinel analytics tier vs data lake tier",
+      "question": "Will this data drive detections and hunting, or is it kept for history and compliance?",
+      "objectives": [
+        "4.2.7",
+        "4.2.9"
+      ],
+      "lessons": [
+        "04-02",
+        "04-03",
+        "04-04"
+      ],
+      "options": [
+        {
+          "name": "Analytics tier",
+          "security_problem": "Detections and hunting need fast, fully featured access to recent data.",
+          "purpose": "Store data where analytics rules, hunting, workbooks and every real-time feature work.",
+          "layer": "Monitoring (hot storage)",
+          "scope": "Per table; 30 days by default, 90 days at no extra storage charge for Microsoft Sentinel solution tables, extendable to 2 years.",
+          "when_to_use": "The table feeds analytics rules or frequent investigation.",
+          "major_difference": "Full real-time capability at standard ingestion cost.",
+          "limitation": "Expensive for high-volume, low-value telemetry.",
+          "dependency": "Table set to the analytics tier; retention configured per table.",
+          "validation": "Analytics rules return results against the table; retention shows in Tables."
+        },
+        {
+          "name": "Data lake tier",
+          "security_problem": "Keeping years of verbose logs at analytics prices is unaffordable.",
+          "purpose": "Low-cost long-term storage (up to 12 years), queried with KQL jobs, notebooks and search jobs.",
+          "layer": "Monitoring (cold storage)",
+          "scope": "Per table; analytics data is mirrored to it, and total retention can extend beyond analytics retention.",
+          "when_to_use": "High-volume, low-value logs, or compliance retention.",
+          "major_difference": "Minimal ingestion cost; no real-time rules.",
+          "limitation": "Analytics rules and interactive hunting do not run on it; queries are slower and charged by data scanned.",
+          "dependency": "The data lake enabled for the workspace (part of Sentinel onboarding for customers onboarding since September 2026); table tier or total retention configured.",
+          "validation": "A KQL or search job returns historical results; the table shows the data lake tier."
+        }
+      ],
+      "takeaway": "Detection-grade data in the analytics tier, everything else in the data lake - and total retention to keep history cheaply.",
+      "trap": "Moving a table that feeds analytics rules to the data lake - the rules stop working.",
+      "clues": [
+        {
+          "clue": "must be usable by analytics rules",
+          "points_to": "Analytics tier"
+        },
+        {
+          "clue": "keep seven years for compliance at low cost",
+          "points_to": "Data lake tier (total retention)"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/sentinel/manage-data-overview"
+      ]
+    },
+    {
+      "id": "automation-rule-vs-playbook",
+      "title": "Sentinel automation rule vs playbook",
+      "question": "Is the requirement to route and manage incidents, or to take action in other systems?",
+      "objectives": [
+        "4.2.8"
+      ],
+      "lessons": [
+        "04-04"
+      ],
+      "options": [
+        {
+          "name": "Automation rule",
+          "security_problem": "Analysts spend time on mechanical triage - assigning, tagging, closing known noise.",
+          "purpose": "React to incident creation or update (or alert creation) with conditions and ordered actions.",
+          "layer": "Security operations (routing)",
+          "scope": "Incidents and Sentinel alerts in the workspace.",
+          "when_to_use": "Assign, tag, change status or severity, suppress with an expiry, or start a playbook.",
+          "major_difference": "Lives in Sentinel; decides whether and when.",
+          "limitation": "Cannot reach external systems itself; alert-trigger rules can only run a playbook and, in the Defender portal, see only Sentinel alerts.",
+          "dependency": "Microsoft Sentinel Contributor to author; deliberate rule order.",
+          "validation": "A test incident is assigned and tagged; suppression rules show an expiration date."
+        },
+        {
+          "name": "Playbook",
+          "security_problem": "Response steps need other systems - tickets, Teams, disabling accounts.",
+          "purpose": "A Logic Apps workflow that Sentinel runs to take action anywhere Logic Apps can reach.",
+          "layer": "Security operations (action)",
+          "scope": "Whatever its connections and identity can reach.",
+          "when_to_use": "You need actions in Entra, ticketing, messaging or third-party APIs.",
+          "major_difference": "Lives in Logic Apps; does the work, with its own identity.",
+          "limitation": "Sentinel cannot run it without Automation Contributor on its resource group; its identity is a privileged object.",
+          "dependency": "Logic Apps permissions to build; Sentinel Automation Contributor on the resource group; a least-privilege managed identity.",
+          "validation": "Run history shows a successful run triggered by the automation rule."
+        }
+      ],
+      "takeaway": "Automation rules are the routing layer; playbooks are the action layer.",
+      "trap": "Granting Playbook Operator to someone who must build playbooks - building needs Logic Apps permissions.",
+      "clues": [
+        {
+          "clue": "automatically assign and tag new incidents",
+          "points_to": "Automation rule"
+        },
+        {
+          "clue": "create a ServiceNow ticket / disable the user in Entra",
+          "points_to": "Playbook (run by an automation rule)"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/sentinel/automate-incident-handling-with-automation-rules",
+        "https://learn.microsoft.com/azure/sentinel/automation/automation"
+      ]
+    },
+    {
+      "id": "windows-security-events-vs-forwarded-events",
+      "title": "Windows Security Events via AMA vs Windows Forwarded Events",
+      "question": "Should each server send its own Security log, or should endpoints forward to a collector?",
+      "objectives": [
+        "4.2.6"
+      ],
+      "lessons": [
+        "04-03"
+      ],
+      "options": [
+        {
+          "name": "Windows Security Events via AMA",
+          "security_problem": "Windows logon and process evidence never reaches the SIEM.",
+          "purpose": "Azure Monitor Agent on each machine sends the Security log, filtered by an event set or XPath.",
+          "layer": "Monitoring (collection)",
+          "scope": "Each Azure VM or Arc-enabled server with AMA and the DCR.",
+          "when_to_use": "Machines can run AMA and reach Azure, and you want built-in Windows rules to work unchanged.",
+          "major_difference": "Writes to SecurityEvent, which many built-in analytics rules query.",
+          "limitation": "An agent (and Arc outside Azure) on every machine; All events is very expensive.",
+          "dependency": "AMA, a DCR with Common, Minimal or custom XPath, Arc for non-Azure machines.",
+          "validation": "SecurityEvent has the expected event IDs from each machine."
+        },
+        {
+          "name": "Windows Forwarded Events (WEF)",
+          "security_problem": "Endpoints cannot (or should not) connect to Azure directly.",
+          "purpose": "Endpoints forward events to a Windows Event Collector; AMA on the collector sends the ForwardedEvents channel.",
+          "layer": "Monitoring (collection)",
+          "scope": "One collector (plus WEF subscriptions on many endpoints).",
+          "when_to_use": "Many endpoints, no direct Azure connectivity, one place to run the agent.",
+          "major_difference": "Writes to WindowsEvent - including forwarded Security log events.",
+          "limitation": "Built-in rules that query SecurityEvent will not see this data unless adapted (or ASIM parsers are used); collecting both ways duplicates events.",
+          "dependency": "WEF subscriptions, a collector running AMA, the Windows Forwarded Events connector.",
+          "validation": "WindowsEvent has rows from the collector; detections that need them query WindowsEvent or ASIM."
+        }
+      ],
+      "takeaway": "Same events, different tables: SecurityEvent for direct collection, WindowsEvent for forwarded collection - and detections must read the right one.",
+      "trap": "Forwarding events with WEF and assuming the built-in SecurityEvent rules now cover them.",
+      "clues": [
+        {
+          "clue": "collect only these event IDs from each server",
+          "points_to": "Windows Security Events via AMA with custom XPath"
+        },
+        {
+          "clue": "endpoints must not connect to Azure directly",
+          "points_to": "Windows Forwarded Events via a collector"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/azure/sentinel/connect-services-windows-based",
+        "https://learn.microsoft.com/azure/sentinel/windows-security-event-id-reference"
+      ]
+    },
+    {
+      "id": "obo-vs-autonomous-agent",
+      "title": "On-behalf-of agent vs autonomous agent",
+      "question": "Whose token does the agent use - a signed-in user's, or its own?",
+      "objectives": [
+        "3.1.4",
+        "3.1.6"
+      ],
+      "lessons": [
+        "03-02"
+      ],
+      "options": [
+        {
+          "name": "On-behalf-of (delegated) agent",
+          "security_problem": "An assistant acting for a user could reach more than that user should.",
+          "purpose": "Act with the signed-in user's delegated permissions.",
+          "layer": "Identity (delegated access)",
+          "scope": "Whatever the signed-in user can reach, limited by the delegated permissions granted.",
+          "when_to_use": "The agent assists a person interactively.",
+          "major_difference": "The user is the token subject, so the user's Conditional Access policies apply.",
+          "limitation": "Reach changes with every user - a broadly privileged user widens it; prompt injection can misuse that user's access.",
+          "dependency": "Delegated permissions and consent; least privilege for users.",
+          "validation": "Sign-in logs show the user as subject with the agent as client; the user's policies applied."
+        },
+        {
+          "name": "Autonomous (app-only) agent",
+          "security_problem": "A background agent with broad standing permissions acts with nobody watching.",
+          "purpose": "Act as its own agent identity, with no user present.",
+          "layer": "Identity (workload / agent identity)",
+          "scope": "Exactly what the agent identity is granted.",
+          "when_to_use": "The agent runs on its own schedule or triggers.",
+          "major_difference": "The agent identity is the token subject, so agent-targeted Conditional Access applies - All users policies do not.",
+          "limitation": "Needs its own governance: sponsor, expiring access, agent-specific policies; cannot do MFA.",
+          "dependency": "Microsoft Entra Agent ID, agent Conditional Access (E7 or Agent 365 licensing), least-privilege grants.",
+          "validation": "Agent identity sign-ins show the agent policy result; access packages show expiry and sponsor."
+        }
+      ],
+      "takeaway": "Target Conditional Access at the token subject: users for on-behalf-of agents, agent identities or blueprints for autonomous ones.",
+      "trap": "Assuming your All users MFA policy covers agents - it does not include agent identities or agents' user accounts.",
+      "clues": [
+        {
+          "clue": "assistant that acts for the signed-in user",
+          "points_to": "On-behalf-of - governed by user policies"
+        },
+        {
+          "clue": "nightly agent with no user present",
+          "points_to": "Autonomous - agent identity policies"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/entra/identity/conditional-access/agent-id",
+        "https://learn.microsoft.com/entra/agent-id/identity-platform/what-is-agent-id"
+      ]
+    },
+    {
+      "id": "copilot-roles-vs-service-roles",
+      "title": "Security Copilot roles vs underlying service roles",
+      "question": "Does this role let someone use Security Copilot, or see the data Copilot reasons over?",
+      "objectives": [
+        "4.3.2",
+        "4.3.3"
+      ],
+      "lessons": [
+        "04-05"
+      ],
+      "options": [
+        {
+          "name": "Copilot owner / contributor",
+          "security_problem": "The wrong people can use or administer an AI assistant connected to security tools.",
+          "purpose": "Grant access to the Security Copilot platform (owner: administer; contributor: use).",
+          "layer": "Platform access",
+          "scope": "The Security Copilot workspace.",
+          "when_to_use": "Deciding who may open Security Copilot, manage plugins or capacity.",
+          "major_difference": "Platform access only - no data access by itself.",
+          "limitation": "Does not control what data a user sees; older tenants may still assign contributor to Everyone.",
+          "dependency": "Role assignment in Security Copilot (users and role-assignable groups); owner role selection.",
+          "validation": "Role assignment lists the intended groups; Everyone is not assigned."
+        },
+        {
+          "name": "Service roles (for example Microsoft Sentinel Reader, Purview roles, Intune roles)",
+          "security_problem": "Copilot could expose data a user should not see.",
+          "purpose": "Grant access to each product's data, which Copilot plugins then respect.",
+          "layer": "Data access",
+          "scope": "Each underlying service and its scopes.",
+          "when_to_use": "Deciding what data a user (or agent identity) can retrieve through Copilot.",
+          "major_difference": "Copilot inherits these - two users get different answers to the same prompt.",
+          "limitation": "An empty answer may mean no access; granting a broad role (such as Security Administrator) just for Copilot over-privileges the user.",
+          "dependency": "Least-privilege role assignments in each product.",
+          "validation": "A user without Sentinel Reader gets no Sentinel data through Copilot; with it, they do."
+        }
+      ],
+      "takeaway": "Copilot roles open the door; service roles decide what is in the room.",
+      "trap": "Restricting Copilot contributor and believing that limits data exposure - data access was always the service roles.",
+      "clues": [
+        {
+          "clue": "analyst can query Purview but not Sentinel through Copilot",
+          "points_to": "Missing Sentinel service role"
+        },
+        {
+          "clue": "restrict who can open Security Copilot",
+          "points_to": "Copilot contributor assignment"
+        }
+      ],
+      "sources": [
+        "https://learn.microsoft.com/copilot/security/authentication"
+      ]
+    }
+  ]
+}

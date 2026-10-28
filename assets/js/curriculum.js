@@ -12,6 +12,12 @@
                                         modules it belongs to
      content/official-training.json     Microsoft Learn learning paths and
                                         Microsoft's own labs, per objective
+     content/comparisons.json           the structured comparison component:
+                                        each comparison names its lessons and
+                                        the official bullets it serves
+     primer front matter                supports_objectives: which official
+                                        objectives a Module 0A foundation
+                                        primer exists to support
 
    The chain the redesign brief asks for - Objective -> Lesson -> Visual ->
    Lab -> Knowledge check -> Review - is assembled here by joining those
@@ -129,7 +135,7 @@
 
   /* ---------------------------------------------------------------- build */
 
-  function build(manifest, snapshotMd, lessonTexts, quizzes, a6Md, a6Index, training) {
+  function build(manifest, snapshotMd, lessonTexts, quizzes, a6Md, a6Index, training, comparisons, cases, drills) {
     var FM = global.SC500FrontMatter;
     var snap = parseSnapshot(snapshotMd || '');
 
@@ -149,6 +155,8 @@
       order: [],            // lesson ids in manifest (study) order, Module 0 included
       questions: {},        // qid -> question with lessonId, bulletId, domainId
       distinctions: parseDistinctions(a6Md),
+      comparisons: [],      // content/comparisons.json, joined to lessons
+      comparisonById: {},
       a6Index: a6Index,     // index into manifest.appendix, or -1
       unmapped: []          // front-matter sub-objectives that match no official bullet
     };
@@ -166,10 +174,10 @@
       };
       sd.objectives.forEach(function (so, oi) {
         var oid = (di + 1) + '.' + (oi + 1);
-        var obj = { id: oid, domainId: id, text: so.text, bulletIds: [], lessonIds: [] };
+        var obj = { id: oid, domainId: id, text: so.text, bulletIds: [], lessonIds: [], foundationIds: [] };
         so.bullets.forEach(function (bt, bi) {
           var bid = oid + '.' + (bi + 1);
-          var b = { id: bid, objectiveId: oid, domainId: id, text: bt, lessonIds: [], questionIds: [] };
+          var b = { id: bid, objectiveId: oid, domainId: id, text: bt, lessonIds: [], questionIds: [], scenarioIds: [] };
           m.bullets.push(b);
           m.bulletById[bid] = b;
           m.bulletByNorm[norm(bt)] = b;
@@ -201,8 +209,12 @@
           title: mod.title,
           domainId: d.id,
           domainName: d.name,
+          label: d.label || '',
           weight: d.weight,
           exam: !!(d.weight && d.weight !== 'n/a'),
+          foundation: /^0A$/i.test(String(d.id)),
+          supports: Array.isArray(fm.supports_objectives) ? fm.supports_objectives.map(String) : [],
+          comparisonIds: [],
           content: mod.content,
           lab: mod.lab || null,
           hasLab: !!mod.lab,
@@ -237,6 +249,15 @@
       });
     });
 
+    /* Foundation primers, joined to the objectives they support. */
+    Object.keys(m.lessons).forEach(function (lid) {
+      var L = m.lessons[lid];
+      L.supports.forEach(function (oid) {
+        var o = m.objectiveById[oid];
+        if (o && o.foundationIds.indexOf(lid) === -1) o.foundationIds.push(lid);
+      });
+    });
+
     /* Study order links. */
     for (var i = 0; i < m.order.length; i++) {
       var L = m.lessons[m.order[i]];
@@ -262,6 +283,49 @@
         if (lesson) lesson.questionIds.push(qid);
         if (b) b.questionIds.push(qid);
       });
+    });
+
+    /* Structured comparisons, joined to lessons. A lesson id that does not
+       exist is reported on the coverage page, not dropped silently. */
+    m.comparisonUnmapped = [];
+    ((comparisons && comparisons.comparisons) || []).forEach(function (x) {
+      if (!x || !x.id) return;
+      x.lessons = Array.isArray(x.lessons) ? x.lessons : [];
+      m.comparisons.push(x);
+      m.comparisonById[x.id] = x;
+      x.lessons.forEach(function (lid) {
+        if (m.lessons[lid]) m.lessons[lid].comparisonIds.push(x.id);
+        else m.comparisonUnmapped.push(x.id + ' (lesson ' + lid + ' not found)');
+      });
+      (x.objectives || []).forEach(function (bid) {
+        var b = m.bulletById[bid];
+        if (b) (b.comparisonIds = b.comparisonIds || []).push(x.id);
+        else m.comparisonUnmapped.push(x.id + ' (objective ' + bid + ' not in the outline)');
+      });
+    });
+
+    /* Case-study questions and break-fix drills, joined to the official
+       bullet on the verbatim sub_skill text, like quiz questions. Kept apart
+       from questionIds on purpose: they are practice in context and must
+       not change what "knowledge checked" means for a sub-objective. Keys
+       match what cases.js and drills.js record in progress.js. */
+    m.scenarios = {};       // key -> { kind, id, title, href, bulletId, domainId }
+    m.scenarioUnmapped = [];
+    function addScenario(key, rec, subSkill) {
+      var b = m.bulletByNorm[norm(subSkill)];
+      rec.bulletId = b ? b.id : null;
+      rec.domainId = b ? b.domainId : null;
+      m.scenarios[key] = rec;
+      if (b) b.scenarioIds.push(key); else m.scenarioUnmapped.push(key + ' (' + subSkill + ')');
+    }
+    ((cases && cases.cases) || []).forEach(function (c) {
+      (c.questions || []).forEach(function (q, qi) {
+        addScenario('case:' + c.id + ':' + q.id,
+          { kind: 'case', id: c.id, title: c.title + ', question ' + (qi + 1), href: '#/cases/' + c.id }, q.sub_skill);
+      });
+    });
+    ((drills && drills.drills) || []).forEach(function (d) {
+      addScenario('drill:' + d.id, { kind: 'drill', id: d.id, title: d.title, href: '#/drills/' + d.id }, d.sub_skill);
     });
 
     /* Distinctions, joined to lessons. */
@@ -321,7 +385,10 @@
     var lessons = bullet.lessonIds.map(function (id) { return m.lessons[id]; }).filter(Boolean);
     var hasLab = lessons.some(function (l) { return l.hasLab; });
     var visual = lessons.some(function (l) { return l.hasVisual; });
-    var distinctions = lessons.some(function (l) { return l.distinctionNs.length > 0; });
+    var comparisons = (bullet.comparisonIds || []).map(function (id) { return m.comparisonById[id]; }).filter(Boolean);
+    var a6 = lessons.some(function (l) { return l.distinctionNs.length > 0; });
+    var distinctions = comparisons.length > 0 || a6 || lessons.some(function (l) { return l.comparisonIds.length > 0; });
+    var obj = m.objectiveById[bullet.objectiveId];
     var status = !lessons.length ? 'missing' : (bullet.questionIds.length ? 'covered' : 'partial');
     return {
       status: status,
@@ -329,7 +396,11 @@
       lab: hasLab ? 'available' : 'n/a',
       visual: visual,
       distinctions: distinctions,
-      questions: bullet.questionIds.length
+      comparisons: comparisons,     // structured comparisons that name this bullet
+      a6: a6,                       // an appendix A6 comparison via one of its lessons
+      foundations: obj ? obj.foundationIds.slice() : [],
+      questions: bullet.questionIds.length,
+      scenarios: (bullet.scenarioIds || []).length   // case questions + drills
     };
   }
 
@@ -361,13 +432,16 @@
     });
     var a6Path = a6Index >= 0 ? manifest.appendix[a6Index].content : A6_FALLBACK;
 
-    var snapshot = '', a6 = '', training = null;
+    var snapshot = '', a6 = '', training = null, comparisons = null, cases = null, drills = null;
     tasks.push(getJson('content/official-training.json').then(function (t) { training = t; }));
+    tasks.push(getJson('content/comparisons.json').then(function (t) { comparisons = t; }));
+    tasks.push(getJson('content/cases.json').then(function (t) { cases = t; }));
+    tasks.push(getJson('content/drills.json').then(function (t) { drills = t; }));
     tasks.push(getText(SNAPSHOT).then(function (t) { snapshot = t; }));
     tasks.push(getText(a6Path).then(function (t) { a6 = t; }));
 
     job = Promise.all(tasks).then(function () {
-      model = build(manifest, snapshot, texts, quizzes, a6, a6Index, training);
+      model = build(manifest, snapshot, texts, quizzes, a6, a6Index, training, comparisons, cases, drills);
       model.a6Path = a6Path;
       job = null;
       return model;

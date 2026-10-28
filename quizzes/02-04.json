@@ -20,7 +20,9 @@
         null,
         "Rule collection group priority does not change the rule-type order. Network rules are processed before application rules, whatever the group priority.",
         "Threat intelligence did not allow anything. The network rule matched and ended processing."
-      ]
+      ],
+      "scenario_clue": "\"a network rule allowing TCP 443 to any destination\" - network rules are always processed before application rules, and a network rule match ends processing.",
+      "misconception": "Rule collection group priority decides whether application or network rules run first"
     },
     {
       "id": "02-04-q2",
@@ -39,7 +41,9 @@
         null,
         "A private DNS zone has no per-client exclusions. It answers queries from linked virtual networks, and the colleague at home never queries it.",
         "A service endpoint does not remove the public endpoint either. The fix is the account's own network settings."
-      ]
+      ],
+      "scenario_clue": "\"A colleague at home still reaches the same account\" - a private endpoint adds a private path; it does not close the public one.",
+      "misconception": "Creating a private endpoint switches off public access"
     },
     {
       "id": "02-04-q3",
@@ -58,7 +62,9 @@
         null,
         "Service endpoints do not apply to traffic from on-premises, and the failure here is DNS returning the public address.",
         "Allowing the public address would make the connection work over the internet, which bypasses the private endpoint rather than fixing it."
-      ]
+      ],
+      "scenario_clue": "\"nslookup from on-premises returns a public address\" - the private endpoint works, but on-premises DNS cannot see the private DNS zone.",
+      "misconception": "A private endpoint needs network changes, not DNS changes, to work from on-premises"
     },
     {
       "id": "02-04-q4",
@@ -77,7 +83,9 @@
         "The connector brokers traffic into the private network. It is not where users are authenticated or where policy is assigned.",
         null,
         "The forwarding profile controls which traffic the client sends through Global Secure Access. Policy on this application comes from publishing it as an enterprise application."
-      ]
+      ],
+      "scenario_clue": "\"MFA and device compliance enforced\" for a legacy app \"without a VPN\" - Conditional Access needs a target, and publishing the app as an enterprise application gives it one.",
+      "misconception": "The client or the connector enforces Conditional Access"
     },
     {
       "id": "02-04-q5",
@@ -96,7 +104,9 @@
         null,
         "Effective security rules shows the NSG rules applied to a NIC. It knows nothing about firewall application rules - and the firewall rules are correct anyway.",
         "The symptom is traffic not reaching the firewall, which is a routing question. Next hop answers it directly."
-      ]
+      ],
+      "scenario_clue": "\"not reaching the firewall\" although \"the firewall rules are correct\" - a routing problem; next hop shows where the packet actually goes.",
+      "misconception": "IP flow verify or effective security rules diagnose routing"
     },
     {
       "id": "02-04-q6",
@@ -118,7 +128,8 @@
       ],
       "difficulty": "scenario",
       "concept": "Private Link service (provider side) versus private endpoint (consumer side)",
-      "misconception": "The provider creates the private endpoint"
+      "misconception": "The provider creates the private endpoint",
+      "scenario_clue": "\"another Microsoft Entra tenant\", \"address space overlaps\", \"decide which partner connections are allowed\" - a Private Link service that the partner connects to with their own private endpoint, which you approve."
     }
   ]
 }

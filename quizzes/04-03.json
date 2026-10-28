@@ -6,21 +6,23 @@
     {
       "id": "04-03-q1",
       "sub_skill": "Configure and use Microsoft data connectors for Azure resources",
-      "prompt": "You enable the Microsoft Defender XDR connector and leave the individual Defender product connectors enabled. What happens?",
+      "prompt": "In the Azure portal, you enable the Microsoft Defender XDR connector but clear the check box \"Turn off all Microsoft incident creation rules for these products\", so the rules you created earlier for Defender for Endpoint and Defender for Identity stay on. What goes wrong?",
       "options": [
-        "Sentinel deduplicates automatically; there is no effect",
-        "The same events are ingested twice, billed twice, and every count in every query you write afterwards is wrong",
-        "The XDR connector takes precedence and the product connectors become inert",
-        "Ingestion fails with a schema conflict"
+        "Nothing: Defender XDR deduplicates alerts and incidents for you",
+        "The same alerts raise duplicate incidents, because the incident creation rules still turn alerts into incidents while Defender XDR also groups them into incidents",
+        "The Defender for Endpoint and Defender for Identity connectors keep ingesting the same alerts, so they are ingested and billed twice",
+        "Ingestion fails with a schema conflict between the two connectors"
       ],
       "answer": 1,
-      "explanation": "The unified connector supersedes the individual ones. Leaving both on is the most common avoidable Sentinel cost, and the duplicate rows quietly corrupt every aggregation.",
+      "explanation": "Enabling the Defender XDR connector disconnects the individual Defender product alert connectors automatically, and Defender XDR alerts and incidents are ingested at no charge. What it does not undo, if you clear that check box, is your Microsoft incident creation rules: they still create an incident per alert while Defender XDR correlates the same alerts into its own incidents. That is why Microsoft recommends turning them off, and why the Defender portal doesn't support them at all.",
       "why_not": [
-        "Nothing deduplicates the events. They are ingested and billed twice.",
+        "Defender XDR correlates its own alerts into incidents; it does not stop separate Microsoft incident creation rules from creating more.",
         null,
-        "The product connectors keep ingesting. Nothing makes them inert until you disable them.",
-        "Ingestion does not fail. It succeeds twice, which is the problem."
-      ]
+        "Microsoft disconnects the individual product connectors when the XDR connector is enabled. They may still look connected, but no data flows through them, and the alerts are free either way.",
+        "There is no schema conflict. Alert schemas do differ between the standalone and XDR connectors, which can affect existing queries, but ingestion doesn't fail."
+      ],
+      "scenario_clue": "\"clear the check box ... incident creation rules ... stay on\" - two mechanisms turning the same alerts into incidents.",
+      "misconception": "That leaving per-product Defender connectors on doubles ingestion and cost."
     },
     {
       "id": "04-03-q2",
@@ -39,7 +41,9 @@
         null,
         "A firewall sending CEF uses the forwarder pattern and lands in CommonSecurityLog. The Logs Ingestion API is for sources that can call an API into a custom table.",
         "Diagnostic settings are an Azure resource feature. A third-party appliance sends syslog instead."
-      ]
+      ],
+      "scenario_clue": "\"firewall\" - an appliance that cannot run an agent; vendor security logs are usually CEF.",
+      "misconception": "That every log source can run the Azure Monitor Agent."
     },
     {
       "id": "04-03-q3",
@@ -58,48 +62,55 @@
         null,
         "A transformation reshapes data after collection is defined. XPath decides what is collected at all.",
         "Trimming a predefined set is not how selection works. A custom XPath query names exactly the events to collect."
-      ]
+      ],
+      "scenario_clue": "\"only specific Windows event IDs, and nothing else\" - a custom XPath query.",
+      "misconception": "That a predefined event set can be narrowed to exact event IDs."
     },
     {
       "id": "04-03-q4",
       "sub_skill": "Implement and configure collection of Windows Security events by using data collection rules, including Windows Event Forwarding (WEF)",
-      "prompt": "Your analytics rule for suspicious logons has returned nothing for three weeks. The rule is enabled and its query is correct. What would you check on the collection side?",
+      "prompt": "Your analytics rule for suspicious logons has returned nothing for three weeks. The rule is enabled, queries SecurityEvent, and its logic is correct. What would you check on the collection side?",
       "options": [
         "Whether an XPath filter or predefined event set removed the event IDs the rule queries",
-        "Whether both the Security log connector and WEF collection are enabled on the same collector",
+        "Whether those servers' events are actually being collected through Windows Forwarded Events, which writes to WindowsEvent rather than SecurityEvent",
         "Whether the daily cap has been dropping data",
         "Whether the workspace region matches the rule"
       ],
       "answer": [
         0,
+        1,
         2
       ],
-      "explanation": "Two collection-side causes produce silence. A filter chosen to save money can remove the exact event IDs a detection depends on, and a daily cap drops data once reached. Enabling both the Security log connector and WEF would produce duplicates, not silence.",
+      "explanation": "Three collection-side causes produce exactly this silence: the filter removed the event IDs; the events arrive through Windows Forwarded Events into WindowsEvent, which a SecurityEvent rule never reads; or the daily cap stopped ingestion. Region is not a property a rule depends on.",
       "why_not": [
         null,
-        "Enabling both the Security log connector and WEF would produce duplicates, not silence.",
         null,
-        "Workspace region is not a collection-side cause of silence. Filters and the daily cap are."
-      ]
+        null,
+        "Analytics rules run in the workspace that holds the data; region does not make an otherwise correct rule return nothing."
+      ],
+      "scenario_clue": "\"queries SecurityEvent\" and \"returned nothing\" - check filters, which table the events land in, and whether ingestion stopped.",
+      "misconception": "That an empty result means nothing happened, rather than that the data never reached the table the rule reads."
     },
     {
       "id": "04-03-q5",
       "sub_skill": "Create custom log tables in the workspace to store ingested data",
       "prompt": "An application has no connector. You must retain twelve months of its verbose logs for compliance and run detections against a small subset. Describe the design.",
       "options": [
-        "One custom table on the Analytics plan, with twelve-month interactive retention",
-        "A custom table plus a DCR with a data collection endpoint; detection-relevant data on the Analytics plan, verbose telemetry on a cheaper tier, with long-term retention for the rest",
+        "One custom table in the analytics tier, with twelve months of analytics retention",
+        "A DCR-based custom table fed by the Logs Ingestion API; the detection-relevant subset in the analytics tier and the verbose telemetry in the data lake tier (for example with a split transformation), with total retention set to twelve months",
         "Ingest everything to Syslog via a forwarder and filter at query time",
         "Store the logs in a storage account and query them with a search job"
       ],
       "answer": 1,
-      "explanation": "Custom tables are DCR-based and need a data collection endpoint — ingestion fails quietly without one. Everything on the Analytics plan because it is the default is the most common cost mistake after over-collection.",
+      "explanation": "A custom source needs a DCR-based custom table and the Logs Ingestion API. Put only what detections need in the analytics tier; keep the verbose remainder cheaply in the data lake, and set total retention to cover the compliance period.",
       "why_not": [
-        "Twelve months of verbose logs on the Analytics plan is the most common cost mistake after over-collection. Only the detection subset needs it.",
+        "It works, but keeps twelve months of verbose data at analytics-tier prices when only a small subset feeds detections.",
         null,
-        "The syslog forwarder pattern is for appliances that speak syslog. An application with no connector needs a custom table and a DCR, and filtering at query time still pays to ingest everything.",
-        "Search jobs query the workspace's own long-term retention, not a storage account, and detections need the data in the workspace."
-      ]
+        "Syslog is for devices that speak syslog, and filtering at query time means you already paid to ingest everything.",
+        "A storage account is not a Sentinel table, so analytics rules cannot run against it."
+      ],
+      "scenario_clue": "\"no connector\", \"twelve months ... compliance\" and \"a small subset\" for detections - custom table, split across tiers.",
+      "misconception": "That everything retained must sit in the analytics tier."
     },
     {
       "id": "04-03-q6",
@@ -118,7 +129,9 @@
         null,
         "A transformation does not change a table's plan. It reshapes data as it arrives.",
         "Transformations are not limited to Windows Security events. They reshape data flowing through a data collection rule."
-      ]
+      ],
+      "scenario_clue": "\"KQL transformation in a data collection rule\" - it acts before storage.",
+      "misconception": "That a transformation only hides data at query time."
     }
   ]
 }

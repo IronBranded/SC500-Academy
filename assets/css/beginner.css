@@ -1,0 +1,310 @@
+/* beginner.css - SC-500 guide
+   Components added by the beginner-first redesign (2026-10). Kept in their own
+   file so the earlier certification-first layer in learn.css stays readable.
+
+   Every component here follows the rules in tokens.css: domain colour only
+   through --d / --d-ink / --d-tint, the reserved caution amber for traps and
+   review, and colour never carrying meaning alone (each state also has a word
+   or a glyph). */
+
+/* ======================================================================
+   Lesson parts: the anatomy sections wrap their own content
+   ====================================================================== */
+
+.lesson > .stage > .part,
+.lesson > .stage > .compare-list,
+.lesson > .stage > .distinctions { max-width: none; }
+.lesson .part > *:not(.table-scroll):not(pre):not(.cause):not(.diagram):not(.words) { max-width: var(--measure); }
+.lesson .part { margin: 0 0 var(--s-5); }
+.lesson .part > h2:first-child { margin-top: var(--s-4); }
+
+/* Review pass folds Understand as well as Learn. */
+.lesson[data-mode="review"] .stage[data-stage="understand"] > :not(.stage__head) { display: none; }
+.lesson[data-mode="review"] .stage[data-stage="understand"]::after {
+  content: "Folded in review pass.";
+  display: block;
+  color: var(--ink-faint);
+  font-size: var(--t-sm);
+}
+
+/* In plain English: the sentence a beginner should leave with. */
+.part--plain {
+  padding: var(--s-2) var(--s-4) var(--s-3);
+  border-left: 3px solid var(--d, var(--accent-fill));
+  background: var(--d-tint, var(--paper-raise));
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+.part--plain > h2:first-child { margin-top: var(--s-2); }
+
+/* Words you need to know: a grid of term cards. */
+.content ul.words {
+  list-style: none;
+  padding: 0;
+  margin: var(--s-3) 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--s-2);
+}
+.content ul.words > li {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raise);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+.words__term { display: block; color: var(--d-ink, var(--ink)); font-size: var(--t-base); }
+
+/* Teaching-model badge: conceptual pictures are labelled as such. */
+.content .teaching-badge {
+  display: inline-block;
+  margin: 0 0 var(--s-2);
+  padding: 0.1em 0.6em;
+  border: 1px dashed var(--rule);
+  border-radius: 99px;
+  font-size: var(--t-xs);
+  color: var(--ink-soft);
+}
+
+/* Cause and effect: two chains, without and with the control. */
+.cause {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--s-4);
+  margin: var(--s-2) 0 var(--s-4);
+}
+.cause__col {
+  margin: 0;
+  padding: var(--s-3);
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+}
+.cause__col[data-kind="without"] { border-top-color: var(--cost-high); }
+.cause__col[data-kind="with"] { border-top-color: var(--state-done); }
+.cause__label { font-weight: 700; margin: 0 0 var(--s-2); font-size: var(--t-sm); }
+.cause__col[data-kind="without"] .cause__label::before { content: "\2717  "; color: var(--cost-high); }
+.cause__col[data-kind="with"] .cause__label::before { content: "\2713  "; color: var(--state-done); }
+.content ol.cause__chain { list-style: none; padding: 0; margin: 0; counter-reset: chain; }
+.content ol.cause__chain > li {
+  counter-increment: chain;
+  position: relative;
+  margin: 0 0 var(--s-4);
+  padding: var(--s-2) var(--s-3) var(--s-2) 2.1rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+}
+.content ol.cause__chain > li::before {
+  content: counter(chain);
+  position: absolute;
+  left: var(--s-2);
+  top: var(--s-2);
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--paper-sink);
+  color: var(--ink-soft);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.3rem;
+}
+.content ol.cause__chain > li:not(:last-child)::after {
+  content: "\2193";
+  position: absolute;
+  left: 50%;
+  bottom: calc(-1 * var(--s-4) - 0.1rem);
+  transform: translateX(-50%);
+  color: var(--ink-faint);
+  font-size: var(--t-sm);
+  line-height: var(--s-4);
+}
+.cause__col[data-kind="without"] ol.cause__chain > li:last-child { border-color: var(--cost-high); font-weight: 600; }
+.cause__col[data-kind="with"] ol.cause__chain > li:last-child { border-color: var(--state-done); font-weight: 600; }
+
+/* Example, validation, takeaways, teach it back. */
+.part--example,
+.part--validate,
+.part--takeaways,
+.part--teachback,
+.part--supports {
+  padding: var(--s-1) var(--s-4) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+}
+.part--validate { border-left: 4px solid var(--state-done); }
+.part--validate > h2::before { content: "\2713  "; color: var(--state-done); }
+.part--takeaways { border-left: 4px solid var(--d, var(--accent-fill)); }
+.part--example { border-left: 4px solid var(--accent-fill); }
+.part--misunderstandings .table-scroll td:first-child { color: var(--ink-soft); }
+
+.teachback__pad { display: grid; gap: var(--s-1); margin: var(--s-3) 0; max-width: var(--measure); }
+.teachback__label { font-size: var(--t-sm); font-weight: 600; }
+.teachback__text {
+  width: 100%;
+  min-height: 7rem;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  resize: vertical;
+}
+.teachback__text:focus { outline: var(--focus); outline-offset: 2px; }
+.content .teachback__status { margin: 0; font-size: var(--t-xs); color: var(--ink-faint); min-height: 1em; }
+
+/* Foundations: the objectives a primer supports, and split prerequisites. */
+.supports { margin: var(--s-4) 0 0; }
+.supports h3 { margin: 0 0 var(--s-2); font-size: var(--t-sm); }
+.content ul.supports__list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-2); font-size: var(--t-sm); }
+.content ul.supports__list > li {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border-left: 3px solid var(--d, var(--rule));
+  background: var(--paper-raise);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.content .prereqs__note { margin: calc(-1 * var(--s-1)) 0 var(--s-2); font-size: var(--t-xs); color: var(--ink-faint); }
+.prereqs h3 + .prereqs__note + .prereqs__list + h3,
+.prereqs .prereqs__list + h3 { margin-top: var(--s-3); }
+
+/* ======================================================================
+   Structured comparison component (compare.js)
+   ====================================================================== */
+
+.compare-list { display: grid; gap: var(--s-4); margin: 0 0 var(--s-5); }
+.cmpx {
+  padding: var(--s-3) var(--s-4) var(--s-2);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--d, var(--rule));
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+  scroll-margin-top: calc(var(--h-topbar) + var(--s-3));
+}
+.content .cmpx__title { margin: 0; font-size: var(--t-md); }
+.content h1.cmpx__title { font-size: var(--t-xl); }
+.content .cmpx__question { margin: var(--s-1) 0 0; color: var(--ink-soft); font-style: italic; }
+.content .cmpx__meta { margin: var(--s-2) 0 0; font-size: var(--t-xs); color: var(--ink-faint); display: flex; flex-wrap: wrap; gap: 0.3em; align-items: center; }
+.cmpx__takeaway {
+  margin: var(--s-3) 0 0;
+  padding: var(--s-2) var(--s-3);
+  border-left: 3px solid var(--accent-fill);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: var(--t-sm);
+  max-width: var(--measure);
+}
+.content .cmpx__trap {
+  margin: var(--s-3) 0 0;
+  padding: var(--s-2) var(--s-3);
+  border-left: 3px solid var(--state-review);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: var(--t-sm);
+  max-width: var(--measure);
+}
+.cmpx__trap strong { color: var(--state-review); }
+.cmpx__more { margin: var(--s-3) 0 0; }
+.cmpx__more > summary { cursor: pointer; font-weight: 600; font-size: var(--t-sm); color: var(--accent); padding: var(--s-1) 0; }
+.cmpx__body { margin-top: var(--s-2); }
+.content table.cmpx__table { font-size: var(--t-sm); }
+.content table.cmpx__table tbody th { white-space: nowrap; color: var(--ink-soft); font-weight: 600; vertical-align: top; }
+.content table.cmpx__table td { vertical-align: top; min-width: 12rem; }
+.cmpx__clues { margin-top: var(--s-3); }
+.content .cmpx__h { margin: 0 0 var(--s-1); font-size: var(--t-sm); }
+.content .cmpx__clues ul { margin: 0; padding-left: 1.2em; font-size: var(--t-sm); }
+.cmpx__clue { font-style: italic; }
+.content .cmpx__foot { margin: var(--s-2) 0 0; font-size: var(--t-xs); color: var(--ink-faint); }
+.content .distinctions__sub { margin: var(--s-5) 0 var(--s-2); font-size: var(--t-sm); color: var(--ink-soft); }
+.cmpx-toc ul { columns: 2 18rem; padding-left: 1.2em; font-size: var(--t-sm); }
+.cmpx-toc li { break-inside: avoid; }
+.content > .cmpx { max-width: none; }
+.view-sec .cmpx + .cmpx { margin-top: var(--s-4); }
+
+@media (max-width: 640px) {
+  .content table.cmpx__table tbody th { white-space: normal; font-size: var(--t-sm); color: var(--ink); }
+  .content table.cmpx__table td { min-width: 0; }
+}
+
+/* ======================================================================
+   Dashboard: start here, path chooser, objective-first next step
+   ====================================================================== */
+
+.content > .starthere { max-width: none; }
+.starthere { margin: var(--s-6) 0; }
+.starthere > h2 { font-size: var(--t-lg); margin-bottom: var(--s-3); }
+.starthere__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--s-3); margin-top: var(--s-3); }
+.starthere__grid .m0 { margin: 0; }
+.pathpick {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+  display: grid;
+  gap: var(--s-2);
+}
+.pathpick__legend { font-weight: 700; padding: 0 var(--s-1); }
+.pathpick__opt { display: flex; gap: var(--s-2); align-items: flex-start; }
+.pathpick__opt input { margin-top: 0.3em; accent-color: var(--accent-fill); }
+.pathpick__opt label { display: grid; gap: 0.1em; cursor: pointer; }
+.pathpick__desc { font-size: var(--t-sm); color: var(--ink-soft); }
+.content .pathpick__note { margin: var(--s-1) 0 0; font-size: var(--t-xs); color: var(--ink-faint); }
+.content .continue__kicker { margin: var(--s-3) 0 0; font-size: var(--t-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--d-ink, var(--ink-soft)); }
+.content .continue__kicker + .continue__title { margin-top: var(--s-1); }
+.content .dcard__depth { margin: 0; display: grid; gap: 0.1em; font-size: var(--t-xs); color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+/* ======================================================================
+   Knowledge check: the scenario clue
+   ====================================================================== */
+
+.kc__clue {
+  margin: var(--s-3) 0;
+  padding: var(--s-1) var(--s-3) var(--s-2);
+  border-left: 3px solid var(--accent-fill);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.kc__clue .kc__h { margin-top: var(--s-2); }
+.kc__clue p { margin: 0; }
+
+/* ======================================================================
+   Lab anatomy: why, outcome, architecture, what happened, limits
+   ====================================================================== */
+
+.labpart { margin: var(--s-5) 0; }
+.labpart--outcome {
+  padding: var(--s-1) var(--s-4) var(--s-3);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--state-done);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+}
+.labpart--outcome > h2::before { content: "\2713  "; color: var(--state-done); }
+.content .labpart__eyebrow { margin: 0 0 var(--s-2); font-size: var(--t-xs); color: var(--ink-faint); }
+.labpart--why,
+.labpart--happened,
+.labpart--limits {
+  padding: var(--s-1) var(--s-4) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+}
+.labpart--limits { border-left: 4px solid var(--state-review); }
+.labpart--happened { border-left: 4px solid var(--accent-fill); }
+.labpart--architecture pre { max-width: 100%; }
+.labpart--completion { margin-top: var(--s-6); }
+
+@media print {
+  .teachback__pad, .pathpick, .cmpx__foot { display: none !important; }
+  .cmpx__more > .cmpx__body { display: block !important; }
+}

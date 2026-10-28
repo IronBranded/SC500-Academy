@@ -11,7 +11,7 @@ sub_objectives:
 domain: "Manage identity, access, and governance"
 domain_weight: "20-25%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02", "01-01"]
+prerequisites: ["00-00", "00-01", "00-02", "01-01", "0A-05", "0A-08"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/azure/key-vault/general/rbac-access-policy"
@@ -50,7 +50,7 @@ forensic_relevance: "A key vault is an early-stage objective in most cloud intru
 - Scan for secrets by using Defender Cloud Security Posture Management (Defender CSPM)
 - Implement Defender for Key Vault
 
-## Why this exists
+## The security problem
 
 An application that talks to a database needs a connection string. That string has
 to exist somewhere at runtime. The historical answers were all bad in the same way:
@@ -85,6 +85,61 @@ follows from that:
 - Find the credentials that never made it into the vault in the first place →
   **Defender CSPM secret scanning**
 - And make sure nobody can quietly destroy it → **soft delete and purge protection**
+
+## In plain English
+
+Applications need sensitive values to work: database passwords, API keys, encryption
+keys, certificates. Put those values in code or configuration and anyone who can read
+the code or the server can read them too.
+
+**Azure Key Vault** is a locked, audited store for those values. Applications ask the
+vault for a secret when they need it, and the vault checks who is asking, whether they
+are allowed, and whether they are coming from an allowed network.
+
+Two things make it work properly. The application should prove who it is **without a
+password of its own** - with a managed identity. And because the vault now holds
+everything valuable in one place, it needs extra protection: tight access, a network
+boundary, protection against deletion, and monitoring.
+
+## Words you need to know
+
+- **Secret** - a value the vault stores and returns, such as a connection string.
+- **Key** - a cryptographic key the vault *uses* for you; the private part never leaves
+  the vault.
+- **Certificate** - a managed certificate with its key and lifecycle, such as auto-renewal.
+- **Control plane** - managing the vault itself through Azure Resource Manager.
+- **Data plane** - reading and writing what is inside the vault, at
+  `<vault>.vault.azure.net`.
+- **Azure RBAC permission model** - data-plane access granted with Azure role
+  assignments. The recommended model, and the default for new vaults.
+- **Access policy model** - the legacy, vault-specific way of granting data-plane access.
+- **Vault firewall** - network rules that filter data-plane traffic.
+- **Private endpoint** - gives the vault a private IP address in your virtual network
+  (0A-08).
+- **Soft delete** - deleted vaults and objects are kept, recoverable, for a retention
+  period.
+- **Purge protection** - stops anyone permanently deleting the vault before that
+  retention period ends. Cannot be turned off once on.
+- **Defender for Key Vault** - a Defender for Cloud plan that alerts on suspicious vault
+  access.
+- **Secret scanning (Defender CSPM)** - finds credentials stored *outside* the vault,
+  on disks, in deployments and in code.
+
+## Mental model
+
+A teaching model: the path a secret request takes, and what guards each step.
+
+```mermaid
+flowchart LR
+  accTitle: Teaching model - how a request reaches a secret in Key Vault
+  accDescr: An application with a managed identity obtains a token from Microsoft Entra ID without holding a secret. It calls the vault's data-plane endpoint. The vault firewall or private endpoint decides whether the network path is allowed. Azure RBAC decides whether this identity may read this secret. The secret is returned and the read is logged. Soft delete and purge protection guard against destruction, Defender for Key Vault watches for unusual access, and secret scanning looks for credentials that never made it into the vault.
+  APP["App with<br/>managed identity"]:::d01 -->|"token, no stored secret"| NET["Network check<br/>firewall / private endpoint"]:::d02
+  NET --> AUTHZ["Authorization<br/>Azure RBAC role"]:::d01
+  AUTHZ --> SEC["Secret returned<br/>read is logged"]:::d01
+  DEF["Defender for Key Vault<br/>unusual access alerts"]:::d04 -.-> SEC
+  DEL["Soft delete +<br/>purge protection"]:::d00 -.-> SEC
+  SCAN["Secret scanning<br/>secrets OUTSIDE the vault"]:::d04 -.-> APP
+```
 
 ## How it works under the hood
 
@@ -255,6 +310,33 @@ authenticates to another reachable machine: unverified keys appear as
 recommendations, verified ones appear as **attack paths**, because a proven pivot is
 a different finding from a suspicious file.
 
+## Why security cares
+
+**Without the control**
+
+1. A connection string is stored in an application's configuration file
+2. The configuration is copied to a backup, a support ticket and a developer laptop
+3. One of those copies leaks
+4. The attacker connects to the database directly; nobody can tell which copy leaked
+
+**With the control**
+
+1. The connection string lives only in Key Vault
+2. The application reads it with its managed identity, which holds Key Vault Secrets
+   User on that secret alone
+3. The vault accepts data-plane traffic only through a private endpoint, and every read
+   is logged
+4. Secret scanning finds and flags any leftover copies on disks or in deployments
+
+**What it does not solve.** Anything that can run code on the application's resource
+can request the managed identity's token and read what the identity can read. And if a
+role that can grant access is compromised, the vault's access model is only as strong
+as who holds Owner or User Access Administrator.
+
+**Depends on.** Using the Azure RBAC permission model (under access policies, anyone with
+vault write access can grant themselves data access), diagnostic logs switched on, and
+correct private DNS when a private endpoint is used.
+
 ## Configuration surface
 
 | Setting | Default | Set it to | Why |
@@ -309,6 +391,22 @@ the reason the objective says *implement* rather than *have*.
 machines. In a lab with no VMs, expect no findings, and do not read that as a clean
 result.
 
+## Hands-on
+
+See [01-02 lab](../../labs/01-identity-access-governance/01-02-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| Permission model | Data-plane access is governed by Azure RBAC | The vault's access configuration shows the Azure RBAC model (`enableRbacAuthorization` is true) |
+| Least privilege | The app can read its secret and nothing else | The app identity's assignment is Key Vault Secrets User, scoped as narrowly as practical; reading a different secret returns 403 |
+| Network restriction | The data plane is unreachable from outside allowed networks | From an unlisted network, a secret read fails while a control-plane read (vault properties) still works |
+| Private endpoint | Clients inside the network use the private path | The vault's name resolves to a private IP from inside the virtual network |
+| Deletion protection | The vault cannot be purged early | Soft delete retention and purge protection settings show as expected (production) |
+| Logging | Every secret read is attributable | A test read appears in the `AuditEvent` logs sent by the diagnostic setting |
+| Defender | Suspicious access raises alerts | The Key Vault plan shows **On** in Defender for Cloud environment settings for the subscription |
+
 ## How this is tested
 
 | Phrase in the question | What it steers you to |
@@ -335,9 +433,16 @@ trusted-services bypass now interacts with Network Security Perimeter, and CSPM
 secret scanning has no AZ-500 precedent as an exam objective. Treat older
 walkthroughs as a guide to the blades, not to the answers.
 
-## Hands-on
+### What SC-500 expects you to do
 
-See [01-02 lab](../../labs/01-identity-access-governance/01-02-lab.md).
+- **Identify** whether a problem is control plane or data plane.
+- **Distinguish** Azure RBAC from access policies, Key Vault Reader from Key Vault
+  Secrets User, and Defender for Key Vault from Defender CSPM secret scanning.
+- **Select** the narrowest role and scope, and the right network option for a
+  connectivity requirement.
+- **Implement** the vault with soft delete, purge protection where required, network
+  restrictions, logging and the Defender plan.
+- **Evaluate** where credentials still exist outside the vault.
 
 ## Check yourself
 
@@ -356,6 +461,27 @@ See [01-02 lab](../../labs/01-identity-access-governance/01-02-lab.md).
    establish, and why does it change how you triage it?
 5. You enable purge protection on a lab vault and then delete the resource group.
    Two weeks later the same lab needs the same vault name. What are your options?
+
+## Teach it back
+
+Explain to a colleague why "we moved the password into Key Vault" is only half a fix if
+the application still signs in to the vault with a client secret, and what completes it.
+
+A strong answer covers: the app now needs a credential to reach the vault, so the problem
+moved rather than disappeared; a managed identity removes that credential; the identity
+needs only Key Vault Secrets User on the specific secret; network restriction and logging
+limit and record use.
+
+## Key takeaways
+
+- Key Vault is only worth having if callers authenticate without a secret - use managed
+  identities.
+- Control plane (manage the vault) and data plane (read what is in it) are separate; the
+  vault firewall filters only the data plane.
+- Azure RBAC is the recommended permission model and the default for new vaults. Under
+  access policies, vault write access is effectively data access.
+- Soft delete is always on; purge protection is irreversible.
+- Defender for Key Vault watches the vault; secret scanning finds secrets outside it.
 
 ## Sources
 

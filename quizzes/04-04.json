@@ -20,7 +20,9 @@
         null,
         "Launching the playbook is not the playbook identity's job. Sentinel itself needs Automation Contributor on the playbook's resource group.",
         "Nothing in the scenario involves another rule. A playbook that never runs, with no error, is the permissions gap this role exists to prevent."
-      ]
+      ],
+      "scenario_clue": "\"the playbook never runs\" and \"no error\" - Sentinel lacks permission on the playbook's resource group.",
+      "misconception": "That a playbook's own identity is what lets Sentinel launch it."
     },
     {
       "id": "04-04-q2",
@@ -39,45 +41,51 @@
         null,
         "It is the reverse: reaching an external API is what playbooks are for, and assigning an owner is available to automation rules.",
         "Automation rules run on incident and alert events, not on a schedule, and closing an incident is a status change they can make."
-      ]
+      ],
+      "scenario_clue": "\"only an automation rule\" versus \"only a playbook\" - routing versus reaching external systems.",
+      "misconception": "That automation rules and playbooks are interchangeable."
     },
     {
       "id": "04-04-q3",
       "sub_skill": "Implement data retention in Microsoft Sentinel data stores",
-      "prompt": "Your workspace has 90-day interactive retention and two-year total retention. An investigation needs data from 14 months ago. What do you do?",
+      "prompt": "A table has 90 days of analytics retention and two years of total retention, with the older data in the data lake tier. An investigation needs data from 14 months ago. What do you do?",
       "options": [
-        "Query it directly — total retention means it is queryable",
-        "Run a search job, which queries long-term data and writes results into a new table, or restore a time range into interactive tier; both take time and both carry charges, typically with minimums",
+        "Query it with an analytics rule - total retention means it is available to rules",
+        "Run a search job or a KQL job against the data lake (or notebook), which returns the results you need; it takes time and carries its own charges",
         "Re-ingest the data from the original source",
-        "Raise interactive retention to 24 months, which applies retroactively"
+        "Raise analytics retention to 24 months, which brings back data that has already left the analytics tier"
       ],
       "answer": 1,
-      "explanation": "Archived data is retained, not queryable. 'We have two years of data' and 'we can query two years of data' are different claims with different price tags — and a search job leaves a new table behind that counts against retention.",
+      "explanation": "Data beyond analytics retention is kept, but it is not available to analytics rules or interactive hunting. Reach it with a search job, KQL job or notebook (or restore, for long-term retention). \"We have two years of data\" and \"we can query two years of data\" are different claims with different price tags.",
       "why_not": [
-        "Data in long-term retention is retained, not directly queryable. It needs a search job or a restore.",
+        "Data in the data lake tier is not available to analytics rules or interactive hunting.",
         null,
-        "Re-ingesting duplicates data you already retain, at ingestion cost. Search jobs and restore exist for exactly this.",
-        "Changing retention settings is not the mechanism for querying old data. Search jobs and restore are built for that."
-      ]
+        "Re-ingesting duplicates data you already retain, at ingestion cost. Jobs against the lake exist for exactly this.",
+        "Raising analytics retention changes how long new and still-present data stays in the analytics tier; it is not how you query data already in the lake."
+      ],
+      "scenario_clue": "\"14 months ago\" with \"90 days of analytics retention\" - the data is in the lake, so you need a job, not a rule.",
+      "misconception": "That data you retain is data you can query the same way as recent data."
     },
     {
       "id": "04-04-q4",
       "sub_skill": "Query Microsoft Purview Audit in Defender XDR",
-      "prompt": "An account is compromised and you need to know which emails were accessed. What determines whether you can answer?",
+      "prompt": "During a mailbox compromise investigation you can list the messages the attacker accessed, but you also need to know what they searched for inside the mailbox. What determines whether that is possible?",
       "options": [
         "Whether Sentinel's OfficeActivity connector was enabled",
-        "Whether the user held an Audit (Premium) licence, since MailItemsAccessed is generated only for licensed users",
-        "Whether mailbox auditing was enabled on the tenant",
+        "Whether the user held an Audit (Premium) licence with the Advanced Auditing service plan, because SearchQueryInitiated is an Audit (Premium) insight",
+        "Whether MailItemsAccessed was enabled for the mailbox",
         "Whether the mailbox was placed on litigation hold"
       ],
       "answer": 1,
-      "explanation": "MailItemsAccessed fires when mail data is accessed by a protocol or client, even with no explicit signal that messages were read, and records the access type. It is per-user licensed, so the answer to 'what did the attacker read' was decided months before the incident.",
+      "explanation": "MailItemsAccessed (part of Audit Standard mailbox auditing for E3/E5 users) tells you which messages were accessed. SearchQueryInitiated - what the attacker searched for in Exchange or SharePoint - is an Audit (Premium) intelligent insight, generated only for users with the licence and the Advanced Auditing service plan. That decision was made months before the incident.",
       "why_not": [
-        "The OfficeActivity connector brings audit records into Sentinel. It cannot create a MailItemsAccessed record that was never generated.",
+        "The OfficeActivity connector brings audit records into Sentinel. It cannot create a SearchQueryInitiated record that was never generated.",
         null,
-        "Mailbox auditing being on is not enough. MailItemsAccessed is generated only for users with an Audit (Premium) licence.",
-        "Litigation hold preserves mailbox content. It does not record which items were accessed."
-      ]
+        "MailItemsAccessed already answered the first question. Search activity is a separate, Audit (Premium) event.",
+        "Litigation hold preserves mailbox content. It does not record searches."
+      ],
+      "scenario_clue": "\"what they searched for inside the mailbox\" - SearchQueryInitiated, an Audit (Premium) insight.",
+      "misconception": "That every mailbox audit event comes with the base audit licence."
     },
     {
       "id": "04-04-q5",
@@ -96,7 +104,30 @@
         null,
         "Silence across everything points at ingestion being off tenant-wide. That is the check that explains every workload at once.",
         "An indexing delay affects recent events, not every query across every workload."
-      ]
+      ],
+      "scenario_clue": "\"nothing at all, for every query, across every workload\" - tenant-wide ingestion is off.",
+      "misconception": "That an empty audit search means no activity happened."
+    },
+    {
+      "id": "04-04-q6",
+      "sub_skill": "Query Microsoft Purview Audit in Defender XDR",
+      "prompt": "A user with a Microsoft 365 E3 licence is compromised. You need to establish which email messages the attacker opened. Which audit event do you search for, and what could make it missing?",
+      "options": [
+        "MessageBind - it is only recorded for E5 users",
+        "MailItemsAccessed - part of Audit (Standard) mailbox auditing for E3/E5 users; it can be missing if mailbox auditing was turned off or bypassed for the mailbox, or its audited actions were customised before the event existed",
+        "SearchQueryInitiated - it lists every message the attacker opened",
+        "UserLoggedIn - sign-in records list the messages read in each session"
+      ],
+      "answer": 1,
+      "explanation": "MailItemsAccessed records mail access by any protocol or client, with bind records listing individual messages. It is part of Audit (Standard) mailbox auditing for E3/E5 users. If mailbox auditing was disabled or bypassed, or the mailbox's audited actions were customised, newer events such as this one may not be recorded.",
+      "why_not": [
+        "MessageBind is only available for users without E5 licences and covers preview-pane access by admins and delegates; MailItemsAccessed is the event built for scoping compromise.",
+        null,
+        "SearchQueryInitiated records what was searched for, not what was opened - and it needs Audit (Premium).",
+        "Sign-in events show that and where an account signed in, not which messages were accessed."
+      ],
+      "scenario_clue": "\"which email messages the attacker opened\" on an E3 user - MailItemsAccessed, Audit (Standard).",
+      "misconception": "That knowing which emails were read always requires Audit (Premium)."
     }
   ]
 }

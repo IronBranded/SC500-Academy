@@ -10,7 +10,7 @@ sub_objectives:
 domain: "Manage identity, access, and governance"
 domain_weight: "20-25%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02"]
+prerequisites: ["00-00", "00-01", "00-02", "0A-04", "0A-05"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/entra/identity/conditional-access/overview"
@@ -53,7 +53,7 @@ forensic_relevance: "Four of the six controls here produce the artifacts you wou
 > eligible/active distinction or the role management policy is not yet automatic
 > for you - the exam tests it directly and it is the first bullet of this objective.
 
-## Why this exists
+## The security problem
 
 Strip away the product names and every one of these six bullets answers one of
 three questions about a request for data:
@@ -90,6 +90,74 @@ control was present and scoped to the wrong thing." An MFA requirement that
 excludes the service account, a consent setting that permits any publisher, a
 user-assigned managed identity shared by fourteen resources - all of these pass a
 checklist.
+
+## In plain English
+
+Before anyone - a person, an application or an AI agent - reaches your data, Microsoft
+Entra ID answers three questions: **who is asking**, **how well have they proved it**,
+and **what have they been allowed to do**.
+
+The six controls in this lesson each answer part of that:
+
+- **PIM** keeps powerful roles switched off until someone needs them.
+- **Conditional Access** sets the rules for signing in: from where, on what device,
+  with what proof.
+- **Authentication methods** decide which kinds of proof exist at all - passkeys,
+  authenticator apps, text messages.
+- **App registrations and enterprise applications** give software its own identity.
+- **Consent** decides what an application may do with a user's data, or the
+  organisation's.
+- **Managed identities** let Azure resources sign in to other services without any
+  password or secret.
+
+## Words you need to know
+
+- **Conditional Access policy** - an if-then rule evaluated at sign-in: *if* these users
+  sign in to these resources under these conditions, *then* require (or block) this.
+- **Grant control** - what a Conditional Access policy requires, such as MFA, a
+  compliant device, or a specific authentication strength.
+- **Report-only** - a policy state that evaluates and logs the result without enforcing
+  it.
+- **Security defaults** - a fixed baseline of protections for tenants without
+  Conditional Access. The two cannot be used together.
+- **Authentication methods policy** - the single place where you decide which sign-in
+  methods each group of users may register and use.
+- **Authentication strength** - a named set of acceptable method combinations, such as
+  "phishing-resistant MFA", that Conditional Access can require.
+- **App registration** - an application's definition in its home tenant.
+- **Enterprise application (service principal)** - the application's local instance in a
+  tenant, where its permissions and assignments actually live.
+- **Delegated permission** - lets an app act *for* a signed-in user, limited to what that
+  user can do.
+- **Application permission** - lets an app act *as itself*, with no user, across
+  everything the permission covers.
+- **Consent** - approving the permissions an app requests. It creates a lasting grant.
+- **Admin consent workflow** - lets users request approval for an app they cannot
+  consent to themselves.
+- **Managed identity** - an identity for an Azure resource whose credential Azure holds
+  and rotates. **System-assigned** lives and dies with one resource; **user-assigned** is
+  a standalone resource that can be attached to many.
+- **Eligible assignment (PIM)** - a role you can activate for a limited time, rather than
+  one you hold permanently.
+
+## Mental model
+
+A teaching model: one request, five checkpoints, and the control that owns each.
+
+```mermaid
+flowchart LR
+  accTitle: Teaching model - where each Entra ID control acts on a request
+  accDescr: A request starts with an identity. Authentication methods decide which proofs the identity can present. Conditional Access evaluates the sign-in and decides what extra proof is required or whether to block. Entra ID issues a token whose permissions come from earlier consent or role assignments. The resource then makes its own authorization decision. PIM controls whether a privileged role is active at all, and a managed identity removes the stored credential from the start of the path.
+  WHO["Who is asking?<br/>user, app, managed identity"]:::d01 --> PROOF["Which proofs exist?<br/>authentication methods policy"]:::d01
+  PROOF --> CA["Sign-in rules<br/>Conditional Access"]:::d01
+  CA --> TOK["Token issued<br/>permissions from consent / roles"]:::d01
+  TOK --> RES["Resource decides<br/>Azure RBAC, Graph permissions"]:::d02
+  PIM["PIM<br/>is the privileged role active?"]:::d00 -.-> TOK
+  MI["Managed identity<br/>no stored secret"]:::d00 -.-> WHO
+```
+
+Read the line left to right. Most exam questions in this objective are really asking
+**which checkpoint** a requirement belongs to.
 
 ## How it works under the hood
 
@@ -158,10 +226,10 @@ flowchart TD
   E --> A{"Does this policy apply?<br/>exclusions beat inclusions (rule 2)"}
   A -- "No" --> N["Policy plays no part"]
   A -- "Yes" --> B{"Does any applicable<br/>policy block? (rule 3)"}
-  B -- "Yes" --> X["Blocked<br/>block beats grant"]
+  B -- "Yes" --> X["Blocked<br/>block beats grant"]:::stop
   B -- "No" --> G{"Every grant control from every<br/>applicable policy satisfied? (rule 4)"}
-  G -- "Yes" --> OK["Access granted"]
-  G -- "No" --> R["Not granted until the<br/>missing controls are met"]
+  G -- "Yes" --> OK["Access granted"]:::ok
+  G -- "No" --> R["Not granted until the<br/>missing controls are met"]:::warn
 ```
 
 **Report-only** is a fourth policy state alongside On and Off: the policy is fully
@@ -210,8 +278,8 @@ This trips up almost everyone once.
 The registration is the blueprint; the service principal is the building. You
 *request* permissions on the registration. You *hold* permissions on the service
 principal. A multi-tenant app has one registration and a service principal in every
-tenant that ever consented - which is why deleting the registration does not clean
-up anything in someone else's tenant.
+tenant that ever consented. Deleting the registration also deletes its service
+principal in the home tenant, but cleans up nothing in anyone else's tenant.
 
 Credentials hang off the registration: a **client secret** (a password, with an
 expiry), a **certificate**, or a **federated identity credential** - no stored
@@ -288,6 +356,53 @@ Two consequences, both exam-relevant and incident-relevant:
   assigned. A server-side request forgery bug in a web app on that VM is a
   credential disclosure. Least privilege on a managed identity is not paperwork.
 
+Which identity should a workload use? Start at the top: the first yes is your answer,
+and every branch ends in the same place.
+
+```mermaid
+flowchart TD
+  %% flowchart: choose-identity
+  accTitle: Choosing an identity for a workload
+  accDescr: If the workload runs on an Azure resource that supports managed identities, use a managed identity, user-assigned if several resources share it, otherwise system-assigned. If it runs elsewhere but its platform issues tokens Entra can trust, use workload identity federation. Otherwise use an app registration with a certificate. In every case grant the narrowest role.
+  A(["A workload must call<br/>an Azure service"]):::actor --> B{"Runs on an Azure<br/>resource that supports<br/>managed identities?"}:::d01
+  B -->|Yes| C{"Several resources<br/>share one identity?"}:::d01
+  C -->|Yes| C1["User-assigned<br/>managed identity"]:::ok
+  C -->|No| C2["System-assigned<br/>managed identity,<br/>tied to the resource"]:::ok
+  B -->|No| D{"Its platform issues<br/>tokens Entra<br/>can trust?"}:::d01
+  D -->|"Yes: GitHub Actions,<br/>Kubernetes,<br/>another cloud"| D1["Workload identity<br/>federation:<br/>no secret at all"]:::ok
+  D -->|No| E["App registration<br/>with a certificate;<br/>a secret is the<br/>last resort"]:::warn
+  C1 --> R["Then: narrowest role,<br/>narrowest scope"]:::d01
+  C2 --> R
+  D1 --> R
+  E --> R
+```
+
+## Why security cares
+
+**Without the control**
+
+1. A user is sent a convincing link to a third-party app that asks to "read your mail"
+2. User consent is open to any app, so the user clicks Accept
+3. The consent creates a lasting delegated grant on the app's service principal
+4. The app reads the mailbox every day - and resetting the user's password or enforcing
+   MFA changes nothing, because the app never needed the password again
+
+**With the control**
+
+1. User consent is limited to verified publishers and permissions you classified as
+   low impact
+2. The admin consent workflow routes everything else to named reviewers
+3. The malicious app's request lands in a review queue instead of producing a grant
+4. Existing grants are reviewed and unexpected ones removed
+
+**What it does not solve.** Consent settings do not stop a password being phished.
+That is the job of authentication methods, authentication strengths and Conditional
+Access. Nor do they remove grants already made - those need a review.
+
+**Depends on.** Classifying permissions (the low-impact option does nothing until you
+do), naming reviewers, and Conditional Access policies that exclude your emergency
+access accounts so a mistake cannot lock everyone out.
+
 ## Configuration surface
 
 | Control | Default | Set it to | Why |
@@ -351,6 +466,23 @@ exam objective in 01-03, which asks you to find and remediate exactly this artif
 **One user-assigned identity attached to everything.** Convenient, and it means
 every resource carrying it holds the union of all permissions any of them needed.
 
+## Hands-on
+
+See [01-01 lab](../../labs/01-identity-access-governance/01-01-lab.md).
+
+## Validate the security outcome
+
+A control is only done when you have evidence it does what you intended.
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| Conditional Access | The policy applies to the people and apps you meant, and only them | Run **What If** for a test user before enabling; after enabling (or in report-only), open the sign-in log entry and check its **Conditional Access** tab for the policy and its result |
+| Break-glass exclusion | Emergency accounts are never blocked | Each policy's assignments list both emergency accounts under exclusions; What If for an emergency account shows the policy not applying |
+| Authentication strength | Admins cannot satisfy MFA with a weak method | Sign in as a test admin with only a weaker method registered and confirm the sign-in is not granted |
+| Consent settings | Users cannot grant unreviewed apps | As a test user, attempt to consent to an app outside your rules and confirm you see an approval request instead; check the audit log for the consent activity |
+| Managed identity | The resource can reach only what it needs | List the identity's role assignments (`Get-AzRoleAssignment -ObjectId <principalId>`); a call to an allowed resource succeeds and a call outside that scope returns 403 |
+| PIM | No standing privileged access | The role shows as **Eligible**, not **Active**, outside an activation window |
+
 ## How this is tested
 
 SC-500 scenario questions are usually decided by one constraint in the stem. The
@@ -383,9 +515,16 @@ methods policy, and Conditional Access has grown targeting for agent identities,
 which connects this module to the Entra Agent ID material in Domain 3 (03-02). Do
 not trust an AZ-500-era walkthrough for portal paths.
 
-## Hands-on
+### What SC-500 expects you to do
 
-See [01-01 lab](../../labs/01-identity-access-governance/01-01-lab.md).
+- **Identify** which checkpoint a requirement belongs to: method, sign-in rule, consent,
+  or resource authorization.
+- **Distinguish** delegated from application permissions, system-assigned from
+  user-assigned managed identities, and report-only from What If.
+- **Select** the least privileged administrative role for a task.
+- **Implement** Conditional Access with emergency-account exclusions and authentication
+  strengths, consent settings with an admin consent workflow, and managed identities.
+- **Evaluate** existing consent grants and app credentials for risk.
 
 ## Check yourself
 
@@ -407,6 +546,28 @@ See [01-01 lab](../../labs/01-identity-access-governance/01-01-lab.md).
 5. Policy A requires MFA. Policy B requires a compliant device. Policy C blocks
    sign-ins from a country. A user in scope of all three signs in from that country
    with MFA and a compliant device. What is the outcome, and which rule decides it?
+
+## Teach it back
+
+A colleague resets a user's password after a phishing report and says the incident is
+closed. Explain why an app the user consented to can still read their mail, and what you
+would do instead.
+
+A strong answer covers: consent created a durable grant on the app's service principal;
+the app's tokens come from that grant, not from the user's password; revoke the grant
+(or disable the service principal) and review the audit log; prevent recurrence with
+consent settings and the admin consent workflow.
+
+## Key takeaways
+
+- Every Entra ID control sits at one checkpoint: identity, proof, sign-in rule, token
+  permissions, or resource authorization.
+- Conditional Access evaluates every applicable policy; exclusions beat inclusions and
+  block beats grant.
+- Authentication strengths turn "require MFA" into "require *this kind* of MFA".
+- Consent creates a lasting grant. Application permissions are tenant-wide.
+- Managed identities remove the secret - but still need least-privilege role assignments.
+- PIM makes privileged roles eligible, not permanent.
 
 ## Sources
 

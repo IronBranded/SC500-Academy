@@ -59,7 +59,7 @@
     deepState = 'loading';
     deep = {};
 
-    var jobs = shallow.map(function (entry) {
+    var jobs = shallow.filter(function (entry) { return entry.path; }).map(function (entry) {
       return fetch(entry.path, { cache: 'force-cache' })
         .then(function (r) { return r.ok ? r.text() : ''; })
         .then(function (text) {
@@ -89,6 +89,27 @@
         })
         .catch(function () { /* one unreadable file should not break search */ });
     });
+
+    /* Structured comparisons join the index here: their whole text is the
+       searchable part, and a hit shows the takeaway or trap it matched. */
+    jobs.push(fetch('content/comparisons.json', { cache: 'force-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        ((j && j.comparisons) || []).forEach(function (x) {
+          if (shallow.some(function (e) { return e.kind === 'compare' && e.id === x.id; })) return;
+          var names = (x.options || []).map(function (o) { return o.name; });
+          var clues = (x.clues || []).map(function (c) { return c.clue + ' ' + c.points_to; });
+          shallow.push({
+            id: x.id, kind: 'compare', title: x.title, domain: 'Compare controls', weight: '', path: null,
+            hay: [x.title, x.question, names.join(' '), 'compare comparison versus vs'].join(' ').toLowerCase()
+          });
+          deep['compare:' + x.id] = [x.takeaway, x.trap, clues.join(' ')].join(' ').toLowerCase();
+          body['compare:' + x.id] = ['SC-500 takeaway: ' + x.takeaway, 'The trap: ' + x.trap]
+            .concat((x.clues || []).map(function (c) { return 'Clue: "' + c.clue + '" points to ' + c.points_to + '.'; }))
+            .join('\n');
+        });
+      })
+      .catch(function () {}));
 
     Promise.all(jobs).then(function () {
       deepState = 'ready';
@@ -220,7 +241,7 @@
       var a = node('a', 'nav-link search-hit');
       if (h.e.domainId && global.SC500Domains) global.SC500Domains.paint(a, h.e.domainId);
       a.href = '#/' + h.e.kind + '/' + h.e.id;
-      a.appendChild(node('span', 'nav-link__id', h.e.kind === 'appendix' ? 'A' + (Number(h.e.id) + 1) : h.e.id));
+      a.appendChild(node('span', 'nav-link__id', h.e.kind === 'appendix' ? 'A' + (Number(h.e.id) + 1) : (h.e.kind === 'compare' ? 'vs' : h.e.id)));
       var t = node('span', 'nav-link__title');
       t.appendChild(document.createTextNode(h.e.title));
       if (h.e.domainId && global.SC500Domains) {

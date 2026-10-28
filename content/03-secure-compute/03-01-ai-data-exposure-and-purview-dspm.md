@@ -6,7 +6,7 @@ sub_objectives:
 domain: "Secure compute"
 domain_weight: "20-25%"
 status: GA
-prerequisites: ["00-00", "00-02", "01-01"]
+prerequisites: ["00-00", "00-02", "01-01", "0A-02", "0A-14"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/en-us/purview/ai-microsoft-purview"
@@ -23,7 +23,7 @@ licensing: "Microsoft 365 E5 / E5 Compliance for Purview. SharePoint Advanced Ma
 azure_resources: []
 lab_cost_estimate: "$0 - Microsoft 365 E5 tenant only. No Azure resources. Note that reports need at least 24 hours to populate, so this lab spans two sessions."
 free_practice_available: true
-forensic_relevance: "Copilot does not create exposure; it makes existing exposure reachable by asking. That inverts the usual investigative question - instead of 'who accessed this file', the useful question becomes 'who could have asked a question that returned it'. Purview audit records Copilot prompts and responses only when a collection policy exists, so the absence of that policy is itself a finding: the interactions happened and were never recorded."
+forensic_relevance: "Copilot does not create exposure; it makes existing exposure reachable by asking. That inverts the usual investigative question - instead of 'who accessed this file', the useful question becomes 'who could have asked a question that returned it'. For Microsoft 365 Copilot the record exists by default - audit events show which files an interaction touched, and the prompt and response are stored in the user's mailbox for eDiscovery - but only for as long as retention allows, and users can delete their own Copilot history. For Copilot in Fabric, Security Copilot and third-party AI apps, prompts and responses are captured only if a collection policy exists, so for those the absence of the policy is itself a finding."
 ---
 
 # AI Data Exposure and Purview DSPM
@@ -40,7 +40,7 @@ forensic_relevance: "Copilot does not create exposure; it makes existing exposur
 > which means there is no pool of second-hand prep material to lean on and no
 > accumulated folklore to unlearn. Build it from the product documentation.
 
-## Why this exists
+## The security problem
 
 Start with the sentence that explains the entire AI security domain:
 
@@ -75,6 +75,63 @@ So this objective has two halves, in this order:
 And a point of sequence worth holding onto: fixing oversharing is a permissions
 project, not an AI project. The AI tooling tells you where to look and limits the
 damage while you work, but nothing in DSPM for AI repairs a badly shared site.
+
+## In plain English
+
+Microsoft 365 Copilot answers questions using whatever the person asking is already
+allowed to open. It does not get special access. But it makes everything they *could*
+open instantly findable - including files that were shared too widely years ago and
+forgotten.
+
+So securing AI over Microsoft 365 data starts with **finding and fixing oversharing** in
+SharePoint and OneDrive. SharePoint's reports show where content is shared too broadly;
+SharePoint Advanced Management can hide sites from Copilot while you fix them, or lock
+them down. **Microsoft Purview Data Security Posture Management (DSPM)** then shows how
+people use Copilot and other AI apps with your data, flags risky use, and creates
+policies to protect it.
+
+## Words you need to know
+
+- **Oversharing** - content accessible to far more people than need it, for example
+  sites shared with "Everyone except external users" or "Anyone" links.
+- **Data access governance (DAG) reports** - SharePoint admin center reports on sharing
+  activity and permission state.
+- **SharePoint Advanced Management (SAM)** - a SharePoint add-on with snapshot reports and
+  remediation controls; included for tenants licensed for Microsoft 365 Copilot.
+- **Restricted Content Discovery (RCD)** - stops a site's content surfacing in Copilot and
+  organisation-wide search; permissions do not change.
+- **Restricted Access Control (RAC)** - limits a site to members of specified groups,
+  overriding existing permissions and links.
+- **Site access review** - asks a site owner to review and correct the sharing a report
+  found.
+- **Data Security Posture Management (DSPM)** - Purview's solution for seeing and
+  reducing data risk, including AI apps and agents. The older **DSPM for AI** is now
+  labelled classic.
+- **One-click policy** - a policy DSPM creates for you in another Purview solution, such
+  as Insider Risk Management or Communication Compliance.
+- **Collection policy** - captures AI interactions (optionally including prompt and
+  response content) for apps that are not captured by default.
+- **Sensitivity label with encryption** - a label that restricts what people, and Copilot,
+  can do with content; Copilot needs the EXTRACT and VIEW rights to summarise it.
+- **DLP for Microsoft 365 Copilot** - a data loss prevention policy that blocks Copilot
+  from processing items with specified sensitivity labels.
+
+## Mental model
+
+A teaching model: Copilot sees what the user can see - so the controls act on what the
+user can see.
+
+```mermaid
+flowchart LR
+  accTitle: Teaching model - how existing permissions shape what Copilot can surface
+  accDescr: A user asks Microsoft 365 Copilot a question. Copilot searches Microsoft 365 content using the user's own permissions through Microsoft Graph, so anything overshared to that user can appear in the answer. Data access governance reports find the oversharing. Restricted Content Discovery hides a site from Copilot without changing access; Restricted Access Control removes access. Sensitivity labels with encryption and DLP for Copilot stop Copilot processing specific content. Purview DSPM and auditing show what AI interactions happened and flag risky use.
+  U["User asks Copilot"]:::d00 --> C["Copilot<br/>uses the USER'S permissions"]:::d03
+  C --> SP["SharePoint / OneDrive content<br/>including overshared sites"]:::d02
+  DAG["DAG reports<br/>find oversharing"]:::d04 -.-> SP
+  RCD["RCD: hide from Copilot<br/>RAC: remove access"]:::d01 -.-> SP
+  LBL["Labels + DLP for Copilot<br/>block processing of specific items"]:::d01 -.-> C
+  DSPM["Purview DSPM + audit<br/>see and flag AI use"]:::d04 -.-> C
+```
 
 ## How it works under the hood
 
@@ -122,8 +179,13 @@ without breaking anyone's work. RAC is the remediation: it genuinely locks the s
 down. Choosing RCD when the question demands that unauthorised users lose access - or
 RAC when the question says existing users must not be disrupted - is the trap.
 
-Two operational notes worth carrying: **RCD can take up to 24 hours to take effect**,
-and it can be delegated to site owners.
+Two operational notes worth carrying: **RCD takes time to propagate** - it is a
+site-level property applied through the search index, and Microsoft notes that a site
+with more than 500,000 items can take over a week - and it applies to SharePoint sites
+only, not OneDrive. RCD also removes AI entry points (the Copilot button, AI actions)
+from the restricted site. And it is not total invisibility: people can still find content
+they own or have recently interacted with, and a search started from inside the site
+still works.
 
 **Restricted SharePoint Search** - the tenant-wide allow-list of up to 100 sites - is
 being retired, with new enablement blocked from **31 July 2026**. It was always a blunt
@@ -147,9 +209,14 @@ does not introduce new enforcement; it uses existing Purview controls - sensitiv
 labels, data classification, auditing, communication compliance, retention, eDiscovery -
 and puts reports, recommendations, and **one-click policies** in front of them.
 
-> **Naming, as of this writing:** the portal offers **DSPM for AI (classic)** and a
-> newer unified **Data Security Posture Management (preview)**. Verify which your
-> tenant shows before following any walkthrough, including this one.
+> **Naming, as of this writing:** Microsoft has replaced **DSPM for AI** with a new,
+> unified **Data Security Posture Management** (Purview portal > **Solutions** >
+> **DSPM**), which covers AI apps and agents alongside other data risks. Its key pages
+> are **Posture**, **Objectives** and **AI observability** (an inventory of AI apps and
+> agents). The previous experiences are still reachable as **DSPM for AI (classic)** and
+> **DSPM (classic)**, and the one-click policies below originate there - Microsoft adds
+> new features to the current version only. Verify which your tenant shows before
+> following any walkthrough, including this one.
 
 What it reports on, in two categories:
 
@@ -162,17 +229,26 @@ The one-click policies are named objects you should recognise on sight:
 
 | Policy | Created from | Owning solution |
 | --- | --- | --- |
-| **DSPM for AI - Capture interactions for Copilot experiences** | *Secure interactions in Microsoft Copilot experiences* | Purview Audit / collection policy |
+| **DSPM for AI - Capture interactions for Copilot experiences** | *Secure interactions in Microsoft Copilot experiences* | Collection policy (captures prompts and responses from Copilot in Fabric and Security Copilot) |
 | **DSPM for AI - Detect risky AI usage** | *Detect risky interactions in AI apps* | Insider Risk Management |
 | **DSPM for AI - Unethical behavior in AI apps** | *Detect unethical behavior in AI apps* | Communication Compliance |
 
 Two mechanical facts that generate exam questions:
 
-1. **Prompts and responses are not captured by default.** Recording the actual
-   interactions requires a **collection policy** - in practice, the *Capture
-   interactions for Copilot experiences* one-click policy. Without it, DSPM shows
-   activity counts but the content of what people asked and what came back was never
-   stored. In an incident, that gap is unrecoverable.
+1. **Where prompt and response content comes from depends on the AI app.**
+   - **Microsoft 365 Copilot and Copilot Chat:** every interaction generates an audit
+     record (`CopilotInteraction`) automatically, showing when it happened and which
+     resources were accessed. The prompt and response themselves are stored in the
+     user's mailbox and are found with **eDiscovery** (the *Copilot activity* type) or
+     the **AI interaction** event in activity explorer, which requires auditing to be on.
+     They persist only as long as retention allows - and users can delete their own
+     Copilot activity history unless a retention policy holds it.
+   - **Copilot in Fabric and Security Copilot:** prompts and responses are captured only
+     with a **collection policy** - the *Capture interactions for Copilot experiences*
+     one-click policy.
+   - **Third-party and enterprise AI apps:** a collection policy **with content capture
+     selected** is needed; some one-click collection policies leave content capture off
+     until you edit them.
 2. **Reports need at least a day to populate.** An empty DSPM report on the afternoon
    you enabled it means nothing.
 
@@ -188,6 +264,56 @@ Alongside DSPM, two Purview controls act directly on Copilot:
   carrying specified sensitivity labels - a label-driven exclusion rather than a
   site-driven one
 
+### One Copilot question, end to end
+
+The controls in this lesson act at different points of one question. Copilot only ever
+sees what the user can open, so each control either hides content, holds it back, or
+shows you that it happened.
+
+```mermaid
+flowchart TD
+  %% flowchart: flow-copilot
+  accTitle: Microsoft 365 Copilot meets an overshared site
+  accDescr: Copilot searches with the user's own permissions. A site under Restricted Content Discovery is not surfaced by Copilot or organization-wide search. A DLP policy for Copilot can exclude labelled content. Otherwise overshared content can appear in the answer. DSPM shows sensitive data in the interaction and Purview Audit records it. Data access governance reports find broadly shared sites.
+  A(["Employee asks<br/>Microsoft 365 Copilot"]):::actor --> B["Copilot searches<br/>with the employee's<br/>own permissions"]:::d03
+  B --> C{"Site under<br/>Restricted Content<br/>Discovery?"}:::d03
+  C -->|Yes| C1["Not surfaced by<br/>Copilot or org-wide<br/>search"]:::ok
+  C -->|No| D{"DLP for Copilot<br/>excludes this<br/>labelled content?"}:::d03
+  D -->|Yes| D1["Not used<br/>in the answer"]:::ok
+  D -->|No| E["Answer can include<br/>the overshared<br/>content"]:::warn
+  E -.-> F["Purview DSPM:<br/>sensitive data in<br/>the interaction"]:::d03
+  B -.-> G["Purview Audit records<br/>the interaction"]:::d04
+  H["Data access governance<br/>reports find broadly<br/>shared sites"]:::d03 -.->|"owners fix access;<br/>RCD in the meantime"| C
+```
+
+## Why security cares
+
+**Without the control**
+
+1. A site holding salary review documents was shared with "Everyone except external
+   users" years ago
+2. Copilot is rolled out to the whole organisation
+3. A curious employee asks Copilot about "next year's salary bands"
+4. Copilot summarises the documents - the employee always had access, they just never
+   knew where to look
+
+**With the control**
+
+1. Before rollout, DAG reports flag sites shared with Everyone except external users
+2. RCD hides the HR site from Copilot immediately, while a site access review runs
+3. The site owner removes the broad sharing; sensitive files carry a label with
+   encryption that withholds EXTRACT from most staff
+4. DSPM and audit show Copilot interactions touching sensitive content, so any remaining
+   exposure is noticed
+
+**What it does not solve.** RCD changes discoverability, not access: anyone with
+permission can still open the files directly. Only fixing the permissions (or RAC)
+removes access.
+
+**Depends on.** Running the reports before the rollout, licensing for SharePoint Advanced
+Management, and retention policies if interaction history must survive for
+investigations.
+
 ## Configuration surface
 
 | Setting | Default | Set it to | Why |
@@ -199,7 +325,8 @@ Alongside DSPM, two Purview controls act directly on Copilot:
 | Restricted Access Control | off | On where access genuinely must be revoked | Overrides existing permissions and links |
 | Restricted SharePoint Search | legacy | Do not build on it | New enablement blocked from 31 July 2026 |
 | Site access reviews | not initiated | Initiated from DAG findings | Puts the decision with the site owner who knows the content |
-| Collection policy for Copilot interactions | **not created** | Created | No prompts or responses are recorded without it |
+| Retention policy for Copilot and AI apps | none | Retain for your investigation window | Without one, users can delete their Copilot history and content ages out |
+| Collection policies | **not created** | *Capture interactions for Copilot experiences*, and content capture for third-party AI apps | Prompts and responses from Copilot in Fabric, Security Copilot and other AI apps are not captured without them |
 | DSPM recommendations | pending | Actioned, then dismissed deliberately | Dismissed recommendations vanish from the Overview |
 | Sensitivity labels on sensitive content | none | Labels with encryption; withhold EXTRACT where summarisation must be blocked | The only content-level control over Copilot |
 | DLP for Microsoft 365 Copilot | none | Exclude labelled content from Copilot | Label-driven rather than site-driven |
@@ -218,7 +345,8 @@ can.
 existing permissions and sharing links for anyone outside the group. That is its
 purpose and it will break things.
 
-**Enabling RCD the morning of a demonstration.** It can take 24 hours.
+**Enabling RCD the morning of a demonstration.** It propagates through the search index
+and can take a long time on large sites.
 
 **Assuming E5 provides the permission snapshot reports.** E5 gives activity reports,
 capped and requiring collection to be enabled. The snapshot and permission state
@@ -230,15 +358,32 @@ the tenant enables it for all SharePoint admins.
 **Reading an empty DSPM report as a clean result.** Reports need at least 24 hours, and
 third-party AI app discovery depends on managed devices reporting in.
 
-**No collection policy.** DSPM shows that AI was used, not what was asked or returned.
-This is the single highest-value configuration step in the module and it is off by
-default.
+**Assuming every AI interaction is recorded the same way.** Microsoft 365 Copilot
+interactions are audited and stored by default; Security Copilot, Copilot in Fabric and
+third-party AI apps need a collection policy before any prompt or response content
+exists. And without a retention policy, even Microsoft 365 Copilot history can be
+deleted by the user or age out before anyone investigates.
 
 **Editing a one-click policy in DSPM.** They are created there and managed in
 Communication Compliance, Insider Risk Management, or Audit.
 
 **Labelling content and expecting Copilot to be blocked.** A label without encryption
 does not restrict Copilot. Encryption plus the withholding of EXTRACT does.
+
+## Hands-on
+
+See [03-01 lab](../../labs/03-secure-compute/03-01-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| Oversharing discovery | You know which sites are overshared | DAG reports (and, with SAM, the site permissions snapshot) list the sites and sharing counts |
+| RCD | The site no longer surfaces in Copilot or org-wide search | After propagation, a Copilot query that previously returned the site's content no longer does - but the user can still open the site directly |
+| RAC | Only the named group can open the site | A user outside the group is denied, even with an old sharing link |
+| Label-based control | Copilot cannot summarise protected content | A user who can open a labelled file without EXTRACT rights gets no Copilot summary of it |
+| AI interaction evidence | Interactions can be investigated | `CopilotInteraction` audit records appear in Purview Audit; an eDiscovery search on the user's mailbox returns *Copilot activity* items |
+| Collection policy (other AI apps) | Prompts are captured where they would not be by default | The collection policy exists with content capture selected, and AI interaction events show prompt text |
 
 ## How this is tested
 
@@ -249,7 +394,9 @@ does not restrict Copilot. Encryption plus the withholding of EXTRACT does.
 | "identify sites shared with Everyone Except External Users" | DAG activity report |
 | "point-in-time view of the permission structure" | DAG snapshot / permission state report, requires SAM |
 | "site owner should confirm whether sharing is appropriate" | Site access review |
-| "record what users asked Copilot" | Collection policy - *Capture interactions for Copilot experiences* |
+| "find what a user asked Microsoft 365 Copilot" | eDiscovery search of the user's mailbox (*Copilot activity*), or the AI interaction event in activity explorer |
+| "keep Copilot prompts and responses for seven years" | Retention policy for Microsoft Copilot experiences |
+| "capture prompts in Security Copilot or third-party AI apps" | Collection policy (with content capture) |
 | "detect risky AI usage" | DSPM one-click policy, managed in Insider Risk Management |
 | "detect inappropriate prompts" | DSPM one-click policy, managed in Communication Compliance |
 | "prevent Copilot summarising a document the user can still open" | Sensitivity label with encryption, withholding EXTRACT |
@@ -262,9 +409,17 @@ third-party summary conflicts with the Microsoft documentation here, the documen
 wins - and both the DSPM naming and the Restricted SharePoint Search retirement moved
 recently enough that even recent blog posts are unreliable.
 
-## Hands-on
+### What SC-500 expects you to do
 
-See [03-01 lab](../../labs/03-secure-compute/03-01-lab.md).
+- **Identify** overexposure in SharePoint and OneDrive with the right report for the
+  licence available.
+- **Distinguish** RCD from RAC, activity reports from snapshot reports, and default
+  Microsoft 365 Copilot auditing from collection policies.
+- **Select** the control that meets a requirement: reduce discoverability, remove access,
+  block processing of labelled content, or capture interactions.
+- **Implement** DSPM recommendations and one-click policies, and know which solution owns
+  each policy.
+- **Evaluate** AI-related risk from DSPM reports, audit records and activity explorer.
 
 ## Check yourself
 
@@ -277,11 +432,35 @@ See [03-01 lab](../../labs/03-secure-compute/03-01-lab.md).
    state precisely what risk remains after you apply it.
 3. Same scenario, but Legal now says unauthorised users must lose access entirely.
    Which control, and what will break?
-4. DSPM for AI shows 400 Copilot interactions last week. Your incident response team
-   asks what a specific user asked on Tuesday. Under what configuration can you answer,
-   and what do you tell them if that configuration was never in place?
+4. DSPM shows 400 Microsoft 365 Copilot interactions last week. Your incident response
+   team asks what a specific user asked on Tuesday. Where do you find it, and what
+   could have made it unavailable? How would your answer change if the question were
+   about Security Copilot?
 5. A file carries a sensitivity label with encryption. A user can open it but Copilot
    refuses to summarise it. Explain the mechanism, and name the usage right involved.
+
+## Teach it back
+
+Explain to a business leader why turning on Microsoft 365 Copilot can expose data
+without anyone changing a permission, and the difference between "hiding a site from
+Copilot" and "fixing who can access it".
+
+A strong answer covers: Copilot uses each user's existing permissions; it makes
+long-forgotten oversharing easy to find; RCD hides a site from Copilot and search without
+changing access; fixing the sharing (or RAC) actually removes access.
+
+## Key takeaways
+
+- Copilot surfaces what users can already reach; oversharing is a permissions problem it
+  makes visible.
+- DAG activity reports come with E5; snapshot reports and RCD/RAC need SharePoint
+  Advanced Management.
+- RCD reduces discoverability without changing access; RAC changes access.
+- Microsoft 365 Copilot interactions are audited and stored by default; other Copilots
+  and third-party AI apps need a collection policy. Retention decides how long any of it
+  lasts.
+- DSPM creates policies; their owning solutions manage them.
+- Labels with encryption (EXTRACT right) and DLP for Copilot are content-level controls.
 
 ## Sources
 
@@ -291,3 +470,8 @@ See [03-01 lab](../../labs/03-secure-compute/03-01-lab.md).
 - SharePoint Advanced Management overview: <https://learn.microsoft.com/en-us/sharepoint/advanced-management>
 - Use SharePoint Advanced Management to get ready for Copilot: <https://learn.microsoft.com/sharepoint/get-ready-copilot-sharepoint-advanced-management>
 - Microsoft 365 Copilot architecture, data protection, and auditing: <https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-architecture-data-protection-auditing>
+- Learn about Data Security Posture Management (current version): <https://learn.microsoft.com/purview/data-security-posture-management-learn-about>
+- DSPM for AI considerations and one-click policies (classic): <https://learn.microsoft.com/purview/dspm-for-ai-considerations>
+- Audit logs for Copilot and AI applications: <https://learn.microsoft.com/purview/audit-copilot>
+- Restrict discovery of SharePoint sites and content (RCD): <https://learn.microsoft.com/sharepoint/restricted-content-discovery>
+- Data access governance reports: <https://learn.microsoft.com/sharepoint/data-access-governance-reports>

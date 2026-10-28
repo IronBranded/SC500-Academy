@@ -1,7 +1,7 @@
 ---
 objective: "(Project prerequisite - not an SC-500 exam objective)"
 sub_objectives: []
-domain: "Lab Safety and Environment Setup"
+domain: "Safe Lab Foundations"
 domain_weight: "n/a"
 status: GA
 prerequisites: []
@@ -21,11 +21,13 @@ free_practice_available: true
 forensic_relevance: "Lab tenant hygiene determines whether your own audit log is readable later. A tenant full of orphaned test objects produces noise that looks exactly like the anomalies you are trying to learn to spot."
 ---
 
-# Module 0 Overview: Lab Topology and Conventions
+# Module 0B Overview: Lab Topology and Conventions
 
-> **Read this before you create a single resource.**
+> **Read this before you create a single resource.** New to the cloud? Work through
+> [Module 0A](../00a-foundations/0A-01-cloud-computing.md) first - it explains the
+> tenants, subscriptions, roles and resources this page assumes.
 
-## Why this module exists first
+## Why this exists
 
 Everything else in this guide creates billable Azure resources or privileged
 Microsoft Entra objects. Two failure modes wreck a self-funded lab, and both are
@@ -41,10 +43,19 @@ silent:
    built yourself. Worse, it teaches your hands the opposite of what the exam
    tests.
 
-Module 0 is the control plane for both. It is not exam content. It is what makes
+Module 0B is the control plane for both. It is not exam content. It is what makes
 the exam content survivable.
 
-## The mental model: blast radius and time
+## In plain English
+
+Before you practise on a cloud account, set up three safety nets: an alarm that tells
+you when spending climbs, a way of using powerful permissions only when you need them,
+and a routine for removing everything when a lab ends. Labs teach security; a careless
+lab environment teaches the opposite.
+
+## Mental model
+
+**Blast radius and time.**
 
 Every lab in this guide is designed around two questions:
 
@@ -173,6 +184,15 @@ Only then start Domain 1.
    to do beforehand for it to work?
 4. You hold Global Administrator. `Get-AzResource` returns nothing. What is
    wrong, and what are the two different ways to fix it?
+
+## Key takeaways
+
+- Build the safety nets - budget alerts, PIM, teardown - before any billable resource.
+- Every change has a blast radius (its scope) and a lifetime (how long it persists).
+- Keep two emergency access accounts excluded from Conditional Access.
+- Global Administrator controls the directory, not Azure resources; elevation is a
+  separate, temporary step.
+- Tag everything so orphans can be found later.
 
 ## Sources
 

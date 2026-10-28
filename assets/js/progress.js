@@ -18,6 +18,17 @@
 
    Opening or scrolling a page never counts as any of them.
 
+   TWO DEEPER STATES, added in the beginner-first redesign (2026-10), both
+   derived per question from answers already recorded:
+
+     applied    answered correctly OUTSIDE its home lesson - in a domain
+                review, Exam prep, or the mock exam - where the question is
+                mixed in with others and the lesson is not on screen
+     retained   answered correctly again at least RETAIN_DAYS after the first
+                correct answer
+
+   Neither is a prediction. They are observable facts about the answers.
+
    Schema stays v:1. v1.1 only ADDS keys (answers, marks, last), so a progress
    file exported before the redesign still imports, and one exported after it
    still imports into an older build (the extra keys are ignored there). */
@@ -26,11 +37,12 @@
   'use strict';
 
   var KEY = 'sc500:progress:v1';
+  var RETAIN_DAYS = 7;
   var state = null;
 
   /* ----------------------------------------------------------- persistence */
 
-  function blank() { return { v: 1, items: {}, pages: {}, quiz: {}, answers: {}, marks: {}, last: null }; }
+  function blank() { return { v: 1, items: {}, pages: {}, quiz: {}, answers: {}, marks: {}, last: null, prefs: {} }; }
 
   function load() {
     if (state) return state;
@@ -43,6 +55,7 @@
       state.quiz = state.quiz || {};
       state.answers = state.answers || {};
       state.marks = state.marks || {};
+      state.prefs = state.prefs || {};
       if (state.last === undefined) state.last = null;
     } catch (e) {
       state = blank();
@@ -432,6 +445,7 @@
         });
         Object.keys(incoming.marks || {}).forEach(function (k) { if (!s.marks[k]) s.marks[k] = incoming.marks[k]; });
         if (incoming.last && (!s.last || String(incoming.last.at) > String(s.last.at))) s.last = incoming.last;
+        Object.keys(incoming.prefs || {}).forEach(function (k) { if (s.prefs[k] === undefined) s.prefs[k] = incoming.prefs[k]; });
         save();
         if (global.SC500App) global.SC500App.reroute();
       }).catch(function (e) {
@@ -475,15 +489,41 @@
   function recordAnswer(qid, ok, meta) {
     var s = load();
     var prev = s.answers[qid];
+    var now = new Date().toISOString();
+    var src = meta && meta.src ? meta.src : 'check';
     s.answers[qid] = {
       ok: !!ok,
-      at: new Date().toISOString(),
+      at: now,
       n: (prev && prev.n ? prev.n : 0) + 1,
       wrong: (prev && prev.wrong ? prev.wrong : 0) + (ok ? 0 : 1),
       lesson: meta && meta.lesson ? meta.lesson : (prev ? prev.lesson : null),
-      src: meta && meta.src ? meta.src : 'check'
+      src: src,
+      /* v1.2: first correct answer, and whether it has ever been answered
+         correctly in a mixed set. Extra keys; older builds ignore them. */
+      firstOk: prev && prev.firstOk ? prev.firstOk : (ok ? now : null),
+      applied: !!((prev && prev.applied) || (ok && src !== 'check'))
     };
     save();
+  }
+
+  /* Applied and retained, for a set of questions (one lesson's, one
+     sub-objective's, one domain's). Counts questions, not attempts. */
+  function depth(qids) {
+    var s = load(), applied = 0, retained = 0;
+    (qids || []).forEach(function (q) {
+      var a = s.answers[q];
+      if (!a) return;
+      if (a.applied && a.ok) applied++;
+      if (a.ok && a.firstOk && (Date.parse(a.at) - Date.parse(a.firstOk)) >= RETAIN_DAYS * 86400000) retained++;
+    });
+    return { applied: applied, retained: retained, total: (qids || []).length };
+  }
+
+  /* Learner preferences that change recommendations, never progress. */
+  function pref(k, v) {
+    var s = load();
+    if (arguments.length > 1) { s.prefs[k] = v; save(); return v; }
+    return s.prefs[k];
   }
 
   function answer(qid) { return load().answers[qid] || null; }
@@ -575,6 +615,9 @@
     recordQuiz: recordQuiz,
     readQuiz: readQuiz,
     recordAnswer: recordAnswer,
+    depth: depth,
+    pref: pref,
+    RETAIN_DAYS: RETAIN_DAYS,
     answer: answer,
     checkState: checkState,
     lessonCheck: lessonCheck,

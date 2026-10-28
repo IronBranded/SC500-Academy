@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='6.5' height='6.5' fill='%230078d4'/%3E%3Crect x='8.5' y='1' width='6.5' height='6.5' fill='%23008272'/%3E%3Crect x='1' y='8.5' width='6.5' height='6.5' fill='%238661c5'/%3E%3Crect x='8.5' y='8.5' width='6.5' height='6.5' fill='%23d83b01'/%3E%3C/svg%3E">
+<title>SC-500 Control Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Every SC-500 control on one map: what each one solves, what it connects to, and guided walkthroughs of real requests.">
+<script>
+/* Follow the Academy's theme choice when this page is served with it. */
+(function () {
+  try {
+    var t = localStorage.getItem('sc500:theme:v1');
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    else if (!t && /\/map\/?(index\.html)?$/.test(location.pathname)) document.documentElement.setAttribute('data-theme', 'dark');
+  } catch (e) { /* storage blocked: follow the system */ }
+})();
+</script>
+<style>
+/* Layout: a layered stack of controls (who asks, at the top, to who responds, at the
+   bottom), with a details rail on the right; on phones the rail becomes a bottom sheet.
+   Palette and type come from SC500 Academy's tokens (Fluent neutrals, one hue per
+   exam domain). */
+:root {
+  --bg: #faf9f8;
+  --surface: #ffffff;
+  --sink: #f3f2f1;
+  --rule: #e1dfdd;
+  --rule-strong: #c8c6c4;
+  --ink: #201f1e;
+  --ink-soft: #484644;
+  --ink-faint: #605e5c;
+  --accent: #005a9e;
+  --accent-fill: #0078d4;
+  --on-accent: #ffffff;
+  --d-00: #605e5c; --d-00-ink: #484644; --d-00-tint: #f3f2f1;
+  --d-01: #0078d4; --d-01-ink: #0062ae; --d-01-tint: #edf6fc;
+  --d-02: #008272; --d-02-ink: #006e61; --d-02-tint: #edf6f5;
+  --d-03: #8661c5; --d-03-ink: #7151a5; --d-03-tint: #f7f4fb;
+  --d-04: #d83b01; --d-04-ink: #b53201; --d-04-tint: #fcf1ed;
+  --shadow: 0 10px 30px rgba(32, 31, 30, 0.14);
+  --face-ui: "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --face-display: "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --face-mono: ui-monospace, "Cascadia Mono", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  --t-xs: 0.75rem; --t-sm: 0.875rem; --t-base: 1rem; --t-md: 1.1875rem; --t-lg: 1.4375rem; --t-xl: 2rem;
+  --r: 6px;
+  --rail: 22rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1a19; --surface: #252423; --sink: #141313; --rule: #3b3a39; --rule-strong: #57534f;
+    --ink: #f3f2f1; --ink-soft: #c8c6c4; --ink-faint: #a19f9d;
+    --accent: #4ca8f7; --accent-fill: #4ca8f7; --on-accent: #0b1a26;
+    --d-00: #a19f9d; --d-00-ink: #c8c6c4; --d-00-tint: #2b2a29;
+    --d-01: #3a96dd; --d-01-ink: #6cb4ea; --d-01-tint: #20303c;
+    --d-02: #2aa595; --d-02-ink: #5cc2b4; --d-02-tint: #20312e;
+    --d-03: #a48ad6; --d-03-ink: #bba6e2; --d-03-tint: #332d3a;
+    --d-04: #ea6a3a; --d-04-ink: #f0916c; --d-04-tint: #3e271e;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1a19; --surface: #252423; --sink: #141313; --rule: #3b3a39; --rule-strong: #57534f;
+  --ink: #f3f2f1; --ink-soft: #c8c6c4; --ink-faint: #a19f9d;
+  --accent: #4ca8f7; --accent-fill: #4ca8f7; --on-accent: #0b1a26;
+  --d-00: #a19f9d; --d-00-ink: #c8c6c4; --d-00-tint: #2b2a29;
+  --d-01: #3a96dd; --d-01-ink: #6cb4ea; --d-01-tint: #20303c;
+  --d-02: #2aa595; --d-02-ink: #5cc2b4; --d-02-tint: #20312e;
+  --d-03: #a48ad6; --d-03-ink: #bba6e2; --d-03-tint: #332d3a;
+  --d-04: #ea6a3a; --d-04-ink: #f0916c; --d-04-tint: #3e271e;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); }
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--face-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 2rem;
+}
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: -999px; }
+.skip:focus { left: max(16px, env(safe-area-inset-left, 0px)); top: 8px; background: var(--surface); padding: .4rem .7rem; z-index: 30; }
+
+/* ------------------------------------------------------------------ header */
+.top { max-width: 96rem; margin: 0 auto; padding-top: 1.25rem; display: grid; gap: .75rem; }
+.top__back { font-size: var(--t-sm); color: var(--ink-soft); text-decoration: none; width: fit-content; }
+.top__back:hover { color: var(--accent); text-decoration: underline; }
+.top h1 {
+  margin: 0;
+  font-family: var(--face-display);
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.top__lede { margin: 0; max-width: 46rem; color: var(--ink-soft); font-size: var(--t-base); }
+.bar { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; }
+.modes { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 999px; padding: 3px; background: var(--surface); }
+.modes button {
+  border: 0; background: none; cursor: pointer;
+  padding: .35rem .95rem; border-radius: 999px;
+  font-size: var(--t-sm); font-weight: 600; color: var(--ink-soft);
+}
+.modes button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.filters { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.filters[hidden] { display: none; }
+.filters__label { font-size: var(--t-xs); color: var(--ink-faint); font-weight: 600; margin-right: .15rem; }
+.chip {
+  border: 1px solid var(--rule-strong); background: var(--surface); cursor: pointer;
+  border-radius: 999px; padding: .15rem .65rem; font-size: var(--t-xs); font-weight: 600; color: var(--ink-soft);
+  display: inline-flex; align-items: center; gap: .35rem;
+}
+.chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.chip i { width: .55rem; height: .55rem; border-radius: 2px; background: var(--dc, var(--ink-faint)); display: inline-block; }
+
+/* ------------------------------------------------------------------ layout */
+.layout {
+  max-width: 96rem; margin: 1rem auto 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--rail); gap: 1.25rem; align-items: start;
+}
+
+/* --------------------------------------------------------------------- map */
+.map { position: relative; min-width: 0; }
+.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
+.band {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: .75rem;
+  padding: .7rem 0; border-top: 1px solid var(--rule);
+}
+.band:first-child { border-top: 0; }
+.band__label { display: grid; align-content: start; gap: .1rem; padding-top: .3rem; }
+.band__q { font-family: var(--face-display); font-weight: 650; font-size: var(--t-base); line-height: 1.25; }
+.band__cat { font-size: var(--t-xs); color: var(--ink-faint); line-height: 1.35; }
+.band__tiles { display: flex; flex-wrap: wrap; gap: .5rem; min-width: 0; }
+
+.tile {
+  position: relative;
+  display: grid; gap: .15rem; align-content: start; text-align: left;
+  min-width: 8.25rem; max-width: 13rem; flex: 0 1 auto;
+  padding: .45rem .65rem .5rem;
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: opacity .18s ease, border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+.tile:hover { border-color: var(--dc); }
+.tile__kind { display: flex; align-items: center; gap: .35rem; font-size: 0.6875rem; font-weight: 600; color: var(--ink-faint); letter-spacing: .02em; }
+.tile__kind i { width: .55rem; height: .55rem; border-radius: 2px; background: var(--dc); flex: none; }
+.tile__name { font-weight: 600; font-size: var(--t-sm); line-height: 1.25; }
+.tile__rel { display: none; font-size: 0.6875rem; line-height: 1.3; color: var(--dc-ink); font-weight: 600; }
+.tile__steps { position: absolute; top: -.55rem; right: -.45rem; display: flex; gap: 2px; }
+.tile__steps b {
+  min-width: 1.25rem; height: 1.25rem; padding: 0 .3rem; border-radius: 999px;
+  display: inline-grid; place-items: center;
+  font-size: 0.6875rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: var(--surface); color: var(--ink); border: 1.5px solid var(--ink);
+}
+.tile__steps b.now { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
+
+/* Dimmed tiles recede through surface and border, not opacity, so their text
+   still meets contrast. */
+.map[data-focus="on"] .tile:not([data-lit="true"]),
+.tile[data-filtered="out"] { background: var(--bg); border-color: var(--rule); box-shadow: none; }
+.map[data-focus="on"] .tile:not([data-lit="true"]) .tile__name,
+.tile[data-filtered="out"] .tile__name { color: var(--ink-faint); font-weight: 500; }
+.map[data-focus="on"] .tile:not([data-lit="true"]) .tile__kind i,
+.tile[data-filtered="out"] .tile__kind i { opacity: .35; }
+.map[data-focus="on"] .tile[data-lit="true"] { box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.tile[data-rel="true"] { border-color: var(--dc); }
+.tile[data-rel="true"] .tile__rel { display: block; }
+.tile[aria-pressed="true"], .tile[data-now="true"] {
+  background: var(--dc-tint); border-color: var(--dc); box-shadow: 0 0 0 2px var(--dc);
+}
+.tile[data-now="true"] { transform: translateY(-1px); }
+
+.wire { fill: none; stroke-width: 1.75; }
+.wire--logs { stroke-dasharray: 5 4; }
+.wire--govern { stroke-dasharray: 1.5 3.5; stroke-linecap: round; }
+.wire--path { stroke-width: 2.25; }
+.wire--past { opacity: .45; }
+
+/* ------------------------------------------------------------------- panel */
+.panel {
+  position: sticky; top: max(12px, env(safe-area-inset-top, 0px));
+  max-height: calc(100vh - 24px); overflow: auto;
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+  padding: 1rem 1.1rem 1.15rem;
+  display: grid; gap: .8rem; align-content: start;
+}
+.panel h2 { margin: 0; font-family: var(--face-display); font-size: var(--t-lg); line-height: 1.2; text-wrap: balance; }
+.panel h3 { margin: .2rem 0 0; font-size: var(--t-xs); font-weight: 700; color: var(--ink-faint); letter-spacing: .04em; text-transform: uppercase; }
+.panel p { margin: 0; }
+.panel__toggle { display: none; }
+.tags { display: flex; flex-wrap: wrap; gap: .35rem; }
+.tag {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: var(--t-xs); font-weight: 600; padding: .05rem .5rem; border-radius: 999px;
+  background: var(--dc-tint, var(--sink)); color: var(--dc-ink, var(--ink-soft));
+}
+.tag i { width: .5rem; height: .5rem; border-radius: 2px; background: var(--dc, var(--ink-faint)); }
+.fact { display: grid; gap: .2rem; }
+.fact p { color: var(--ink); }
+.fact--limit p { color: var(--ink-soft); }
+.rels { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
+.rels li { display: grid; grid-template-columns: 1rem minmax(0, 1fr); gap: .4rem; align-items: baseline; font-size: var(--t-sm); color: var(--ink-soft); }
+.rels li.plain { display: block; }
+.rels .dir { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--ink-faint); }
+.link-btn {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 2px;
+  text-align: left;
+}
+.objs { display: flex; flex-wrap: wrap; gap: .3rem; }
+.obj {
+  font-family: var(--face-mono); font-size: var(--t-xs); padding: 0 .4rem; border-radius: 4px;
+  border: 1px solid var(--rule-strong); color: var(--ink-soft); text-decoration: none;
+}
+a.obj:hover { border-color: var(--accent); color: var(--accent); }
+.study { display: grid; gap: .3rem; font-size: var(--t-sm); }
+.hint { color: var(--ink-soft); font-size: var(--t-sm); }
+
+.flowpick { display: grid; gap: .3rem; }
+.flowpick label { font-size: var(--t-xs); font-weight: 700; color: var(--ink-faint); letter-spacing: .04em; text-transform: uppercase; }
+.flowpick select {
+  width: 100%; padding: .45rem .5rem; border-radius: var(--r);
+  border: 1px solid var(--rule-strong); background: var(--bg); color: var(--ink); font: inherit; font-size: var(--t-sm);
+}
+.progress { display: flex; gap: 4px; }
+.progress span { flex: 1; height: 4px; border-radius: 2px; background: var(--rule); }
+.progress span.done { background: var(--ink-faint); }
+.progress span.now { background: var(--accent-fill); }
+.stepno { font-size: var(--t-xs); font-weight: 700; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.narr { font-size: var(--t-base); line-height: 1.55; }
+.nav { display: flex; gap: .5rem; flex-wrap: wrap; }
+.btn {
+  border: 1px solid var(--rule-strong); background: var(--surface); cursor: pointer;
+  border-radius: var(--r); padding: .4rem .85rem; font-size: var(--t-sm); font-weight: 600;
+}
+.btn--primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
+.btn[disabled] { opacity: .45; cursor: default; }
+
+/* ------------------------------------------------------------------ footer */
+.foot { max-width: 96rem; margin: 1.5rem auto 0; padding-top: 1rem; border-top: 1px solid var(--rule); display: grid; gap: .8rem; }
+.legend { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; font-size: var(--t-xs); color: var(--ink-soft); }
+.legend span { display: inline-flex; align-items: center; gap: .45rem; }
+.legend svg { flex: none; }
+.legend line { stroke: var(--ink-soft); stroke-width: 2; }
+.note { font-size: var(--t-xs); color: var(--ink-faint); max-width: 60rem; margin: 0; }
+
+/* ------------------------------------------------------------- narrow ---- */
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .wires { display: none; }
+  .map { padding-bottom: 48vh; }
+  .panel {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 20;
+    max-height: 46vh; border-radius: 14px 14px 0 0; border-width: 1px 0 0;
+    box-shadow: var(--shadow);
+    padding: .6rem max(16px, env(safe-area-inset-right, 0px)) calc(.9rem + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .panel__toggle {
+    display: block; justify-self: center; border: 0; background: none; cursor: pointer;
+    font-size: var(--t-xs); font-weight: 700; color: var(--ink-faint); padding: .15rem .6rem;
+  }
+  .panel[data-collapsed="true"] > :not(.panel__toggle):not(.panel__head) { display: none; }
+  .map[data-sheet="collapsed"] { padding-bottom: 7rem; }
+}
+@media (max-width: 640px) {
+  .band { grid-template-columns: minmax(0, 1fr); gap: .45rem; }
+  .band__label { padding-top: 0; grid-auto-flow: row; }
+  .tile { min-width: 0; max-width: none; flex: 1 1 calc(50% - .5rem); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile { transition: none; }
+}
+@media (forced-colors: active) {
+  .tile[aria-pressed="true"], .tile[data-now="true"] { outline: 3px solid Highlight; }
+}
+</style>
+
+<a class="skip" href="#panel">Skip to the details panel</a>
+
+<header class="top">
+  <a class="top__back" id="back" href="https://ironbranded.github.io/SC500-Academy/#/">SC500 Academy</a>
+  <h1>SC-500 control map</h1>
+  <p class="top__lede">Every control the exam measures, on one map, from who is asking at the top to who responds at the bottom. Follow a walkthrough to watch the controls work together on one real request, or switch to Explore and select any control to see what it solves and what it connects to. For the same controls as step-by-step decisions, open the <a id="flows" href="https://claude.ai/artifact/3BtnQ6Ls2oWMF6DTaLE3bE" target="_blank" rel="noopener">flowcharts</a>.</p>
+  <div class="bar">
+    <div class="modes" role="tablist" aria-label="View">
+      <button type="button" role="tab" id="tab-walk" aria-selected="true" aria-controls="panel">Walkthroughs</button>
+      <button type="button" role="tab" id="tab-explore" aria-selected="false" aria-controls="panel">Explore</button>
+    </div>
+    <div class="filters" id="filters" hidden>
+      <span class="filters__label" id="f-kind-l">Show</span>
+      <div class="filters" role="group" aria-labelledby="f-kind-l" id="f-kind"></div>
+      <span class="filters__label" id="f-dom-l">Domain</span>
+      <div class="filters" role="group" aria-labelledby="f-dom-l" id="f-dom"></div>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="map" id="map" aria-label="Map of SC-500 controls">
+    <svg class="wires" id="wires" aria-hidden="true">
+      <defs id="defs"></defs>
+      <g id="wire-g"></g>
+    </svg>
+  </section>
+  <aside class="panel" id="panel" tabindex="-1" aria-label="Details">
+    <button type="button" class="panel__toggle" id="sheet-toggle" aria-expanded="true">Hide details</button>
+    <div class="panel__head vh" aria-live="polite" id="status"></div>
+    <div id="panel-body" style="display:grid;gap:.8rem"></div>
+  </aside>
+</main>
+
+<footer class="foot">
+  <div class="legend" aria-label="Line styles">
+    <span><svg width="34" height="8" aria-hidden="true"><line x1="1" y1="4" x2="33" y2="4"/></svg>identity, access, traffic, protection, alerts</span>
+    <span><svg width="34" height="8" aria-hidden="true"><line x1="1" y1="4" x2="33" y2="4" stroke-dasharray="5 4"/></svg>sends logs</span>
+    <span><svg width="34" height="8" aria-hidden="true"><line x1="1" y1="4" x2="33" y2="4" stroke-dasharray="1.5 3.5" stroke-linecap="round"/></svg>governs</span>
+    <span><b>Prevent</b>&nbsp;stops it happening</span>
+    <span><b>Govern</b>&nbsp;sets the rules everyone works within</span>
+    <span><b>Harden</b>&nbsp;a workload's own security settings</span>
+    <span><b>Detect</b>&nbsp;finds it and alerts</span>
+    <span><b>Respond</b>&nbsp;acts on what was found</span>
+    <span><b>Recover</b>&nbsp;gets you back</span>
+  </div>
+  <p class="note" id="note">A teaching model, not a deployment diagram: it shows how controls depend on and feed one another. Colours follow the four exam domains. Every relationship restates something SC500 Academy teaches, checked against Microsoft Learn.</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var DATA = {"checked":"21 October 2026","layers":[{"id":"actors","q":"Who is asking?","label":"People, workloads, agents and the internet"},{"id":"identity","q":"Who are you?","label":"Identity and access"},{"id":"govern","q":"What may you do?","label":"Authorization and governance"},{"id":"network","q":"Which way in?","label":"Network paths and filters"},{"id":"compute","q":"What runs?","label":"Servers, containers and apps"},{"id":"data","q":"What holds the data?","label":"Secrets, storage and databases"},{"id":"ai","q":"What does the AI do?","label":"AI workloads and AI controls"},{"id":"detect","q":"Who is watching?","label":"Posture, threat protection and audit"},{"id":"respond","q":"What happens next?","label":"Investigation and response"}],"kinds":{"actor":"Actor","prevent":"Prevent","govern":"Govern","harden":"Harden","detect":"Detect","respond":"Respond","recover":"Recover"},"edgeKinds":{"auth":"Proves identity","access":"Grants access","govern":"Governs","net":"Carries or filters traffic","protect":"Protects","detect":"Watches and alerts","logs":"Sends logs","respond":"Responds","uses":"Uses"},"nodes":[{"id":"person","name":"People","layer":"actors","d":"00","kind":"actor","objs":[],"problem":"Employees, administrators and customers who sign in and ask for things.","does":"Every request they make starts with proving who they are.","limit":null,"primer":"0A-04","lessons":[]},{"id":"workload","name":"Apps and workloads","layer":"actors","d":"00","kind":"actor","objs":[],"problem":"Code running on Azure that calls other services: storage, databases, APIs.","does":"A workload needs an identity of its own, ideally one with no secret to store.","limit":null,"primer":"0A-06","lessons":[]},{"id":"agent","name":"AI agents","layer":"actors","d":"00","kind":"actor","objs":[],"problem":"Software that reasons over a request and calls tools, for a user or on its own.","does":"An agent acts with real access, so it needs an identity, limits and monitoring like anything else.","limit":null,"primer":"0A-16","lessons":[]},{"id":"internet","name":"The internet","layer":"actors","d":"00","kind":"actor","objs":[],"problem":"Clients you don't control, including attackers scanning for anything exposed.","does":"Everything public is reachable from here until a control says otherwise.","limit":null,"primer":"0A-08","lessons":[]},{"id":"entra","name":"Microsoft Entra ID","layer":"identity","d":"01","kind":"prevent","objs":[{"id":"1.1.2","text":"Implement conditional access policies","lesson":"01-01"},{"id":"1.1.4","text":"Implement and configure identity for applications, including enterprise applications and app registrations","lesson":"01-01"}],"problem":"Every person, app and agent needs one trusted place that proves who it is.","does":"Authenticates identities and issues the tokens that Azure, Microsoft 365 and your apps accept.","limit":"It proves identity; what the holder may do inside Azure is decided by Azure RBAC.","primer":"0A-05","lessons":["01-01"]},{"id":"authm","name":"MFA and passwordless","layer":"identity","d":"01","kind":"prevent","objs":[{"id":"1.1.3","text":"Implement and configure authentication methods, including multifactor authentication (MFA) and passwordless","lesson":"01-01"}],"problem":"Passwords alone are phished, guessed and sprayed.","does":"Adds factors and phishing-resistant methods such as passkeys and Windows Hello for Business.","limit":"A method protects nothing until a policy requires it.","primer":"0A-05","lessons":["01-01"]},{"id":"ca","name":"Conditional Access","layer":"identity","d":"01","kind":"prevent","objs":[{"id":"1.1.2","text":"Implement conditional access policies","lesson":"01-01"},{"id":"3.1.4","text":"Implement conditional access for Microsoft Entra Agent ID","lesson":"03-02"}],"problem":"The same sign-in deserves different treatment depending on who, from where, on what device and at what risk.","does":"Evaluates each Microsoft Entra sign-in and grants access, requires MFA or a compliant device, or blocks.","limit":"It only sees Entra sign-ins. SQL logins, storage account keys and SAS tokens never reach it.","primer":"0A-05","lessons":["01-01","03-02"]},{"id":"pim","name":"Privileged Identity Management","layer":"identity","d":"01","kind":"prevent","objs":[{"id":"1.1.1","text":"Implement and configure Privileged Identity Management (PIM)","lesson":"01-01"}],"problem":"Standing admin rights are a permanent target.","does":"Makes Azure and Entra roles eligible instead of permanent: activated just in time, with MFA, justification or approval, and expiring.","limit":"It limits when a role is active, not what the role can do. Scope the role too.","primer":"0A-05","lessons":["01-01"]},{"id":"apps","name":"App registrations and consent","layer":"identity","d":"01","kind":"prevent","objs":[{"id":"1.1.4","text":"Implement and configure identity for applications, including enterprise applications and app registrations","lesson":"01-01"},{"id":"1.1.5","text":"Manage OAuth permission grants and consent settings","lesson":"01-01"}],"problem":"Apps need identities and permissions to data, and users can grant those permissions by consenting.","does":"Defines app identities (service principals) and controls who may consent to which permissions.","limit":"Revoking a grant doesn't stop users consenting again; change the consent settings too.","primer":"0A-04","lessons":["01-01"]},{"id":"mi","name":"Managed identities","layer":"identity","d":"01","kind":"prevent","objs":[{"id":"1.1.6","text":"Implement and configure managed identities for Azure resources","lesson":"01-01"}],"problem":"Secrets kept in code and settings leak and expire.","does":"Gives an Azure resource a Microsoft Entra identity whose credential Azure issues and rotates.","limit":"It removes the credential, not the permission problem: a managed identity with Owner is still Owner.","primer":"0A-04","lessons":["01-01"]},{"id":"agentid","name":"Microsoft Entra Agent ID","layer":"identity","d":"03","kind":"prevent","objs":[{"id":"3.1.4","text":"Implement conditional access for Microsoft Entra Agent ID","lesson":"03-02"},{"id":"3.1.5","text":"Analyze blast radius for security risks related to Entra Agent ID by using Defender XDR","lesson":"03-02"},{"id":"3.1.6","text":"Manage Entra Agent ID access","lesson":"03-02"}],"problem":"Agents act with real access, so they need identities you can govern.","does":"Gives agents their own identities (blueprints, agent identities, agent users) with owners and sponsors, Conditional Access and risk detection.","limit":"A Conditional Access block on an agent identity doesn't apply when its blueprint gets tokens to create agent identities.","primer":"0A-16","lessons":["03-02"]},{"id":"rbac","name":"Azure RBAC","layer":"govern","d":"01","kind":"prevent","objs":[{"id":"1.3.5","text":"Manage Azure built-in role assignments","lesson":"01-03"},{"id":"1.3.6","text":"Manage custom roles, including Azure roles and Microsoft Entra roles","lesson":"01-03"},{"id":"1.3.7","text":"Evaluate and remediate overprivileged access assignments by using Azure role-based access control (RBAC)","lesson":"01-03"}],"problem":"People and workloads need exactly the access their job needs, at the right scope.","does":"Role assignments at management group, subscription, resource group or resource scope. Permissions add up.","limit":"Owner has no data actions: it can't read blobs or secrets through Entra ID, though it can list storage keys.","primer":"0A-05","lessons":["01-03"]},{"id":"policy","name":"Azure Policy","layer":"govern","d":"01","kind":"govern","objs":[{"id":"1.3.1","text":"Implement and configure security controls by using Azure Policy, including built-in and custom policy definitions","lesson":"01-03"},{"id":"3.2.9","text":"Enforce security configuration of Azure-managed servers by using Azure Machine Configuration","lesson":"03-04"}],"problem":"Many teams create resources; rules must hold everywhere, including in subscriptions added later.","does":"Evaluates create and update requests at any scope: Deny, Audit, Modify, DeployIfNotExists. Machine Configuration reaches inside servers.","limit":"It doesn't grant or remove access, and an assignment in DoNotEnforce mode reports without blocking.","primer":"0A-12","lessons":["01-03","03-04"]},{"id":"locks","name":"Resource locks","layer":"govern","d":"01","kind":"govern","objs":[{"id":"1.3.4","text":"Implement resource locks","lesson":"01-03"}],"problem":"Mistakes delete critical resources, even when made by admins.","does":"CanNotDelete or ReadOnly applies to everyone, Owner included, until the lock is removed.","limit":"Anyone allowed to remove the lock can still do the damage afterwards.","primer":"0A-12","lessons":["01-03"]},{"id":"iac","name":"Infrastructure as code","layer":"govern","d":"01","kind":"govern","objs":[{"id":"1.3.9","text":"Implement and configure security controls by using infrastructure as code","lesson":"01-03"}],"problem":"Resources built by hand drift and repeat the same mistakes.","does":"Deploys from reviewed templates (Bicep, ARM, Terraform) that can be scanned before they ship.","limit":"A template is only as secure as its review; Azure Policy still evaluates what it deploys.","primer":"0A-12","lessons":["01-03"]},{"id":"backup","name":"Azure Backup security","layer":"govern","d":"01","kind":"recover","objs":[{"id":"1.3.8","text":"Configure security controls for backup protection by using Azure Backup security features","lesson":"01-03"}],"problem":"Ransomware and insiders go after backups first.","does":"Soft delete, immutable vaults, multi-user authorization and encryption protect recovery points.","limit":"It protects the copies; it doesn't stop the original being encrypted.","primer":"0A-12","lessons":["01-03"]},{"id":"nsg","name":"NSGs and ASGs","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.1","text":"Implement and manage network security groups (NSGs) and application security groups (ASGs)","lesson":"02-03"}],"problem":"Every subnet and VM needs its own allow and deny rules.","does":"Stateful rules on address, port and protocol, by priority. Application security groups group VMs by role instead of by IP.","limit":"No FQDN filtering, no threat intelligence, no look inside the traffic.","primer":"0A-07","lessons":["02-03"]},{"id":"avnm","name":"Virtual Network Manager","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.2","text":"Implement and configure network access policies by using Azure Virtual Network Manager","lesson":"02-03"}],"problem":"Application teams own their NSGs, but some rules must hold for every network.","does":"Security admin rules, deployed to network groups across subscriptions and evaluated before NSGs.","limit":"By default it skips virtual networks that contain SQL Managed Instance or Databricks.","primer":"0A-07","lessons":["02-03"]},{"id":"fw","name":"Azure Firewall","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.8","text":"Implement and configure Azure Firewall","lesson":"02-04"}],"problem":"Traffic between networks and out to the internet needs central inspection and logging.","does":"Threat intelligence first, then DNAT, network and application (FQDN) rules. Premium adds TLS inspection and IDPS.","limit":"It only sees traffic routed to it: a service endpoint route bypasses a 0.0.0.0/0 user-defined route.","primer":"0A-07","lessons":["02-04"]},{"id":"vwan","name":"Virtual WAN","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.3","text":"Configure security for an Azure Virtual WAN","lesson":"02-03"}],"problem":"Many branches, regions and remote users need one managed transit network.","does":"Microsoft-managed hubs. Routing intent sends private and internet traffic through a secured hub's firewall.","limit":"A hub isn't secured until it has a firewall and routing intent is configured.","primer":"0A-08","lessons":["02-03"]},{"id":"vpn","name":"VPN gateway","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.4","text":"Implement and configure security for virtual private network (VPN) connections","lesson":"02-03"}],"problem":"Sites and remote users need encrypted tunnels into Azure.","does":"Site-to-site IPsec. Point-to-site with certificates, RADIUS, or Microsoft Entra ID authentication over OpenVPN.","limit":"Only Entra ID authentication brings Conditional Access into the connection.","primer":"0A-08","lessons":["02-03"]},{"id":"epa","name":"Entra Private Access","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.5","text":"Implement and configure Microsoft Entra Private Access","lesson":"02-04"}],"problem":"A VPN gives a remote user a whole network when they need one app.","does":"Per-app access to private resources through Global Secure Access, with Conditional Access on each app.","limit":"Needs the Global Secure Access client and an Entra Private Access or Entra Suite licence.","primer":"0A-08","lessons":["02-04"]},{"id":"pe","name":"Private endpoints","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.6","text":"Configure Azure private endpoints to secure access to Azure platform as a service (PaaS) resources","lesson":"02-04"}],"problem":"Platform services such as Storage, SQL and Key Vault have public endpoints by default.","does":"Gives the service a private IP in your virtual network. With public network access disabled, it is off the internet.","limit":"It doesn't disable the public endpoint by itself, and it needs private DNS so names resolve to the private IP.","primer":"0A-08","lessons":["02-04"]},{"id":"pls","name":"Private Link service","layer":"network","d":"02","kind":"prevent","objs":[{"id":"2.3.7","text":"Configure Azure Private Link services to secure access to network resources","lesson":"02-04"}],"problem":"Partners need private access to your service, even when their address space overlaps yours.","does":"Publishes a service behind a Standard Load Balancer. Consumers reach it through their own private endpoint, and you approve each connection.","limit":"It works for services behind a Standard Load Balancer.","primer":"0A-08","lessons":["02-04"]},{"id":"bastion","name":"Azure Bastion","layer":"network","d":"03","kind":"prevent","objs":[{"id":"3.2.2","text":"Plan and implement Azure Bastion","lesson":"03-04"}],"problem":"RDP and SSH exposed to the internet are attacked constantly.","does":"RDP and SSH from the browser over TLS to VMs with private IPs only, including VMs in peered networks.","limit":"It controls how admins connect, not what they do once connected.","primer":"0A-08","lessons":["03-04"]},{"id":"jit","name":"Just-in-time VM access","layer":"network","d":"03","kind":"prevent","objs":[{"id":"3.2.3","text":"Enable and enforce use of just-in-time (JIT) VM access","lesson":"03-04"}],"problem":"Management ports that are needed rarely shouldn't be open all the time.","does":"Opens NSG (or Azure Firewall) rules for the requester's IP and a time window, then closes them. Part of Defender for Servers Plan 2.","limit":"Connections already open stay open when the rule is removed.","primer":"0A-07","lessons":["03-04"]},{"id":"waf","name":"Web Application Firewall","layer":"network","d":"03","kind":"prevent","objs":[{"id":"3.3.8","text":"Implement and configure Azure Web Application Firewall","lesson":"03-06"}],"problem":"Web apps face SQL injection, cross-site scripting and bots.","does":"On Front Door or Application Gateway: custom rules first, then managed rules with anomaly scoring. Prevention mode blocks.","limit":"Detection mode logs and blocks nothing.","primer":"0A-10","lessons":["03-06"]},{"id":"apim","name":"API Management","layer":"network","d":"03","kind":"prevent","objs":[{"id":"3.3.9","text":"Implement security policies for back-end API protection by using API Management","lesson":"03-06"}],"problem":"Back-end APIs need one place to authenticate callers and limit abuse.","does":"Policies validate JWTs, rate-limit callers, restrict IPs and authenticate to back ends with a managed identity.","limit":"It only protects traffic that goes through the gateway, so lock the back end to the gateway.","primer":"0A-10","lessons":["03-06"]},{"id":"nw","name":"Network Watcher","layer":"network","d":"02","kind":"detect","objs":[{"id":"2.3.9","text":"Evaluate effective security rules by using Azure Network Watcher diagnostics","lesson":"02-04"}],"problem":"Several rule sets and routes decide a packet's fate; you need proof, not guesses.","does":"IP flow verify, effective security rules, next hop, connection troubleshoot and flow logs.","limit":"It diagnoses; it doesn't change any rule.","primer":"0A-07","lessons":["02-04"]},{"id":"vm","name":"Virtual machines","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.2.1","text":"Implement and configure disk encryption","lesson":"03-04"},{"id":"3.2.8","text":"Configure security features on a VM, including secure boot, virtual Trusted Platform Module (vTPM), integrity monitoring, and security type","lesson":"03-04"},{"id":"3.2.9","text":"Enforce security configuration of Azure-managed servers by using Azure Machine Configuration","lesson":"03-04"}],"problem":"A VM carries risk in its operating system, its disks and its boot chain.","does":"Trusted launch (secure boot, vTPM, integrity monitoring), encryption at host or disk encryption, and Machine Configuration.","limit":"Platform settings don't patch the OS or watch for intrusions; that is Defender for Servers.","primer":"0A-06","lessons":["03-04"]},{"id":"arc","name":"Azure Arc","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.2.4","text":"Extend security controls to hybrid and multicloud servers by using Azure Arc","lesson":"03-04"}],"problem":"Servers outside Azure sit outside Azure's controls.","does":"Gives on-premises and other-cloud servers an Azure resource ID, so Policy, Machine Configuration and Defender extensions reach them.","limit":"Arc protects nothing by itself; it is the bridge the other controls use.","primer":"0A-03","lessons":["03-04"]},{"id":"aks","name":"Azure Kubernetes Service","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.3.2","text":"Implement and configure security controls for Azure Kubernetes Service (AKS)","lesson":"03-05"}],"problem":"A cluster has its own control plane, identities and network.","does":"Microsoft Entra ID authentication with local accounts disabled, Kubernetes RBAC, network policies and private clusters.","limit":"Disabling local accounts doesn't revoke admin certificates already issued: rotate the cluster certificates.","primer":"0A-06","lessons":["03-05"]},{"id":"acr","name":"Container Registry","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.3.3","text":"Implement and configure security controls for Azure Container Registry","lesson":"03-05"}],"problem":"A registry is the supply chain for every container you run.","does":"Admin user disabled by default, Entra roles for pull and push, private endpoints.","limit":"Repository-scoped tokens and anonymous pull, if turned on, still give access.","primer":"0A-06","lessons":["03-05"]},{"id":"aca","name":"Container Apps and Instances","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.3.4","text":"Implement and configure security controls for Azure Container Instances and Azure Container Apps","lesson":"03-05"}],"problem":"Serverless containers still need identity and network limits.","does":"Managed identities, ingress restrictions and virtual network integration.","limit":"Securing the image itself is the registry's and Defender for Containers' job.","primer":"0A-06","lessons":["03-05"]},{"id":"func","name":"Azure Functions","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.3.5","text":"Implement and configure security controls for Azure Functions, including authentication and network access","lesson":"03-06"}],"problem":"Functions are reachable endpoints that often hold keys and connection strings.","does":"App Service authentication, access restrictions, private endpoints, managed identity and Key Vault references.","limit":"Function keys are shared secrets, not user authentication.","primer":"0A-06","lessons":["03-06"]},{"id":"logic","name":"Logic Apps","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.3.6","text":"Implement and configure security controls for Azure Logic Apps","lesson":"03-06"}],"problem":"Workflows hold connector credentials and expose trigger URLs.","does":"Managed identity for connectors, restricted trigger IPs, secured inputs and outputs.","limit":"Run history shows the data unless inputs and outputs are secured.","primer":"0A-06","lessons":["03-06"]},{"id":"appsvc","name":"App Service","layer":"compute","d":"03","kind":"harden","objs":[{"id":"3.3.7","text":"Implement and configure security controls for Azure App Service","lesson":"03-06"}],"problem":"Web apps are public by default, and so is their deployment (SCM) site.","does":"Access restrictions on the main and SCM sites, App Service authentication, private endpoints, managed identity, HTTPS only.","limit":"The SCM site keeps its own rules unless it is set to use the main site's.","primer":"0A-06","lessons":["03-06"]},{"id":"kv","name":"Key Vault","layer":"data","d":"01","kind":"prevent","objs":[{"id":"1.2.1","text":"Deploy Key Vault","lesson":"01-02"},{"id":"1.2.2","text":"Configure Key Vault settings","lesson":"01-02"},{"id":"1.2.3","text":"Configure access to Key Vault","lesson":"01-02"},{"id":"1.2.4","text":"Configure firewall settings on Key Vault","lesson":"01-02"},{"id":"1.2.5","text":"Manage keys, secrets, and certificates","lesson":"01-02"}],"problem":"Secrets, keys and certificates in code and settings leak.","does":"Stores them behind Azure RBAC or access policies, a firewall and private endpoints, with soft delete and purge protection.","limit":"Under the access policy model, anyone who can write the vault can grant themselves access.","primer":"0A-09","lessons":["01-02"]},{"id":"storage","name":"Storage accounts","layer":"data","d":"02","kind":"prevent","objs":[{"id":"2.1.1","text":"Implement and configure security for storage accounts","lesson":"02-01"},{"id":"2.1.2","text":"Configure Azure Storage firewall rules","lesson":"02-01"},{"id":"2.1.4","text":"Manage access to storage, including access policies","lesson":"02-01"}],"problem":"Blobs and files are reached with account keys, SAS tokens and public endpoints.","does":"Entra data roles, SAS bound to stored access policies, firewall rules, private endpoints, Shared Key disabled.","limit":"A SAS without a stored access policy can only be revoked by regenerating the key that signed it.","primer":"0A-09","lessons":["02-01"]},{"id":"sql","name":"Azure SQL","layer":"data","d":"02","kind":"prevent","objs":[{"id":"2.2.1","text":"Implement platform-level security configurations in Azure SQL","lesson":"02-02"},{"id":"2.2.2","text":"Configure database auditing for Azure SQL Database and Azure SQL Managed Instance","lesson":"02-02"}],"problem":"Databases hold the data attackers want, often reached with SQL logins over public endpoints.","does":"Microsoft Entra-only authentication, firewall and private endpoints, transparent data encryption, auditing.","limit":"Conditional Access never sees SQL logins until Entra-only authentication is on.","primer":"0A-09","lessons":["02-02"]},{"id":"foundry","name":"Foundry models and agents","layer":"ai","d":"03","kind":"harden","objs":[{"id":"3.1.9","text":"Configure guardrails for agent security in Foundry","lesson":"03-03"}],"problem":"Models and agents take untrusted input and can call tools with real access.","does":"The AI workload itself: model deployments and agents with tools. Its protection comes from the controls around it.","limit":"Nothing here filters prompts or limits tokens until guardrails and the gateway do.","primer":"0A-15","lessons":["03-03"]},{"id":"aigw","name":"AI gateway","layer":"ai","d":"03","kind":"prevent","objs":[{"id":"3.1.7","text":"Configure and deploy AI Gateway in Azure API Management for Microsoft Foundry","lesson":"03-03"}],"problem":"Teams share model capacity and keys, and nothing in between can limit or log their calls.","does":"API Management in front of Foundry: llm-token-limit per consumer, content safety checks, managed identity to the model.","limit":"It only governs calls that go through it.","primer":"0A-10","lessons":["03-03"]},{"id":"guard","name":"Foundry guardrails","layer":"ai","d":"03","kind":"prevent","objs":[{"id":"3.1.9","text":"Configure guardrails for agent security in Foundry","lesson":"03-03"}],"problem":"Prompts and tool results can carry jailbreaks and hidden instructions.","does":"Controls at user input and output, and for agents (preview) at tool call and tool response: annotate, or annotate and block.","limit":"Classifiers are probabilistic, and an agent's own guardrail replaces its model's entirely.","primer":"0A-15","lessons":["03-03"]},{"id":"cstudio","name":"Copilot Studio agents","layer":"ai","d":"03","kind":"prevent","objs":[{"id":"3.1.3","text":"Enable and configure real-time protection for Microsoft Copilot Studio agents","lesson":"03-02"}],"problem":"Low-code agents plan their own tool calls, such as sending email.","does":"Defender real-time protection (preview) checks each planned tool call and can block it.","limit":"Only generative orchestration agents are checked; classic agents are skipped.","primer":"0A-16","lessons":["03-02"]},{"id":"m365","name":"Microsoft 365 Copilot and SharePoint","layer":"ai","d":"03","kind":"prevent","objs":[{"id":"3.1.1","text":"Identify overexposure of data in SharePoint","lesson":"03-01"}],"problem":"Copilot answers with whatever the user can open, so overshared sites become answers.","does":"Data access governance reports find oversharing; Restricted Content Discovery and Restricted Access Control limit it.","limit":"Restricted Content Discovery doesn't change permissions: people can still open the site.","primer":"0A-14","lessons":["03-01"]},{"id":"m365agents","name":"Agent registry (Microsoft 365 admin center)","layer":"ai","d":"03","kind":"govern","objs":[{"id":"3.1.11","text":"Manage agents in Microsoft 365 admin center","lesson":"03-02"}],"problem":"Agents appear across the tenant faster than anyone can track them.","does":"Lists the tenant's agents and lets admins block them tenant-wide.","limit":"Microsoft's pages differ on where a block applies for SharePoint and Foundry agents; check before relying on it.","primer":"0A-16","lessons":["03-02"]},{"id":"dspm","name":"Purview DSPM","layer":"ai","d":"03","kind":"detect","objs":[{"id":"3.1.2","text":"Identify risks related to Microsoft Copilot and AI apps by using Microsoft Purview Data Security Posture Management (DSPM)","lesson":"03-01"}],"problem":"Sensitive data flows into prompts and AI answers without anyone seeing it.","does":"Shows sensitive information in AI interactions across Microsoft 365 Copilot, Foundry and third-party AI sites.","limit":"It shows and flags. Third-party sites need device onboarding and the Purview browser extension.","primer":"0A-14","lessons":["03-01"]},{"id":"defai","name":"Defender for AI Services","layer":"ai","d":"03","kind":"detect","objs":[{"id":"3.1.8","text":"Enable Defender for AI Service in Cloud Workload Protection in Defender for Cloud","lesson":"03-03"},{"id":"3.1.10","text":"Monitor AI security by using the Data and AI security dashboard in Defender for Cloud","lesson":"03-03"}],"problem":"Attacks on AI deployments happen and nobody is alerted.","does":"Detects jailbreaks, data leakage and suspicious use on model deployments. Suspicious prompt evidence puts the prompt in the alert.","limit":"It alerts; it doesn't block the request.","primer":"0A-15","lessons":["03-03"]},{"id":"mdc","name":"Defender for Cloud (CSPM)","layer":"detect","d":"04","kind":"detect","objs":[{"id":"4.1.1","text":"Identify security risks by using Defender CSPM","lesson":"04-01"},{"id":"4.1.2","text":"Evaluate compliance against security frameworks by using Defender for Cloud","lesson":"04-01"},{"id":"1.3.2","text":"Evaluate regulatory compliance by using Microsoft Defender for Cloud","lesson":"01-03"},{"id":"1.3.3","text":"Implement and configure security controls in Defender for Cloud, including security standards and recommendations","lesson":"01-03"},{"id":"1.2.6","text":"Scan for secrets by using Defender Cloud Security Posture Management (Defender CSPM)","lesson":"01-02"}],"problem":"Misconfigurations pile up across Azure, AWS and GCP faster than anyone reviews them.","does":"Assesses resources against the Microsoft cloud security benchmark and other standards. Defender CSPM adds attack paths, agentless scanning, secrets scanning and AI posture.","limit":"It reports and prioritises; it fixes nothing itself, and it can't see assets nobody connected.","primer":"0A-12","lessons":["01-02","01-03","04-01"]},{"id":"multicloud","name":"AWS and GCP connectors","layer":"detect","d":"04","kind":"detect","objs":[{"id":"4.1.4","text":"Connect hybrid cloud and multicloud environments to Defender for Cloud, including Amazon Web Services (AWS) and Google Cloud Platform (GCP)","lesson":"04-01"}],"problem":"Workloads in other clouds need the same assessments as Azure.","does":"Security connectors bring AWS accounts and GCP projects into Defender for Cloud; Arc auto-provisioning extends server protection.","limit":"Without Arc, agent-based protection can't be deployed, though agentless scanning still assesses the machines.","primer":"0A-03","lessons":["04-01"]},{"id":"defsrv","name":"Defender for Servers","layer":"detect","d":"03","kind":"detect","objs":[{"id":"3.2.5","text":"Onboard servers to Defender for Servers in Defender for Cloud, including hybrid and multicloud scenarios","lesson":"03-04"},{"id":"3.2.6","text":"Configure Defender for Servers settings, including vulnerability scanning, and endpoint detection and response (EDR)","lesson":"03-04"},{"id":"3.2.7","text":"Implement and manage agentless scanning for VMs in Defender for Servers","lesson":"03-04"},{"id":"4.1.5","text":"Configure Microsoft Defender Vulnerability Management settings for Azure VMs","lesson":"04-01"},{"id":"4.1.3","text":"Enable and configure Defender for Cloud workload protection plans","lesson":"04-01"}],"problem":"Servers are exploited through vulnerabilities and stolen credentials.","does":"Defender for Endpoint, vulnerability assessment with Defender Vulnerability Management, and in Plan 2 agentless scanning, JIT and file integrity monitoring.","limit":"Plan 1 has no agentless scanning, JIT or file integrity monitoring.","primer":"0A-12","lessons":["03-04","04-01"]},{"id":"defdata","name":"Defender for Storage, Databases, Key Vault","layer":"detect","d":"04","kind":"detect","objs":[{"id":"2.1.3","text":"Implement Defender for Storage threat protection configurations","lesson":"02-01"},{"id":"2.2.3","text":"Configure Defender for Databases protection across Azure database services","lesson":"02-02"},{"id":"1.2.7","text":"Implement Defender for Key Vault","lesson":"01-02"},{"id":"4.1.3","text":"Enable and configure Defender for Cloud workload protection plans","lesson":"04-01"}],"problem":"Data services face malware uploads, SQL injection and unusual access.","does":"Malware scanning on upload and activity alerts for storage, threat detection for databases, unusual access alerts for Key Vault.","limit":"It detects and alerts; access control is still yours to configure.","primer":"0A-12","lessons":["01-02","02-01","02-02","04-01"]},{"id":"defcont","name":"Defender for Containers","layer":"detect","d":"03","kind":"detect","objs":[{"id":"3.3.1","text":"Detect misconfigurations and runtime risks in container workloads by using Defender for Containers","lesson":"03-05"},{"id":"4.1.3","text":"Enable and configure Defender for Cloud workload protection plans","lesson":"04-01"}],"problem":"Images carry vulnerabilities and clusters drift into risky configurations.","does":"Scans registry images, finds misconfigurations and detects runtime threats in Kubernetes.","limit":"It finds and alerts; fixing images and cluster settings is still your job.","primer":"0A-12","lessons":["03-05","04-01"]},{"id":"easm","name":"Defender EASM","layer":"detect","d":"04","kind":"detect","objs":[{"id":"4.1.6","text":"Discover unprotected assets and vulnerabilities by using Microsoft Defender External Attack Surface Management (EASM)","lesson":"04-01"}],"problem":"Internet-facing assets nobody remembers are the easiest way in.","does":"Discovers your attack surface from the outside, starting from seeds such as domains and IP blocks.","limit":"It doesn't look inside your subscriptions. Only Approved Inventory assets are scanned daily and billed.","primer":"0A-08","lessons":["04-01"]},{"id":"xdr","name":"Microsoft Defender XDR","layer":"detect","d":"04","kind":"detect","objs":[{"id":"3.1.5","text":"Analyze blast radius for security risks related to Entra Agent ID by using Defender XDR","lesson":"03-02"},{"id":"4.2.10","text":"Query Microsoft Purview Audit in Defender XDR","lesson":"04-04"}],"problem":"Alerts from endpoints, identities, email, cloud apps and cloud workloads arrive separately.","does":"Correlates alerts into incidents, runs advanced hunting and blast radius analysis, and hosts Sentinel in the same portal.","limit":"It correlates what is connected to it; a product that isn't onboarded contributes nothing.","primer":"0A-11","lessons":["03-02","04-04"]},{"id":"audit","name":"Microsoft Purview Audit","layer":"detect","d":"04","kind":"detect","objs":[{"id":"4.2.10","text":"Query Microsoft Purview Audit in Defender XDR","lesson":"04-04"}],"problem":"Investigators need to know who did what in Microsoft 365.","does":"Records user and admin activity, such as MailItemsAccessed and Copilot interactions, searchable in Purview and the Defender portal.","limit":"Standard retention is 180 days; longer needs Audit (Premium) licensing.","primer":"0A-11","lessons":["04-04"]},{"id":"sentinel","name":"Microsoft Sentinel","layer":"respond","d":"04","kind":"detect","objs":[{"id":"4.2.1","text":"Create and connect workspaces in Microsoft Sentinel","lesson":"04-02"},{"id":"4.2.2","text":"Assign roles in Microsoft Sentinel","lesson":"04-02"},{"id":"4.2.3","text":"Implement and use content hub solutions","lesson":"04-02"},{"id":"4.2.4","text":"Configure and use Microsoft data connectors for Azure resources","lesson":"04-03"},{"id":"4.2.5","text":"Implement and configure syslog and Common Event Format (CEF) event collections","lesson":"04-03"},{"id":"4.2.6","text":"Implement and configure collection of Windows Security events by using data collection rules, including Windows Event Forwarding (WEF)","lesson":"04-03"},{"id":"4.2.7","text":"Create custom log tables in the workspace to store ingested data","lesson":"04-03"},{"id":"4.2.9","text":"Implement data retention in Microsoft Sentinel data stores","lesson":"04-04"}],"problem":"Logs from everywhere need one place for detection, hunting and long retention.","does":"A workspace with data connectors, Azure Monitor Agent collection rules, CEF and syslog, custom tables, analytics rules, and analytics and data lake tiers.","limit":"It only sees what you connect, and data filtered out before ingestion is gone for good.","primer":"0A-11","lessons":["04-02","04-03","04-04"]},{"id":"auto","name":"Automation rules and playbooks","layer":"respond","d":"04","kind":"respond","objs":[{"id":"4.2.8","text":"Implement automation rules and playbooks in Microsoft Sentinel","lesson":"04-04"}],"problem":"Analysts can't triage every incident by hand.","does":"Automation rules assign, tag and close incidents and run playbooks (Logic Apps) that act on other systems.","limit":"Sentinel needs Automation Contributor on the playbook's resource group, and the playbook needs its own permissions.","primer":"0A-12","lessons":["04-04"]},{"id":"copilot","name":"Security Copilot","layer":"respond","d":"04","kind":"respond","objs":[{"id":"4.3.1","text":"Configure workspaces for Security Copilot","lesson":"04-05"},{"id":"4.3.2","text":"Manage permissions and roles in Security Copilot","lesson":"04-05"},{"id":"4.3.3","text":"Enable and configure plugins","lesson":"04-05"},{"id":"4.3.4","text":"Enable and configure Microsoft agents and Security Store agents","lesson":"04-05"}],"problem":"Investigations need summaries and queries faster than analysts can write them.","does":"Generative AI over Defender, Sentinel, Entra, Intune and Purview through plugins and agents, billed in security compute units.","limit":"It sees only what the user, or the agent's identity, can already access.","primer":"0A-16","lessons":["04-05"]}],"edges":[{"a":"person","b":"entra","k":"auth","ab":"signs in to","ba":"signs in"},{"a":"workload","b":"mi","k":"auth","ab":"authenticates with","ba":"gives an identity to"},{"a":"agent","b":"agentid","k":"auth","ab":"runs as","ba":"is the identity of"},{"a":"agent","b":"aigw","k":"net","ab":"calls models through","ba":"carries model calls from"},{"a":"internet","b":"waf","k":"net","ab":"is filtered by","ba":"filters requests from"},{"a":"person","b":"m365","k":"uses","ab":"asks questions of","ba":"answers"},{"a":"m365agents","b":"agent","k":"govern","ab":"lists and can block","ba":"are listed and blocked in"},{"a":"entra","b":"authm","k":"auth","ab":"verifies sign-ins with","ba":"proves sign-ins for"},{"a":"ca","b":"entra","k":"auth","ab":"evaluates sign-ins in","ba":"applies"},{"a":"ca","b":"authm","k":"auth","ab":"can require","ba":"is required by"},{"a":"pim","b":"rbac","k":"access","ab":"makes Azure roles just-in-time in","ba":"gets time-limited roles from"},{"a":"pim","b":"entra","k":"access","ab":"makes Entra roles just-in-time in","ba":"gets time-limited roles from"},{"a":"entra","b":"apps","k":"auth","ab":"holds identities and consent grants for","ba":"are identities in"},{"a":"mi","b":"entra","k":"auth","ab":"is a service principal in","ba":"issues tokens for"},{"a":"agentid","b":"entra","k":"auth","ab":"is an identity type in","ba":"issues tokens for"},{"a":"ca","b":"agentid","k":"auth","ab":"can block","ba":"can be blocked by"},{"a":"rbac","b":"kv","k":"access","ab":"authorizes secret access (RBAC model) in","ba":"authorizes data access through"},{"a":"rbac","b":"storage","k":"access","ab":"authorizes blob access with data roles in","ba":"authorizes Entra data access through"},{"a":"locks","b":"rbac","k":"govern","ab":"win over every role in","ba":"loses to"},{"a":"policy","b":"storage","k":"govern","ab":"can deny insecure settings on","ba":"is checked by"},{"a":"policy","b":"defsrv","k":"govern","ab":"switches on at scale (DeployIfNotExists)","ba":"can be switched on by"},{"a":"policy","b":"vm","k":"govern","ab":"configures settings inside (Machine Configuration)","ba":"is configured by"},{"a":"policy","b":"aks","k":"govern","ab":"enforces pod rules in (Azure Policy for AKS)","ba":"is checked by"},{"a":"mdc","b":"policy","k":"govern","ab":"assigns standards as initiatives through","ba":"carries the standards of"},{"a":"iac","b":"policy","k":"govern","ab":"deploys through the checks of","ba":"evaluates deployments from"},{"a":"backup","b":"vm","k":"protect","ab":"keeps protected recovery points of","ba":"is backed up by"},{"a":"avnm","b":"nsg","k":"net","ab":"is evaluated before","ba":"is evaluated after"},{"a":"nsg","b":"vm","k":"net","ab":"filters traffic for","ba":"is filtered by"},{"a":"vm","b":"fw","k":"net","ab":"routes egress (user-defined route) through","ba":"inspects traffic from"},{"a":"vwan","b":"fw","k":"net","ab":"secures its hub with","ba":"secures the hubs of"},{"a":"vpn","b":"entra","k":"auth","ab":"signs users in (OpenVPN) with","ba":"authenticates users of"},{"a":"epa","b":"ca","k":"auth","ab":"puts private apps under","ba":"protects private apps in"},{"a":"pe","b":"storage","k":"net","ab":"gives a private IP to","ba":"is reached privately through"},{"a":"pe","b":"sql","k":"net","ab":"gives a private IP to","ba":"is reached privately through"},{"a":"pe","b":"kv","k":"net","ab":"gives a private IP to","ba":"is reached privately through"},{"a":"pls","b":"pe","k":"net","ab":"is reached through a consumer's","ba":"connects privately to"},{"a":"nw","b":"nsg","k":"detect","ab":"shows which rule decides in","ba":"is tested by"},{"a":"nw","b":"fw","k":"detect","ab":"confirms routing to","ba":"is confirmed as next hop by"},{"a":"bastion","b":"vm","k":"net","ab":"opens RDP and SSH to","ba":"is reached through"},{"a":"jit","b":"nsg","k":"net","ab":"opens and closes rules in","ba":"is opened on request by"},{"a":"defsrv","b":"jit","k":"protect","ab":"includes (Plan 2)","ba":"is part of"},{"a":"waf","b":"appsvc","k":"net","ab":"filters attacks before","ba":"is protected by"},{"a":"waf","b":"apim","k":"net","ab":"sits in front of","ba":"sits behind"},{"a":"apim","b":"func","k":"net","ab":"protects calls to","ba":"is fronted by"},{"a":"apim","b":"appsvc","k":"net","ab":"protects calls to","ba":"is fronted by"},{"a":"appsvc","b":"entra","k":"auth","ab":"signs users in (App Service authentication) with","ba":"authenticates users for"},{"a":"appsvc","b":"mi","k":"auth","ab":"authenticates as","ba":"identifies"},{"a":"func","b":"kv","k":"access","ab":"reads settings through Key Vault references to","ba":"supplies Key Vault references to"},{"a":"appsvc","b":"kv","k":"access","ab":"reads settings through Key Vault references to","ba":"supplies Key Vault references to"},{"a":"logic","b":"mi","k":"auth","ab":"authenticates connectors as","ba":"identifies"},{"a":"aca","b":"acr","k":"uses","ab":"pulls images from","ba":"supplies images to"},{"a":"acr","b":"aks","k":"uses","ab":"supplies images to","ba":"pulls images from"},{"a":"aks","b":"entra","k":"auth","ab":"authenticates users through","ba":"authenticates users for"},{"a":"arc","b":"defsrv","k":"protect","ab":"lets Defender deploy to outside servers through","ba":"reaches outside servers through"},{"a":"arc","b":"policy","k":"govern","ab":"brings outside servers under","ba":"reaches outside servers through"},{"a":"multicloud","b":"arc","k":"protect","ab":"can auto-provision","ba":"is installed through"},{"a":"multicloud","b":"mdc","k":"detect","ab":"brings AWS and GCP into","ba":"assesses AWS and GCP through"},{"a":"mi","b":"kv","k":"access","ab":"reads secrets (with a role) from","ba":"is read by"},{"a":"mi","b":"storage","k":"access","ab":"reads and writes data (with a data role) in","ba":"is accessed by"},{"a":"mi","b":"sql","k":"access","ab":"connects as a contained user to","ba":"accepts"},{"a":"sql","b":"sentinel","k":"logs","ab":"sends audit logs to","ba":"collects audit logs from"},{"a":"aigw","b":"foundry","k":"net","ab":"limits tokens and authenticates to","ba":"is called through"},{"a":"guard","b":"foundry","k":"protect","ab":"screens input, output and tool traffic of","ba":"is screened by"},{"a":"defai","b":"foundry","k":"detect","ab":"detects attacks on","ba":"is watched by"},{"a":"mdc","b":"foundry","k":"detect","ab":"maps AI posture and attack paths (Defender CSPM) for","ba":"is assessed by"},{"a":"foundry","b":"dspm","k":"logs","ab":"sends AI interactions to","ba":"receives interactions from"},{"a":"dspm","b":"m365","k":"detect","ab":"shows sensitive data in","ba":"is monitored by"},{"a":"xdr","b":"cstudio","k":"protect","ab":"checks planned tool calls (real-time protection) of","ba":"is checked by"},{"a":"xdr","b":"agentid","k":"detect","ab":"shows the blast radius of","ba":"is analysed by"},{"a":"m365","b":"audit","k":"logs","ab":"records interactions in","ba":"records interactions from"},{"a":"defsrv","b":"xdr","k":"detect","ab":"sends alerts to","ba":"correlates alerts from"},{"a":"defdata","b":"xdr","k":"detect","ab":"sends alerts to","ba":"correlates alerts from"},{"a":"defcont","b":"xdr","k":"detect","ab":"sends alerts to","ba":"correlates alerts from"},{"a":"defai","b":"xdr","k":"detect","ab":"sends alerts to","ba":"correlates alerts from"},{"a":"defdata","b":"kv","k":"detect","ab":"detects unusual access to","ba":"is watched by"},{"a":"defdata","b":"storage","k":"detect","ab":"scans uploads and watches","ba":"is watched by"},{"a":"defdata","b":"sql","k":"detect","ab":"detects threats on","ba":"is watched by"},{"a":"defcont","b":"aks","k":"detect","ab":"detects runtime threats in","ba":"is watched by"},{"a":"defcont","b":"acr","k":"detect","ab":"scans images in","ba":"is scanned by"},{"a":"defsrv","b":"vm","k":"detect","ab":"protects (Defender for Endpoint)","ba":"is protected by"},{"a":"mdc","b":"vm","k":"detect","ab":"scans disks agentlessly on","ba":"is scanned by"},{"a":"easm","b":"mdc","k":"detect","ab":"complements, from the outside,","ba":"is complemented by"},{"a":"xdr","b":"sentinel","k":"logs","ab":"syncs incidents and alerts (free) to","ba":"receives incidents from"},{"a":"entra","b":"sentinel","k":"logs","ab":"sends sign-in and audit logs to","ba":"collects sign-in and audit logs from"},{"a":"fw","b":"sentinel","k":"logs","ab":"sends logs (diagnostic settings) to","ba":"collects firewall logs from"},{"a":"vm","b":"sentinel","k":"logs","ab":"sends Windows events (AMA, DCR) to","ba":"collects events from"},{"a":"waf","b":"sentinel","k":"logs","ab":"sends WAF logs to","ba":"collects WAF logs from"},{"a":"audit","b":"xdr","k":"logs","ab":"is searched in","ba":"searches"},{"a":"sentinel","b":"auto","k":"respond","ab":"raises incidents for","ba":"triages incidents from"},{"a":"auto","b":"logic","k":"respond","ab":"runs playbooks built on","ba":"runs playbooks for"},{"a":"copilot","b":"xdr","k":"respond","ab":"investigates with data from","ba":"feeds"},{"a":"copilot","b":"sentinel","k":"respond","ab":"investigates with data from","ba":"feeds"},{"a":"copilot","b":"entra","k":"respond","ab":"reads identity data from","ba":"feeds"}],"flows":[{"id":"admin-change","title":"An admin changes something in Azure","summary":"From sign-in to the activity log: the identity and governance controls a single change passes through.","steps":[{"n":"person","t":"An administrator needs to change a production storage account."},{"n":"entra","t":"They sign in to Microsoft Entra ID, which checks their password and the methods they registered."},{"n":"ca","t":"Conditional Access evaluates the sign-in: who, which app, which device, how risky. For the Azure management portal it requires phishing-resistant MFA."},{"n":"pim","t":"They hold an eligible role, not a standing one. They activate it in PIM for two hours, with a justification and, if configured, an approval."},{"n":"rbac","t":"Azure RBAC now allows the action at that scope. Roles add up; only a deny assignment takes permission away."},{"n":"policy","t":"Azure Policy evaluates the request before it is applied. A Deny effect fails it; Audit lets it through and records non-compliance."},{"n":"locks","t":"If they try to delete the account, a delete lock stops them, Owner or not, until someone removes the lock."},{"n":"sentinel","t":"The change is written to the Azure activity log, which the Azure Activity connector brings into Sentinel at no charge."}]},{"id":"app-secrets","title":"An app reads a secret and a database","summary":"No password anywhere: managed identity, private endpoints, Key Vault RBAC and Entra-only SQL working together.","steps":[{"n":"workload","t":"An App Service app needs a secret from Key Vault and rows from Azure SQL."},{"n":"mi","t":"It has a managed identity. Azure issues and rotates its credential, so nothing secret sits in code or settings."},{"n":"entra","t":"The app asks Microsoft Entra ID for a token for Key Vault, as itself."},{"n":"pe","t":"Name resolution returns the vault's private endpoint address, and public network access is disabled, so the call stays on the private network."},{"n":"kv","t":"The vault uses the Azure RBAC permission model. The identity holds Key Vault Secrets User, so it can read secret values and nothing more."},{"n":"sql","t":"Azure SQL accepts only Microsoft Entra authentication. The identity is a contained database user with only the permissions it needs."},{"n":"defdata","t":"Defender for Key Vault and Defender for Databases watch for unusual access and raise alerts."},{"n":"xdr","t":"Those alerts appear in the Defender portal, correlated into incidents."}]},{"id":"web-request","title":"A request from the internet reaches your API","summary":"The layers a web request crosses before your code runs, and where each attack is stopped.","steps":[{"n":"internet","t":"A client on the internet calls your public API."},{"n":"waf","t":"A WAF on Front Door or Application Gateway, in Prevention mode, checks custom rules, then the managed rule set. An SQL injection attempt is blocked here."},{"n":"apim","t":"API Management validates the caller's token (validate-jwt) and applies a rate limit per caller."},{"n":"appsvc","t":"App Service access restrictions admit only the gateway; anyone else gets 403. The SCM site uses the main site's rules."},{"n":"entra","t":"App Service authentication validates the caller's Microsoft Entra token before your code runs."},{"n":"sentinel","t":"WAF and API Management logs, sent with diagnostic settings, reach the workspace, where Sentinel analytics rules can spot attack patterns."}]},{"id":"vm-egress","title":"Traffic leaves a VM for the internet","summary":"Which rules decide, in which order, and how to prove the path.","steps":[{"n":"vm","t":"A VM in a spoke network opens a connection to the internet."},{"n":"avnm","t":"Security admin rules from Virtual Network Manager are evaluated first. Deny or Always allow ends evaluation; Allow hands the decision to the NSGs."},{"n":"nsg","t":"Outbound, the network interface's NSG is evaluated, then the subnet's. Both must allow the traffic."},{"n":"fw","t":"A user-defined route sends 0.0.0.0/0 to the firewall's private IP. Threat intelligence runs first, then network rules, then application (FQDN) rules."},{"n":"nw","t":"To prove it, Network Watcher's next hop shows the firewall, and IP flow verify names the NSG rule that decided."},{"n":"sentinel","t":"Firewall logs, sent with a diagnostic setting, land in the workspace for Sentinel."}]},{"id":"admin-rdp","title":"An admin connects to a VM","summary":"Remote access without exposing management ports to the internet.","steps":[{"n":"person","t":"An administrator needs RDP access to a production VM."},{"n":"ca","t":"They sign in to the Azure portal, where Conditional Access requires MFA."},{"n":"bastion","t":"Azure Bastion opens RDP in the browser over TLS. The VM needs no public IP address."},{"n":"jit","t":"Where a direct connection is unavoidable, JIT VM access opens the port only for the requester's IP and a few hours, then closes it."},{"n":"nsg","t":"The VM's NSG allows management traffic only from the Bastion subnet; everything else falls to DenyAllInBound."},{"n":"vm","t":"On the VM itself, trusted launch (secure boot, vTPM) and encryption at host protect the boot chain and disks."},{"n":"defsrv","t":"Defender for Servers, through Defender for Endpoint, watches what happens on the machine."}]},{"id":"foundry-agent","title":"An AI agent uses a tool","summary":"Identity, gateway, guardrails and detection around a Foundry agent.","steps":[{"n":"person","t":"A customer asks a claims assistant, built as a Foundry agent, about their claim."},{"n":"agentid","t":"The agent has its own Microsoft Entra Agent ID. Conditional Access for agents can block it, for example when ID Protection rates it high risk (preview)."},{"n":"aigw","t":"Calls to the model go through the AI gateway in API Management: a token limit per consumer, and managed identity authentication to the model instead of keys."},{"n":"guard","t":"The agent's guardrail checks the user input for jailbreaks and, at the tool response point (preview), checks what the search tool returns for hidden instructions before the agent acts."},{"n":"foundry","t":"The model writes the answer, and the guardrail checks the output too."},{"n":"defai","t":"Defender for AI Services watches the deployment. A jailbreak attempt raises an alert, with the suspicious prompt as evidence."},{"n":"dspm","t":"Purview DSPM shows which sensitive information appears in the agent's interactions."},{"n":"xdr","t":"In Defender XDR the alert becomes an incident, and blast radius analysis shows what the agent could reach."}]},{"id":"copilot-overshare","title":"Microsoft 365 Copilot meets an overshared site","summary":"Why Copilot can surface the wrong content, and the controls that find and limit it.","steps":[{"n":"person","t":"An employee asks Microsoft 365 Copilot to summarise last year's claim files."},{"n":"m365","t":"Copilot searches with the employee's own permissions. A site shared with Everyone is within reach. Data access governance reports find it; Restricted Content Discovery stops it surfacing while the owners fix permissions."},{"n":"dspm","t":"Purview DSPM shows sensitive information in Copilot prompts and responses, and flags risky use."},{"n":"m365agents","t":"Agents built on that content appear in the agent registry, where admins can block them tenant-wide."},{"n":"audit","t":"Copilot interactions are recorded in Purview Audit, searchable from Purview or the Defender portal."}]},{"id":"aws-server","title":"A server outside Azure gets protected","summary":"Connectors, Arc and Defender for Servers bringing an AWS machine under the same controls.","steps":[{"n":"multicloud","t":"An AWS account is connected to Defender for Cloud with a security connector."},{"n":"mdc","t":"Defender for Cloud discovers the EC2 instances and assesses them against the Microsoft cloud security benchmark."},{"n":"arc","t":"With Defender for Servers on the connector, Azure Arc is installed through the SSM Agent, giving each instance an Azure resource ID."},{"n":"defsrv","t":"Defender for Servers deploys Defender for Endpoint and vulnerability assessment as extensions."},{"n":"policy","t":"Azure Policy and Machine Configuration can now audit and configure settings inside the machine."},{"n":"mdc","t":"Agentless scanning reads disk snapshots for vulnerabilities and secrets, feeding attack path analysis in Defender CSPM."},{"n":"xdr","t":"Threats on the machine raise alerts in Defender XDR."}]},{"id":"incident","title":"An alert becomes a closed incident","summary":"Detection, correlation, automation and investigation in the Defender portal.","steps":[{"n":"defsrv","t":"Defender for Endpoint on a server raises an alert."},{"n":"xdr","t":"Defender XDR correlates it with related alerts from identity and email into one incident."},{"n":"sentinel","t":"Sentinel shares the incident queue in the Defender portal and adds its own analytics rules over logs from connectors and Azure Monitor Agent collection rules."},{"n":"auto","t":"An automation rule assigns the incident and runs a playbook."},{"n":"logic","t":"The playbook, a Logic App, opens a ticket using its own managed identity and permissions."},{"n":"copilot","t":"Security Copilot summarises the incident and suggests next steps, using only what the analyst can already see."},{"n":"audit","t":"For a compromised mailbox, Purview Audit's MailItemsAccessed events show which mail items were read."}]}],"titles":{"0A-01":"What the Cloud Is","0A-02":"Azure and Microsoft 365","0A-03":"Tenants, Subscriptions, and Resources","0A-04":"Users, Accounts, and Identities","0A-05":"Authentication and Authorization","0A-06":"Applications and Workloads","0A-07":"Networks: Addresses, Subnets, Routing, DNS, and Firewalls","0A-08":"Public and Private Connectivity","0A-09":"Storage and Databases","0A-10":"APIs","0A-11":"Logs and Telemetry","0A-12":"Preventive, Detective, Corrective, and Governance Controls","0A-13":"Shared Responsibility","0A-14":"Generative AI","0A-15":"AI Models, Prompts, and Outputs","0A-16":"AI Agents and Connected Tools","0A-17":"How Microsoft Cloud Security Fits Together","01-01":"Secure Access with Microsoft Entra ID","01-02":"Secrets and Keys with Azure Key Vault","01-03":"Governance and Regulatory Compliance","02-01":"Storage Account Security","02-02":"Database Security","02-03":"Network Segmentation and Connectivity","02-04":"Private Access and Network Perimeter","03-01":"AI Data Exposure and Purview DSPM","03-02":"AI Agent Identity and Governance","03-03":"AI Platform and Workload Protection","03-04":"Server and Virtual Machine Security","03-05":"Container Platform Security","03-06":"Serverless, Web, and API Security","04-01":"Security Posture with Defender for Cloud","04-02":"Sentinel Workspace, Roles, and Content Hub","04-03":"Sentinel Data Connectors and Event Collection","04-04":"Sentinel Automation, Retention, and Purview Audit","04-05":"Microsoft Security Copilot"}};
+
+  var inAcademy = /\/map\/?(index\.html)?$/.test(location.pathname);
+  var BASE = inAcademy ? '../' : 'https://ironbranded.github.io/SC500-Academy/';
+  document.getElementById('back').href = BASE + '#/';
+  if (inAcademy) { var fl = document.getElementById('flows'); fl.href = '../flowcharts/'; fl.removeAttribute('target'); fl.removeAttribute('rel'); }
+  document.getElementById('note').textContent += ' Checked ' + DATA.checked + '.';
+
+  var byId = {}; DATA.nodes.forEach(function (n) { byId[n.id] = n; });
+  var DOM_NAME = { '00': 'Not an exam control', '01': 'Domain 1', '02': 'Domain 2', '03': 'Domain 3', '04': 'Domain 4' };
+  var DOM_LONG = {
+    '01': 'Identity, access and governance', '02': 'Storage, databases and networking',
+    '03': 'Compute and AI security', '04': 'Posture and monitoring'
+  };
+
+  var mapEl = document.getElementById('map');
+  var svg = document.getElementById('wires');
+  var wireG = document.getElementById('wire-g');
+  var body = document.getElementById('panel-body');
+  var panel = document.getElementById('panel');
+  var status = document.getElementById('status');
+  var tiles = {};
+
+  var state = { mode: 'walk', node: null, flow: DATA.flows[0].id, step: 0, kind: 'all', dom: 'all', sheet: 'open' };
+
+  function h(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'text') e.textContent = attrs[k];
+      else if (k === 'cls') e.className = attrs[k];
+      else if (k === 'style') e.setAttribute('style', attrs[k]);
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c != null) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function paint(el, d) {
+    el.style.setProperty('--dc', 'var(--d-' + d + ')');
+    el.style.setProperty('--dc-ink', 'var(--d-' + d + '-ink)');
+    el.style.setProperty('--dc-tint', 'var(--d-' + d + '-tint)');
+    return el;
+  }
+
+  /* --------------------------------------------------------------- build */
+  DATA.layers.forEach(function (L) {
+    var tilesEl = h('div', { cls: 'band__tiles' });
+    DATA.nodes.filter(function (n) { return n.layer === L.id; }).forEach(function (n) {
+      var t = paint(h('button', { type: 'button', cls: 'tile', 'data-id': n.id, 'aria-pressed': 'false' }, [
+        h('span', { cls: 'tile__kind' }, [h('i', { 'aria-hidden': 'true' }), DATA.kinds[n.kind]]),
+        h('span', { cls: 'tile__name', text: n.name }),
+        h('span', { cls: 'tile__rel' }),
+        h('span', { cls: 'tile__steps' })
+      ]), n.d);
+      t.addEventListener('click', function () { onTile(n.id); });
+      tiles[n.id] = t;
+      tilesEl.appendChild(t);
+    });
+    var band = h('div', { cls: 'band', role: 'group', 'aria-label': L.q + ' ' + L.label }, [
+      h('div', { cls: 'band__label' }, [h('span', { cls: 'band__q', text: L.q }), h('span', { cls: 'band__cat', text: L.label })]),
+      tilesEl
+    ]);
+    mapEl.appendChild(band);
+  });
+
+  /* Arrowhead markers, one per colour in use. */
+  var defs = document.getElementById('defs');
+  ['00', '01', '02', '03', '04', 'path'].forEach(function (d) {
+    var m = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+    m.setAttribute('id', 'arr-' + d);
+    m.setAttribute('viewBox', '0 0 10 10');
+    m.setAttribute('refX', '9'); m.setAttribute('refY', '5');
+    m.setAttribute('markerWidth', '7'); m.setAttribute('markerHeight', '7');
+    m.setAttribute('orient', 'auto-start-reverse');
+    var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+    p.setAttribute('fill', d === 'path' ? 'var(--accent-fill)' : 'var(--d-' + d + ')');
+    m.appendChild(p);
+    defs.appendChild(m);
+  });
+
+  /* Filters (Explore) */
+  var fKind = document.getElementById('f-kind'), fDom = document.getElementById('f-dom');
+  [['all', 'All']].concat(['prevent', 'govern', 'harden', 'detect', 'respond'].map(function (k) { return [k, DATA.kinds[k]]; }))
+    .forEach(function (k) {
+      fKind.appendChild(h('button', { type: 'button', cls: 'chip', 'aria-pressed': String(k[0] === 'all'), 'data-v': k[0], onclick: function () { state.kind = k[0]; render(); } }, [k[1]]));
+    });
+  [['all', 'All']].concat(['01', '02', '03', '04'].map(function (d) { return [d, d.slice(1)]; })).forEach(function (d) {
+    var c = h('button', { type: 'button', cls: 'chip', 'aria-pressed': String(d[0] === 'all'), 'data-v': d[0], onclick: function () { state.dom = d[0]; render(); } },
+      d[0] === 'all' ? ['All'] : [h('i', { 'aria-hidden': 'true' }), d[1]]);
+    if (d[0] !== 'all') { paint(c, d[0]); c.title = DOM_NAME[d[0]] + ': ' + DOM_LONG[d[0]]; c.setAttribute('aria-label', DOM_NAME[d[0]] + ', ' + DOM_LONG[d[0]]); }
+    fDom.appendChild(c);
+  });
+
+  /* Mode tabs */
+  var tabWalk = document.getElementById('tab-walk'), tabExp = document.getElementById('tab-explore');
+  tabWalk.addEventListener('click', function () { state.mode = 'walk'; render(); });
+  tabExp.addEventListener('click', function () { state.mode = 'explore'; render(); });
+  [tabWalk, tabExp].forEach(function (t, i, all) {
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var o = all[1 - i]; o.click(); o.focus(); }
+    });
+  });
+
+  var toggle = document.getElementById('sheet-toggle');
+  toggle.addEventListener('click', function () {
+    state.sheet = state.sheet === 'open' ? 'collapsed' : 'open';
+    renderSheet();
+  });
+  function renderSheet() {
+    var c = state.sheet === 'collapsed';
+    panel.dataset.collapsed = c ? 'true' : 'false';
+    mapEl.dataset.sheet = c ? 'collapsed' : 'open';
+    toggle.textContent = c ? 'Show details' : 'Hide details';
+    toggle.setAttribute('aria-expanded', c ? 'false' : 'true');
+  }
+
+  /* --------------------------------------------------------- interactions */
+  function onTile(id) {
+    if (state.mode === 'walk') {
+      var steps = currentFlow().steps;
+      for (var i = 0; i < steps.length; i++) if (steps[i].n === id) { state.step = i; render(true); return; }
+      state.mode = 'explore';
+    }
+    state.node = state.node === id ? null : id;
+    render(true);
+  }
+  function currentFlow() {
+    for (var i = 0; i < DATA.flows.length; i++) if (DATA.flows[i].id === state.flow) return DATA.flows[i];
+    return DATA.flows[0];
+  }
+  function relsOf(id) {
+    var out = [];
+    DATA.edges.forEach(function (e) {
+      if (e.a === id) out.push({ other: e.b, phrase: e.ab, k: e.k, dir: 'out', e: e });
+      else if (e.b === id) out.push({ other: e.a, phrase: e.ba, k: e.k, dir: 'in', e: e });
+    });
+    return out;
+  }
+  function selectNode(id) { state.mode = 'explore'; state.node = id; render(true); }
+
+  document.addEventListener('keydown', function (e) {
+    if (state.mode !== 'walk') return;
+    var tag = (e.target && e.target.tagName) || '';
+    if (/INPUT|SELECT|TEXTAREA/.test(tag) || e.target.getAttribute('role') === 'tab') return;
+    if (e.key === 'ArrowRight') { go(1); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { go(-1); e.preventDefault(); }
+  });
+  function go(d) {
+    var n = currentFlow().steps.length;
+    var s = Math.max(0, Math.min(n - 1, state.step + d));
+    if (s !== state.step) { state.step = s; render(true); }
+  }
+
+  /* --------------------------------------------------------------- render */
+  function render(scroll) {
+    var walk = state.mode === 'walk';
+    tabWalk.setAttribute('aria-selected', String(walk));
+    tabExp.setAttribute('aria-selected', String(!walk));
+    tabWalk.tabIndex = walk ? 0 : -1; tabExp.tabIndex = walk ? -1 : 0;
+    document.getElementById('filters').hidden = walk;
+    Array.prototype.forEach.call(fKind.children, function (c) { c.setAttribute('aria-pressed', String(c.dataset.v === state.kind)); });
+    Array.prototype.forEach.call(fDom.children, function (c) { c.setAttribute('aria-pressed', String(c.dataset.v === state.dom)); });
+
+    Object.keys(tiles).forEach(function (id) {
+      var t = tiles[id];
+      t.setAttribute('aria-pressed', 'false');
+      t.dataset.lit = 'false'; t.dataset.rel = 'false'; t.dataset.now = 'false';
+      t.querySelector('.tile__rel').textContent = '';
+      t.querySelector('.tile__steps').textContent = '';
+      var n = byId[id];
+      var out = !walk && ((state.kind !== 'all' && n.kind !== state.kind) || (state.dom !== 'all' && n.d !== state.dom));
+      t.dataset.filtered = out ? 'out' : 'in';
+    });
+    mapEl.dataset.focus = 'off';
+    if (walk) renderWalk(scroll); else renderExplore(scroll);
+    var hashTok = walk ? state.flow : (state.node || '');
+    try { history.replaceState(null, '', hashTok ? '#' + hashTok : location.pathname + location.search); } catch (e) {}
+    requestAnimationFrame(drawWires);
+  }
+
+  function renderWalk(scroll) {
+    var f = currentFlow(), s = f.steps[state.step];
+    mapEl.dataset.focus = 'on';
+    f.steps.forEach(function (st, i) {
+      var t = tiles[st.n];
+      t.dataset.lit = 'true';
+      var b = h('b', { text: String(i + 1) });
+      if (i === state.step) b.className = 'now';
+      t.querySelector('.tile__steps').appendChild(b);
+    });
+    tiles[s.n].dataset.now = 'true';
+
+    body.textContent = '';
+    var sel = h('select', { id: 'flow-select' });
+    DATA.flows.forEach(function (fl) {
+      var o = h('option', { value: fl.id, text: fl.title }); if (fl.id === f.id) o.selected = true; sel.appendChild(o);
+    });
+    sel.addEventListener('change', function () { state.flow = sel.value; state.step = 0; render(true); });
+    body.appendChild(h('div', { cls: 'flowpick' }, [h('label', { for: 'flow-select', text: 'Walkthrough' }), sel]));
+    body.appendChild(h('p', { cls: 'hint', text: f.summary }));
+    var prog = h('div', { cls: 'progress', 'aria-hidden': 'true' });
+    f.steps.forEach(function (st, i) { prog.appendChild(h('span', { cls: i < state.step ? 'done' : i === state.step ? 'now' : '' })); });
+    body.appendChild(prog);
+    var n = byId[s.n];
+    body.appendChild(h('div', { cls: 'stepno', text: 'Step ' + (state.step + 1) + ' of ' + f.steps.length }));
+    body.appendChild(paint(h('div', { cls: 'tags' }, [tagDomain(n), h('span', { cls: 'tag', text: DATA.kinds[n.kind] })]), n.d));
+    body.appendChild(h('h2', { text: n.name }));
+    body.appendChild(h('p', { cls: 'narr', text: s.t }));
+    var prev = h('button', { type: 'button', cls: 'btn', text: 'Previous', onclick: function () { go(-1); } });
+    var last = state.step === f.steps.length - 1;
+    var next = h('button', { type: 'button', cls: 'btn btn--primary', text: last ? 'Next walkthrough' : 'Next step', onclick: function () {
+      if (!last) return go(1);
+      var i = DATA.flows.indexOf(f); state.flow = DATA.flows[(i + 1) % DATA.flows.length].id; state.step = 0; render(true);
+    } });
+    if (state.step === 0) prev.disabled = true;
+    body.appendChild(h('div', { cls: 'nav' }, [prev, next]));
+    body.appendChild(h('p', { cls: 'hint' }, ['Arrow keys move between steps. ', h('button', { type: 'button', cls: 'link-btn', text: 'More about ' + n.name, onclick: function () { selectNode(n.id); } })]));
+    status.textContent = f.title + '. Step ' + (state.step + 1) + ' of ' + f.steps.length + ': ' + n.name + '.';
+    if (scroll) reveal(tiles[s.n]);
+  }
+
+  function tagDomain(n) {
+    return h('span', { cls: 'tag' }, [h('i', { 'aria-hidden': 'true' }), n.d === '00' ? 'Not a control' : DOM_NAME[n.d] + ': ' + DOM_LONG[n.d]]);
+  }
+
+  function renderExplore(scroll) {
+    body.textContent = '';
+    if (!state.node) {
+      body.appendChild(h('h2', { text: 'Select a control' }));
+      body.appendChild(h('p', { cls: 'hint', text: 'Each one shows the problem it solves, what it does, what it does not do, everything it connects to, and the official objectives behind it.' }));
+      body.appendChild(h('p', { cls: 'hint', text: 'Use Show and Domain to narrow the map, for example to every control that detects, or to everything in Domain 2.' }));
+      var counts = {};
+      DATA.nodes.forEach(function (n) { if (n.kind !== 'actor') counts[n.kind] = (counts[n.kind] || 0) + 1; });
+      var ul = h('ul', { cls: 'rels' });
+      ['prevent', 'govern', 'harden', 'detect', 'respond', 'recover'].forEach(function (k) {
+        if (counts[k]) ul.appendChild(h('li', { cls: 'plain' }, [h('b', { text: String(counts[k]) }), ' ' + DATA.kinds[k] + (counts[k] === 1 ? ' control' : ' controls')]));
+      });
+      body.appendChild(ul);
+      status.textContent = 'Explore. Select a control to see its connections.';
+      return;
+    }
+    var n = byId[state.node], rels = relsOf(n.id);
+    mapEl.dataset.focus = 'on';
+    tiles[n.id].setAttribute('aria-pressed', 'true');
+    tiles[n.id].dataset.lit = 'true';
+    rels.forEach(function (r) {
+      var t = tiles[r.other];
+      t.dataset.lit = 'true'; t.dataset.rel = 'true';
+      /* Read from the related tile: "<this tile> <phrase> <selected control>". */
+      t.querySelector('.tile__rel').textContent = (r.dir === 'in' ? r.e.ab : r.e.ba) + ' ' + n.name;
+    });
+
+    body.appendChild(paint(h('div', { cls: 'tags' }, [tagDomain(n), h('span', { cls: 'tag', text: DATA.kinds[n.kind] })]), n.d));
+    body.appendChild(h('h2', { text: n.name }));
+    body.appendChild(h('div', { cls: 'fact' }, [h('h3', { text: n.kind === 'actor' ? 'Who this is' : 'The problem' }), h('p', { text: n.problem })]));
+    body.appendChild(h('div', { cls: 'fact' }, [h('h3', { text: n.kind === 'actor' ? 'Why it matters' : 'What it does' }), h('p', { text: n.does })]));
+    if (n.limit) body.appendChild(h('div', { cls: 'fact fact--limit' }, [h('h3', { text: 'What it does not do' }), h('p', { text: n.limit })]));
+
+    var ul = h('ul', { cls: 'rels' });
+    rels.forEach(function (r) {
+      ul.appendChild(h('li', null, [
+        h('span', { cls: 'dir', 'aria-hidden': 'true', text: r.dir === 'out' ? '→' : '←' }),
+        h('span', null, [r.phrase + ' ',
+          h('button', { type: 'button', cls: 'link-btn', text: byId[r.other].name, onclick: function () { selectNode(r.other); } })])
+      ]));
+    });
+    body.appendChild(h('div', { cls: 'fact' }, [h('h3', { text: 'Connects to (' + rels.length + ')' }), ul]));
+
+    var inFlows = DATA.flows.filter(function (f) { return f.steps.some(function (s) { return s.n === n.id; }); });
+    if (inFlows.length) {
+      var fl = h('ul', { cls: 'rels' });
+      inFlows.forEach(function (f) {
+        fl.appendChild(h('li', { cls: 'plain' }, [h('button', { type: 'button', cls: 'link-btn', text: f.title, onclick: function () {
+          state.mode = 'walk'; state.flow = f.id;
+          state.step = Math.max(0, f.steps.map(function (s) { return s.n; }).indexOf(n.id)); render(true);
+        } })]));
+      });
+      body.appendChild(h('div', { cls: 'fact' }, [h('h3', { text: 'See it in a walkthrough' }), fl]));
+    }
+
+    if (n.objs.length) {
+      var objs = h('div', { cls: 'objs' });
+      n.objs.forEach(function (o) {
+        var a = h('a', { cls: 'obj', href: BASE + '#/module/' + o.lesson, text: o.id, title: o.text, 'aria-label': 'Objective ' + o.id + ': ' + o.text });
+        if (!inAcademy) { a.target = '_blank'; a.rel = 'noopener'; }
+        objs.appendChild(a);
+      });
+      body.appendChild(h('div', { cls: 'fact' }, [h('h3', { text: 'Official objectives' }), objs]));
+    }
+    var study = h('div', { cls: 'study' });
+    n.lessons.forEach(function (l) { study.appendChild(lessonLink(l, 'Study it: ')); });
+    if (n.primer) study.appendChild(lessonLink(n.primer, 'New to this? '));
+    if (study.children.length) body.appendChild(study);
+
+    status.textContent = n.name + ' selected. ' + rels.length + ' connections.';
+    if (scroll) reveal(tiles[n.id]);
+  }
+
+  function lessonLink(id, prefix) {
+    var a = h('a', { href: BASE + '#/module/' + id, text: id + ' ' + (DATA.titles[id] || '') });
+    if (!inAcademy) { a.target = '_blank'; a.rel = 'noopener'; }
+    return h('span', null, [prefix, a]);
+  }
+
+  function reveal(t) {
+    if (!t) return;
+    var r = t.getBoundingClientRect();
+    var narrow = window.matchMedia('(max-width: 1100px)').matches;
+    var visBottom = narrow ? window.innerHeight - panel.getBoundingClientRect().height : window.innerHeight;
+    if (r.top < 8 || r.bottom > visBottom - 8) {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: window.scrollY + r.top - Math.max(16, (visBottom - r.height) * 0.35), behavior: reduce ? 'auto' : 'smooth' });
+    }
+  }
+
+  /* ---------------------------------------------------------------- wires */
+  function anchor(el, toward) {
+    var m = mapEl.getBoundingClientRect(), r = el.getBoundingClientRect();
+    var x = r.left - m.left + r.width / 2;
+    return { x: x, top: r.top - m.top, bottom: r.bottom - m.top, mid: r.top - m.top + r.height / 2, left: r.left - m.left, right: r.right - m.left };
+  }
+  function curve(a, b) {
+    var A = anchor(a), B = anchor(b), d;
+    if (B.top >= A.bottom - 2) {               // target below
+      d = 'M' + A.x + ',' + A.bottom + ' C' + A.x + ',' + (A.bottom + (B.top - A.bottom) * 0.55) + ' ' + B.x + ',' + (B.top - (B.top - A.bottom) * 0.55) + ' ' + B.x + ',' + B.top;
+    } else if (B.bottom <= A.top + 2) {       // target above
+      d = 'M' + A.x + ',' + A.top + ' C' + A.x + ',' + (A.top - (A.top - B.bottom) * 0.55) + ' ' + B.x + ',' + (B.bottom + (A.top - B.bottom) * 0.55) + ' ' + B.x + ',' + B.bottom;
+    } else {                                   // same row: arc over the top
+      var lift = Math.min(A.top, B.top) - 26;
+      d = 'M' + A.x + ',' + A.top + ' C' + A.x + ',' + lift + ' ' + B.x + ',' + lift + ' ' + B.x + ',' + B.top;
+    }
+    return d;
+  }
+  function addPath(d, cls, color, marker) {
+    var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', d);
+    p.setAttribute('class', cls);
+    p.setAttribute('stroke', color);
+    p.setAttribute('marker-end', 'url(#' + marker + ')');
+    wireG.appendChild(p);
+  }
+  function drawWires() {
+    wireG.textContent = '';
+    if (getComputedStyle(svg).display === 'none') return;
+    svg.setAttribute('width', mapEl.clientWidth);
+    svg.setAttribute('height', mapEl.clientHeight);
+    if (state.mode === 'walk') {
+      var steps = currentFlow().steps;
+      for (var i = 0; i + 1 < steps.length; i++) {
+        if (steps[i].n === steps[i + 1].n) continue;
+        var cls = 'wire wire--path' + (i + 1 > state.step ? ' wire--past' : '');
+        addPath(curve(tiles[steps[i].n], tiles[steps[i + 1].n]), cls, 'var(--accent-fill)', 'arr-path');
+      }
+      return;
+    }
+    if (!state.node) return;
+    var n = byId[state.node];
+    relsOf(n.id).forEach(function (r) {
+      var from = r.dir === 'out' ? tiles[n.id] : tiles[r.other];
+      var to = r.dir === 'out' ? tiles[r.other] : tiles[n.id];
+      var cls = 'wire' + (r.k === 'logs' ? ' wire--logs' : r.k === 'govern' ? ' wire--govern' : '');
+      var dom = byId[r.dir === 'out' ? n.id : r.other].d;
+      addPath(curve(from, to), cls, 'var(--d-' + dom + ')', 'arr-' + dom);
+    });
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(function () { requestAnimationFrame(drawWires); }).observe(mapEl);
+  else window.addEventListener('resize', function () { requestAnimationFrame(drawWires); });
+
+  /* ------------------------------------------------------------------ start */
+  var tok = (location.hash || '').replace(/^#/, '');
+  if (tok && DATA.flows.some(function (f) { return f.id === tok; })) { state.mode = 'walk'; state.flow = tok; }
+  else if (tok && byId[tok]) { state.mode = 'explore'; state.node = tok; }
+  renderSheet();
+  render(false);
+})();
+</script>
+
+</html>

@@ -20,7 +20,9 @@
         "AlwaysAllow ends evaluation by guaranteeing traffic is permitted - the opposite of the requirement.",
         null,
         "Only Deny and AlwaysAllow end evaluation. Allow hands the decision to the NSG."
-      ]
+      ],
+      "scenario_clue": "\"no application team can override with their own NSG\" and the goal is to block - a Deny admin rule blocks the traffic before any NSG is evaluated. AlwaysAllow is final too, but it allows; Allow leaves the decision to the NSGs.",
+      "misconception": "Any security admin rule action overrides NSGs"
     },
     {
       "id": "02-03-q2",
@@ -39,7 +41,9 @@
         null,
         "Static and dynamic membership only change how virtual networks join the group. With the right members, either works.",
         "Security admin rules do not need an NSG to exist. They are evaluated whether or not one is present."
-      ]
+      ],
+      "scenario_clue": "\"saved ... and has no effect\" - Virtual Network Manager configurations do nothing until they are deployed to target regions.",
+      "misconception": "Saving a Virtual Network Manager configuration applies it"
     },
     {
       "id": "02-03-q3",
@@ -58,7 +62,9 @@
         "Priority numbers are compared only within one NSG. Each NSG is evaluated on its own, and both must allow.",
         null,
         "NSGs are stateful, so return traffic needs no outbound rule."
-      ]
+      ],
+      "scenario_clue": "\"NIC has an NSG\" and \"subnet NSG\" - inbound traffic must pass both, and inside the NIC NSG the lower priority number (150, deny) is matched first.",
+      "misconception": "The lowest priority number across both NSGs decides the outcome"
     },
     {
       "id": "02-03-q4",
@@ -77,7 +83,9 @@
         null,
         "Diagnostic settings on an NSG do not produce flow-level records. Flow logging is a Network Watcher feature, and virtual network flow logs are its current form.",
         "Connection monitor tests reachability between endpoints. It does not log the flows passing through your networks."
-      ]
+      ],
+      "scenario_clue": "\"flow-level logging\" across virtual networks - virtual network flow logs replace NSG flow logs, which can no longer be newly created.",
+      "misconception": "NSG flow logs are still the way to log network flows"
     },
     {
       "id": "02-03-q5",
@@ -96,29 +104,32 @@
         "SSTP supports certificate and RADIUS authentication only. Entra ID authentication needs OpenVPN.",
         null,
         "Entra ID authentication is available only with the OpenVPN tunnel type."
-      ]
+      ],
+      "scenario_clue": "\"Conditional Access and MFA\" for point-to-site - Entra ID authentication for VPN requires the OpenVPN tunnel type.",
+      "misconception": "Entra ID authentication works with any point-to-site tunnel type"
     },
     {
       "id": "02-03-q6",
       "sub_skill": "Configure security for an Azure Virtual WAN",
       "prompt": "Your Virtual WAN hub connects spoke virtual networks and branch offices. Traffic between any two spokes, and between branches and spokes, must be inspected by Azure Firewall in the hub. Internet-bound traffic must also be inspected, and must then leave through the on-premises default route rather than directly from Azure. What should you configure?",
       "options": [
-        "Deploy Azure Firewall in the hub, and configure routing intent with a private routing policy and an internet routing policy in Forced Tunnel mode",
-        "Deploy Azure Firewall in the hub, and configure routing intent with a private routing policy and an internet routing policy in Direct Access mode",
-        "Deploy Azure Firewall in the hub, and configure routing intent with only an internet routing policy in Forced Tunnel mode",
+        "Deploy Azure Firewall in the hub, configure routing intent with a private routing policy, add 0.0.0.0/0 to its additional prefixes, and configure no internet routing policy",
+        "Deploy Azure Firewall in the hub, and configure routing intent with a private routing policy and an internet routing policy",
+        "Deploy Azure Firewall in the hub, and configure routing intent with only an internet routing policy",
         "Deploy Azure Firewall in the hub, and add a user-defined route sending 0.0.0.0/0 to the firewall on every spoke subnet"
       ],
       "answer": 0,
-      "explanation": "A secured virtual hub inspects what routing intent sends through it. The private routing policy covers traffic between virtual networks, branches and ExpressRoute; the internet routing policy covers internet-bound traffic, and Forced Tunnel mode sends it on through a 0.0.0.0/0 next hop learnt from on-premises instead of straight out. If no such route exists, Forced Tunnel blocks internet-bound traffic rather than falling back.",
+      "explanation": "A secured virtual hub inspects what routing intent sends through it. The private routing policy covers traffic between virtual networks, branches and ExpressRoute. Forced Tunnel - inspect internet traffic, then send it on through a 0.0.0.0/0 route learnt from on-premises - is built from that private policy: add 0.0.0.0/0 to its additional prefixes and configure no internet routing policy. If no 0.0.0.0/0 route is learnt, internet traffic does not reach on-premises: Azure Firewall without a public IP drops it, and with one it leaves through that IP.",
       "why_not": [
         null,
-        "Direct Access sends internet traffic straight out to the internet after inspection, not through on-premises.",
-        "Without a private routing policy, traffic between spokes and between branches and spokes is not sent through the firewall.",
+        "An internet routing policy always means Direct Access: internet traffic is inspected and then leaves straight from Azure, not through on-premises. The portal will not even add an internet policy to a hub in Forced Tunnel mode.",
+        "Without a private routing policy, traffic between spokes and between branches and spokes is not sent through the firewall - and an internet routing policy is Direct Access, so internet traffic would not go through on-premises either.",
         "Spoke route tables only affect traffic leaving the spokes. They do not bring branch traffic through the firewall or send internet traffic via on-premises; routing intent is the hub's own mechanism for both."
       ],
       "difficulty": "scenario",
       "concept": "Secured virtual hub and routing intent",
-      "misconception": "An internet routing policy also covers private traffic"
+      "misconception": "Sending internet traffic out through on-premises needs an internet routing policy",
+      "scenario_clue": "\"between spokes, and between branches and spokes\" = a private routing policy; \"leave through the on-premises default route\" = Forced Tunnel, which is that private policy plus 0.0.0.0/0 in additional prefixes, with no internet policy."
     }
   ]
 }

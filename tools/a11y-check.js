@@ -44,7 +44,18 @@ const ROUTES = [
   '#/appendix/0',            // plain content page
   '#/module/03-02',          // a lesson in Preview status (the Preview badge)
   '#/preview',               // verification watchlist: Preview and cost chips
-  '#/cost'                   // cost planner: every cost level's chip
+  '#/cost',                  // cost planner: every cost level's chip
+  '#/module/0A-16',          // Module 0A foundation primer (AI agents)
+  '#/compare',               // comparison index
+  '#/compare/nsg-vs-azure-firewall',   // one comparison, three options
+  '#/lab/03-06',             // lab anatomy: outcome, what happened, limitations, completion
+  '#/posters',               // study posters index
+  '#/cases',                 // case studies index
+  '#/cases/c01',             // one case: tabs, dropdowns, multi-select, design review
+  '#/drills',                // break-fix drills index
+  '#/drills/d01',            // one drill: evidence table with a radio per row
+  'map/',                    // control map: a standalone page outside the SPA
+  'flowcharts/'              // flowcharts: standalone, renders Mermaid after load
 ];
 const THEMES = ['dark', 'light'];
 
@@ -53,7 +64,9 @@ const THEMES = ['dark', 'light'];
 async function settle(page) {
   await page.waitForFunction(() => {
     const c = document.getElementById('content');
-    return c && c.querySelector('h1') && !c.querySelector('.loading');
+    if (!c) return !!document.querySelector('h1')    // standalone pages such as map/
+      && !document.documentElement.classList.contains('fc-wait');   // flowcharts/ still rendering
+    return c.querySelector('h1') && !c.querySelector('.loading');
   }, null, { timeout: 20000 });
   await page.waitForTimeout(1500);
 }

@@ -20,7 +20,9 @@
         null,
         "Foundational CSPM does not need disabling. The missing piece is agentless scanning, which starts only when a Subscription Owner enables the plan.",
         "Attack path analysis is a Defender CSPM capability. The problem is that the plan's agentless scanning never started."
-      ]
+      ],
+      "scenario_clue": "\"attack path analysis shows nothing\" and the explorer has \"no vulnerabilities\" - the agentless scanner never started.",
+      "misconception": "That a plan showing as enabled means all its components are running."
     },
     {
       "id": "04-01-q2",
@@ -39,12 +41,14 @@
         null,
         "Scope is not the difference. An attack path runs through specific resources, joining findings that are individually unremarkable.",
         "Age has nothing to do with it. An attack path is assembled from connected findings, however new they are."
-      ]
+      ],
+      "scenario_clue": "\"distinguish\" with \"one virtual machine\" - single findings versus a connected chain.",
+      "misconception": "That an attack path is just a more severe recommendation."
     },
     {
       "id": "04-01-q3",
       "sub_skill": "Evaluate compliance against security frameworks by using Defender for Cloud",
-      "prompt": "Your secure score is 82%, and an internet-facing VM with a critical CVE holds a managed identity with Contributor at subscription scope. What is secure score actually measuring?",
+      "prompt": "Your classic secure score in the Azure portal is 82%, and an internet-facing VM with a critical CVE holds a managed identity with Contributor at subscription scope. What is that secure score actually measuring?",
       "options": [
         "Risk-weighted exposure across the estate",
         "Compliance against the Microsoft cloud security benchmark — not risk, which is why an unaddressed attack path can coexist with a high score",
@@ -52,13 +56,15 @@
         "The ratio of resolved to open recommendations"
       ],
       "answer": 1,
-      "explanation": "Secure score is computed from MCSB-based controls. It measures what is assessed, not what is dangerous. A high score with an unaddressed attack path is worse than the reverse, which is the argument for risk prioritisation.",
+      "explanation": "The classic secure score is computed from built-in Microsoft cloud security benchmark recommendations, and risk prioritisation doesn't affect it. It measures what is assessed, not what is dangerous. The Defender portal's Cloud Secure Score is a separate, risk-based model that weights recommendations by asset risk factors and criticality - but it still scores findings asset by asset; chaining them into an attack path is Defender CSPM's job.",
       "why_not": [
-        "Secure score is not risk-weighted. It measures compliance with the Microsoft cloud security benchmark, which is why a dangerous attack path can coexist with a high score.",
+        "The classic score isn't risk-weighted: only built-in MCSB recommendations count, and risk prioritisation doesn't affect it. The risk-weighted model is the Cloud Secure Score in the Defender portal.",
         null,
         "Plan coverage is not what the score counts. It is computed from MCSB-based controls.",
         "It is not a count of resolved recommendations. It is computed from MCSB-based controls, and it measures what is assessed, not what is dangerous."
-      ]
+      ],
+      "scenario_clue": "\"classic secure score is 82%\" alongside an obvious attack path - the classic score measures benchmark compliance, not risk.",
+      "misconception": "That a high secure score means low risk."
     },
     {
       "id": "04-01-q4",
@@ -77,7 +83,9 @@
         null,
         "There is no plan inheritance to turn on. Manual enablement covers only the subscriptions that exist today.",
         "Enabling a plan covers the subscription it was enabled on. New subscriptions start without it."
-      ]
+      ],
+      "scenario_clue": "\"subscriptions your organisation creates next year\" - only policy at a parent scope reaches resources that do not exist yet.",
+      "misconception": "That enabling a plan once covers future subscriptions."
     },
     {
       "id": "04-01-q5",
@@ -85,18 +93,20 @@
       "prompt": "You create an AWS security connector but decline Azure Arc auto-provisioning for the discovered EC2 instances. What do you lose?",
       "options": [
         "Nothing — the connector covers all capabilities natively",
-        "Defender for Servers coverage on those machines; they appear in inventory with configuration assessments but no server workload protection",
+        "Agent-based Defender for Servers protection on those machines: without Arc, Defender for Cloud cannot deploy the Defender for Endpoint and vulnerability assessment extensions to them, although agentless scanning still assesses them",
         "The ability to see them in the same secure score",
         "Cross-cloud attack paths, which require Arc on both sides"
       ],
       "answer": 1,
-      "explanation": "The connector establishes read access, discovers resources and applies the equivalent assessments. Arc is what gives each machine an ARM resource ID so that Defender for Servers, Azure Policy and Machine Configuration can reach it.",
+      "explanation": "The connector establishes read access, discovers resources and applies the equivalent assessments, and with Defender for Servers Plan 2 or Defender CSPM, agentless scanning still reads the machines' disks. Arc is what gives each machine an Azure resource ID and an extension host, so Defender for Cloud can deploy Defender for Endpoint and the vulnerability assessment extension, and Azure Policy and Machine Configuration can reach it.",
       "why_not": [
-        "The connector gives read access, discovery and assessments, but not Defender for Servers on the machines. That needs Arc.",
+        "The connector gives read access, discovery and assessments - plus agentless scanning with the right plan - but Defender for Cloud cannot deploy the Defender for Endpoint extension to a machine that is not Arc-enabled.",
         null,
-        "The connector's assessments still reach Defender for Cloud. What you lose is server workload protection on the machines.",
-        "What Arc adds is an ARM resource ID for each machine, which Defender for Servers, Azure Policy and Machine Configuration need. That is the loss here."
-      ]
+        "The connector's assessments still reach Defender for Cloud. What you lose is agent-based server protection on the machines.",
+        "What Arc adds is an Azure resource ID and extension host for each machine, which Defender for Endpoint deployment, Azure Policy and Machine Configuration need. That is the loss here."
+      ],
+      "scenario_clue": "\"decline Azure Arc auto-provisioning\" - the machines get no Azure resource identity, so Defender for Cloud cannot deploy extensions to them; only agentless coverage remains.",
+      "misconception": "That a cloud connector alone gives full server protection."
     },
     {
       "id": "04-01-q6",
@@ -115,7 +125,9 @@
         null,
         "Machine Configuration needs its own extension on the VM, and it assesses configuration, not vulnerabilities.",
         "Connection troubleshoot tests network reachability. It produces no vulnerability findings."
-      ]
+      ],
+      "scenario_clue": "\"without installing anything on the machines\" - agentless snapshot scanning.",
+      "misconception": "That vulnerability assessment always needs an agent."
     },
     {
       "id": "04-01-q7",
@@ -128,13 +140,36 @@
         "Machines whose agents have stopped reporting"
       ],
       "answer": 1,
-      "explanation": "EASM works outward from seeds — domains, IP blocks, hosts, ASNs, WHOIS organisations — and builds an inventory of what an attacker sees. That is shadow IT, which is the category most likely to be unpatched, unmonitored and unowned. Note it is billed per asset in inventory, so seed narrowly.",
+      "explanation": "EASM works outward from seeds - domains, IP blocks, hosts, ASNs, WHOIS organisations - and builds an inventory of what an attacker sees. That is shadow IT, the category most likely to be unpatched, unmonitored and unowned. Billing counts assets in the Approved Inventory state, and discovery approves strongly connected assets automatically, so seed narrowly.",
       "why_not": [
         "EASM does not look inside Azure subscriptions at all. It works outward from seeds such as domains and IP blocks to find what an attacker can see.",
         null,
         "A missing workload protection plan shows up in Defender for Cloud itself. EASM finds assets that are not in your inventory at all.",
         "Machines whose agents have gone quiet are still in your inventory. EASM finds internet-facing assets that never were."
-      ]
+      ],
+      "scenario_clue": "\"internal inventory is complete\" - EASM looks from outside, at what you did not know to inventory.",
+      "misconception": "That a complete internal inventory covers everything internet-facing."
+    },
+    {
+      "id": "04-01-q8",
+      "sub_skill": "Evaluate compliance against security frameworks by using Defender for Cloud",
+      "prompt": "An auditor needs your Azure subscriptions assessed against PCI DSS in the Defender for Cloud Regulatory compliance dashboard. The only paid plan enabled today is Defender for Servers Plan 1. What must change before you can add the standard?",
+      "options": [
+        "Nothing - Foundational CSPM includes every regulatory standard",
+        "Enable a Defender plan that unlocks compliance standards - for example Defender CSPM - because Defender for Servers Plan 1 alone does not",
+        "Assign the PCI DSS initiative in Azure Policy; the dashboard is not involved",
+        "Connect the subscription to Microsoft Purview Compliance Manager first"
+      ],
+      "answer": 1,
+      "explanation": "MCSB is applied for free. Additional standards need a paid Defender plan - Microsoft documents any plan except Defender for Servers Plan 1 or Defender for APIs Plan 1. Defender CSPM is the usual choice. Adding the standard then needs Owner or Policy Contributor.",
+      "why_not": [
+        "Foundational CSPM gives you MCSB and the secure score, not additional regulatory standards.",
+        null,
+        "Standards are Azure Policy initiatives, but the requirement is to assess in the Defender for Cloud dashboard, which needs a qualifying plan to show added standards.",
+        "Compliance data flows from Defender for Cloud to Compliance Manager, not the other way round, and it is not a prerequisite for adding a standard."
+      ],
+      "scenario_clue": "\"only paid plan enabled today is Defender for Servers Plan 1\" - one of the two plans that does not unlock compliance standards.",
+      "misconception": "That any Defender plan, or the free tier, unlocks additional compliance standards."
     }
   ]
 }

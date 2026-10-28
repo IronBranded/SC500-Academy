@@ -1,42 +1,68 @@
 /* lesson.js - SC-500 guide
    Lesson anatomy and lab mode.
 
-   Every exam module is written to the same skeleton (Sub-objectives covered,
-   Why this exists, How it works under the hood, Configuration surface, Common
-   failure modes, How this is tested, Hands-on, Check yourself, Sources). This
-   file re-presents that skeleton as the certification learning sequence
+   BEGINNER-FIRST, CERTIFICATION-FIRST (2026-10 redesign). Every exam lesson is
+   written to one skeleton, in the golden teaching sequence:
 
-     ORIENT -> LEARN -> (VISUALIZE) -> DISTINGUISH -> PRACTICE -> CHECK -> REVIEW
+     Sub-objectives covered        -> ORIENT       what SC-500 measures here
+     The security problem          -> UNDERSTAND   the requirement, before any product
+     In plain English              -> UNDERSTAND
+     Words you need to know        -> UNDERSTAND
+     Mental model                  -> UNDERSTAND   a labelled teaching model
+     Microsoft cloud translation   -> LEARN        generic idea -> Microsoft control
+     How it works under the hood   -> LEARN
+     Why security cares            -> LEARN        cause and effect, drawn as two chains
+     Configuration surface         -> LEARN
+     Example                       -> LEARN
+     (comparisons)                 -> DISTINGUISH  content/comparisons.json + appendix A6
+     Common misunderstandings      -> DISTINGUISH
+     Common failure modes          -> DISTINGUISH
+     Hands-on / lab card           -> PRACTICE
+     Validate the security outcome -> PRACTICE
+     How this is tested            -> EXAM LENS
+     (knowledge check)             -> CHECK
+     Check yourself                -> CHECK        "Explain it yourself"
+     Teach it back                 -> CHECK
+     Key takeaways                 -> REVIEW
+     Where SC-500 uses this        -> REVIEW       (foundation primers)
+     Sources                       -> REVIEW
 
-   without editing a single content file. Sections are MOVED into stages, never
-   rewritten; a heading this file does not recognise lands in LEARN, in its
-   original order, so new content can never disappear because of this layer.
+   Sections are MOVED into stages, never rewritten. A heading this file does
+   not recognise lands in LEARN, in its original order, so new content can
+   never disappear because of this layer. Older headings ("Why this exists")
+   are still recognised.
 
    What it adds, all derived from existing data:
 
    - a topic header: domain (colour + icon + name), the official objective and
      its position in the outline, lab availability, status, verification date,
-     and the three learning states (studied / practised / knowledge checked)
+     and the learning states (studied / practised / knowledge checked / applied
+     / retained)
    - "You are here" breadcrumbs
-   - WHAT YOU NEED TO KNOW: the verbatim sub-objectives with their outline ids
-     and a per-objective knowledge-check state, plus the lesson's prerequisites
-     with whether each has been studied
-   - IMPORTANT DISTINCTIONS: the appendix A6 comparisons that name this module,
-     rendered inline with the trap visible and the full table one click away
-   - the SC-500 EXAM LENS: "How this is tested", framed as one recognisable
-     component
+   - WHAT YOU NEED TO KNOW: the verbatim sub-objectives with their outline ids,
+     plus prerequisites split into foundation primers and earlier lessons
+   - cause-and-effect chains, a "Words you need to know" card grid, a labelled
+     teaching-model badge, and a private Teach-it-back notepad
+   - IMPORTANT DISTINCTIONS: the structured comparisons that name this lesson,
+     then the appendix A6 traps
+   - the SC-500 EXAM LENS as its own stage
    - a PRACTICE card for the lab, or an explicit "no lab for this objective"
    - NEXT STEP: previous, recommended next, related, and the domain review
-   - the investigation note (forensic_relevance) moved from the top of the page
-     to a collapsed "Beyond the exam" panel at the end: useful, not measured
+   - the investigation note (forensic_relevance) in a collapsed "Beyond the
+     exam" panel at the end: useful, not measured
 
-   Labs get a separate, visibly different LAB MODE header and a part tracker. */
+   Foundation primers (Module 0A) use the same anatomy and show the official
+   objectives they support instead of sub-objectives.
+
+   Labs get a separate, visibly different LAB MODE header, the desired security
+   outcome up front, and a part tracker. */
 
 (function (global) {
   'use strict';
 
   var MODE_KEY = 'sc500:readmode:v1';     // shared with tabs.js
   var LABPOS_KEY = 'sc500:labpos:v1';
+  var NOTES_KEY = 'sc500:teachback:v1';
 
   var current = null;   // { root, route, refs } for refresh()
 
@@ -57,28 +83,48 @@
   function P() { return global.SC500Progress; }
   function C() { return global.SC500Curriculum; }
   function key(el) { return (el.textContent || '').replace(/§$/, '').trim().toLowerCase(); }
+  function isFoundation(id) { return /^0A-/i.test(String(id || '')); }
+  function isLabSafety(id) { return /^00-/.test(String(id || '')); }
 
   var STAGES = [
     { id: 'orient',      label: 'Orient' },
+    { id: 'understand',  label: 'Understand' },
     { id: 'learn',       label: 'Learn' },
     { id: 'visualize',   label: 'Visualize' },
     { id: 'distinguish', label: 'Distinguish' },
     { id: 'practice',    label: 'Practice' },
+    { id: 'lens',        label: 'Exam lens' },
     { id: 'check',       label: 'Check' },
     { id: 'review',      label: 'Review' }
   ];
 
-  /* heading text -> where it goes. Anything else goes to LEARN. */
-  var PLACE = {
-    'sub-objectives covered': 'orient',
-    'common failure modes':   'pitfalls',
-    'the traps, specifically':'pitfalls',
-    'how this is tested':     'lens',
-    'hands-on':               'practice',
-    'check yourself':         'selfcheck',
-    'takeaways':              'takeaways',
-    'key takeaways':          'takeaways',
-    'sources':                'sources'
+  /* heading text -> [stage, role]. Anything else goes to LEARN. */
+  var ROLE = {
+    'sub-objectives covered':        ['orient', 'outcomes'],
+    'the security problem':          ['understand', 'problem'],
+    'why this exists':               ['understand', 'problem'],
+    'why this matters for security': ['understand', 'problem'],
+    'in plain english':              ['understand', 'plain'],
+    'words you need to know':        ['understand', 'words'],
+    'mental model':                  ['understand', 'model'],
+    'microsoft cloud translation':   ['learn', 'translation'],
+    'how it works under the hood':   ['learn', 'how'],
+    'how it works':                  ['learn', 'how'],
+    'why security cares':            ['learn', 'cause'],
+    'configuration surface':         ['learn', 'config'],
+    'example':                       ['learn', 'example'],
+    'common misunderstandings':      ['distinguish', 'misunderstandings'],
+    'common failure modes':          ['distinguish', 'pitfalls'],
+    'the traps, specifically':       ['distinguish', 'pitfalls'],
+    'hands-on':                      ['practice', 'handson'],
+    'validate the security outcome': ['practice', 'validate'],
+    'how this is tested':            ['lens', 'lens'],
+    'check yourself':                ['check', 'selfcheck'],
+    'teach it back':                 ['check', 'teachback'],
+    'key takeaways':                 ['review', 'takeaways'],
+    'takeaways':                     ['review', 'takeaways'],
+    'where sc-500 uses this':        ['review', 'supports'],
+    'sources':                       ['review', 'sources']
   };
 
   /* Split the rendered page into [intro nodes] and h2 chunks. */
@@ -87,6 +133,9 @@
     Array.prototype.slice.call(root.childNodes).forEach(function (n) {
       if (n.nodeType === 1 && n.tagName === 'H2') {
         cur = { head: n, key: key(n), nodes: [] };
+        var r = ROLE[cur.key] || ['learn', 'other'];
+        cur.stage = r[0];
+        cur.role = r[1];
         list.push(cur);
       } else if (cur) {
         cur.nodes.push(n);
@@ -108,10 +157,14 @@
     return s;
   }
 
-  function append(target, chunk) {
-    if (!chunk) return;
-    target.appendChild(chunk.head);
-    chunk.nodes.forEach(function (n) { target.appendChild(n); });
+  /* Wrap a chunk in a section-level container that carries its role, so the
+     stylesheet can give each part of the anatomy its own treatment. */
+  function block(chunk, extraClass) {
+    var wrap = node('div', 'part part--' + chunk.role + (extraClass ? ' ' + extraClass : ''));
+    wrap.dataset.role = chunk.role;
+    wrap.appendChild(chunk.head);
+    chunk.nodes.forEach(function (n) { wrap.appendChild(n); });
+    return wrap;
   }
 
   function stateLabel(st) {
@@ -127,28 +180,132 @@
     return c;
   }
 
+  /* --------------------------------------------- anatomy enhancements ---- */
+
+  /* "Why security cares" is written as two ordered lists introduced by bold
+     paragraphs "Without the control" and "With the control". Draw them as two
+     cause-and-effect chains side by side. The lists stay lists, so a screen
+     reader hears an ordered sequence; the arrows are decoration. */
+  function causeEffect(wrap) {
+    var kids = Array.prototype.slice.call(wrap.children);
+    var cols = [];
+    kids.forEach(function (el, i) {
+      if (el.tagName !== 'P') return;
+      var t = el.textContent.trim().toLowerCase();
+      var kind = /^without the control/.test(t) ? 'without' : /^with the control/.test(t) ? 'with' : null;
+      if (!kind) return;
+      var list = kids[i + 1];
+      if (!list || list.tagName !== 'OL') return;
+      cols.push({ kind: kind, label: el, list: list });
+    });
+    if (!cols.length) return;
+    var grid = node('div', 'cause');
+    grid.setAttribute('role', 'group');
+    grid.setAttribute('aria-label', 'Cause and effect, teaching model');
+    cols.forEach(function (c) {
+      var fig = node('figure', 'cause__col');
+      fig.dataset.kind = c.kind;
+      var cap = node('figcaption', 'cause__label', c.label.textContent.trim());
+      fig.appendChild(cap);
+      c.list.classList.add('cause__chain');
+      fig.appendChild(c.list);
+      c.label.remove();
+      grid.appendChild(fig);
+    });
+    var first = wrap.querySelector('h2');
+    wrap.insertBefore(grid, first ? first.nextSibling : wrap.firstChild);
+    var badge = node('p', 'teaching-badge', 'Teaching model: simplified on purpose. One control never removes all risk.');
+    wrap.insertBefore(badge, grid);
+  }
+
+  /* "Words you need to know": a list of "**Term** - definition" items becomes
+     a grid of term cards. Nothing is reworded. */
+  function words(wrap) {
+    var ul = wrap.querySelector('ul');
+    if (!ul) return;
+    ul.classList.add('words');
+    Array.prototype.forEach.call(ul.children, function (li) {
+      var s = li.firstElementChild;
+      if (s && s.tagName === 'STRONG') {
+        li.classList.add('words__item');
+        s.classList.add('words__term');
+        /* "**Term** - definition": the separator reads as a stray bullet once
+           the term sits on its own line in the card, so drop it. */
+        var t = s.nextSibling;
+        if (t && t.nodeType === 3) t.nodeValue = t.nodeValue.replace(/^\s*[-–—:]\s*/, ' ');
+      }
+    });
+  }
+
+  function teachingModel(wrap) {
+    var h = wrap.querySelector('h2');
+    var badge = node('p', 'teaching-badge', 'Teaching model: a simplified picture to reason with, not a product architecture.');
+    wrap.insertBefore(badge, h ? h.nextSibling : wrap.firstChild);
+  }
+
+  /* Teach it back: a private notepad. Stored in this browser only, never
+     scored, never part of progress. Writing the explanation is the point. */
+  function teachBack(wrap, lessonId) {
+    var id = 'teachback-' + lessonId;
+    var box = node('div', 'teachback__pad');
+    var lab = node('label', 'teachback__label', 'Your explanation (private, saved in this browser only)');
+    lab.htmlFor = id;
+    var ta = document.createElement('textarea');
+    ta.id = id;
+    ta.rows = 5;
+    ta.className = 'teachback__text';
+    var saved = '';
+    try { saved = (JSON.parse(localStorage.getItem(NOTES_KEY) || '{}')[lessonId]) || ''; } catch (e) {}
+    ta.value = saved;
+    var status = node('p', 'teachback__status');
+    status.setAttribute('aria-live', 'polite');
+    var timer = null;
+    ta.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        try {
+          var map = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
+          if (ta.value.trim()) map[lessonId] = ta.value; else delete map[lessonId];
+          localStorage.setItem(NOTES_KEY, JSON.stringify(map));
+          status.textContent = 'Saved in this browser.';
+        } catch (e) { status.textContent = 'Could not save in this browser.'; }
+      }, 500);
+    });
+    box.appendChild(lab);
+    box.appendChild(ta);
+    box.appendChild(status);
+    var h = wrap.querySelector('h2');
+    var after = h ? h.nextElementSibling : null;
+    /* Place the pad after the prompt paragraph, before "A strong answer". */
+    while (after && after.tagName === 'P' && !/^a strong answer/i.test(after.textContent.trim())) after = after.nextElementSibling;
+    wrap.insertBefore(box, after || null);
+  }
+
   /* ------------------------------------------------------ module lessons */
 
   function mountModule(root, route, fm) {
     var parts = chunks(root);
     if (!parts.list.length) return false;
 
+    var foundation = isFoundation(route.moduleId);
+    var labSafety = isLabSafety(route.moduleId);
     var h1 = root.querySelector('h1');
-    var byPlace = {};
-    var learn = [];
+
     /* VISUALIZE is not a section of its own: diagrams stay next to the
        explanation they illustrate. The stage rail links to the first one. */
     var firstDiagram = root.querySelector('pre > code.language-mermaid');
     if (firstDiagram) firstDiagram.parentNode.id = 'stage-visualize';
+
+    var byStage = {};
+    var byRole = {};
     parts.list.forEach(function (c) {
-      var p = PLACE[c.key];
-      if (p && !byPlace[p]) byPlace[p] = c;
-      else learn.push(c);
+      (byStage[c.stage] = byStage[c.stage] || []).push(c);
+      if (!byRole[c.role]) byRole[c.role] = c;
     });
 
     /* The intro blockquote restates objective and domain, which the header
        now shows. Keep anything else that sits between the title and the first
-       section (a few modules have a note there). */
+       section (several lessons carry a dated note there). */
     var introKeep = parts.intro.filter(function (n) {
       if (n === h1) return false;
       if (n.nodeType === 1 && n.tagName === 'BLOCKQUOTE' && /^\s*Objective:/.test(n.textContent)) return false;
@@ -158,6 +315,9 @@
     root.textContent = '';
 
     var article = node('article', 'lesson');
+    if (foundation) article.dataset.kind = 'foundation';
+    else if (labSafety) article.dataset.kind = 'lab-safety';
+    else article.dataset.kind = 'exam';
     var header = node('header', 'lesson-head');
     article.appendChild(header);
     if (h1) header.appendChild(h1);
@@ -167,14 +327,14 @@
     /* ORIENT */
     var orient = stage('orient');
     var outcomes = node('ol', 'outcomes');
-    var need = node('h2', null, 'What you need to know');
-    orient.appendChild(need);
-    if (byPlace.orient) {
+    orient.appendChild(node('h2', null, foundation ? 'What this primer gives you' : 'What you need to know'));
+    var supportsHost = node('div', 'supports');
+    supportsHost.hidden = true;
+    if (byRole.outcomes) {
       orient.appendChild(node('p', 'lede',
-        'After this lesson you should be able to do each of the following. The wording is Microsoft\u2019s own, from the SC-500 skills outline.'));
+        'After this lesson you should be able to do each of the following. The wording is Microsoft’s own, from the SC-500 skills outline.'));
       orient.appendChild(outcomes);
-      /* Carry over the list items verbatim, then any notes after the list. */
-      var ul = byPlace.orient.nodes.filter(function (n) { return n.nodeType === 1 && (n.tagName === 'UL' || n.tagName === 'OL'); })[0];
+      var ul = byRole.outcomes.nodes.filter(function (n) { return n.nodeType === 1 && (n.tagName === 'UL' || n.tagName === 'OL'); })[0];
       if (ul) {
         Array.prototype.slice.call(ul.children).forEach(function (li) {
           var item = node('li', 'outcome');
@@ -185,11 +345,15 @@
           outcomes.appendChild(item);
         });
       }
-      byPlace.orient.nodes.forEach(function (n) { if (n !== ul) orient.appendChild(n); });
+      byRole.outcomes.nodes.forEach(function (n) { if (n !== ul) orient.appendChild(n); });
+    } else if (foundation) {
+      orient.appendChild(node('p', 'lede',
+        'A required foundation, written for someone new to cloud and AI. It is not an SC-500 objective on its own: it removes the background knowledge the exam lessons assume. Read it just before the lessons it supports, or work through Module 0A in order.'));
+      orient.appendChild(supportsHost);
     } else {
       orient.appendChild(node('p', 'lede',
-        route.moduleId && route.moduleId.indexOf('00-') === 0
-          ? 'Module 0 is a project prerequisite rather than exam content: it makes every later lab safe and affordable. Complete it before creating any billable resource.'
+        labSafety
+          ? 'Module 0B is a project prerequisite rather than exam content: it makes every later lab safe and affordable. Complete it before creating any billable resource.'
           : 'This lesson has no sub-objective list.'));
     }
     introKeep.forEach(function (n) { orient.appendChild(n); });
@@ -202,94 +366,136 @@
     article.appendChild(orient);
     present.push('orient');
 
+    /* UNDERSTAND */
+    if (byStage.understand) {
+      var und = stage('understand');
+      byStage.understand.forEach(function (c) {
+        var w = block(c);
+        if (c.role === 'words') words(w);
+        if (c.role === 'model') teachingModel(w);
+        und.appendChild(w);
+      });
+      article.appendChild(und);
+      present.push('understand');
+    }
+
     /* LEARN */
-    if (learn.length) {
+    if (byStage.learn) {
       var learnS = stage('learn');
-      learn.forEach(function (c) { append(learnS, c); });
       var reviewNote = node('div', 'stage__collapsed');
-      var showAll = node('button', 'btn', 'Show the Learn stage');
+      var showAll = node('button', 'btn', 'Show the full explanation');
       showAll.type = 'button';
       showAll.addEventListener('click', function () { setMode('full'); });
-      reviewNote.appendChild(node('span', null, 'Review pass: the explanation is folded away.'));
+      reviewNote.appendChild(node('span', null, 'Review pass: Understand and Learn are folded away. Key takeaways, distinctions, the exam lens and the checks stay open.'));
       reviewNote.appendChild(showAll);
-      learnS.insertBefore(reviewNote, learnS.children[1] || null);
+      learnS.appendChild(reviewNote);
+      byStage.learn.forEach(function (c) {
+        var w = block(c);
+        if (c.role === 'cause') causeEffect(w);
+        learnS.appendChild(w);
+      });
       article.appendChild(learnS);
       present.push('learn');
-      if (firstDiagram) present.push('visualize');
     }
+    if (firstDiagram) present.push('visualize');
 
     /* DISTINGUISH */
     var dist = stage('distinguish');
     var distHost = node('div', 'distinctions');
     distHost.hidden = true;
-    var distHead = node('h2', null, 'Important distinctions');
-    distHost.appendChild(distHead);
+    distHost.appendChild(node('h2', null, 'Important distinctions'));
     distHost.appendChild(node('p', 'lede',
-      'The controls this lesson is most easily confused with. Each comparison comes from appendix A6; the trap is the nearly-right answer the exam relies on.'));
+      'The controls this lesson is most easily confused with. Each comparison sets the options side by side on the same questions: what problem each solves, where it sits, what it cannot do, and how you would prove it worked.'));
+    var cmpList = node('div', 'compare-list');
+    distHost.appendChild(cmpList);
     var distList = node('div', 'distinctions__list');
     distHost.appendChild(distList);
     dist.appendChild(distHost);
-    if (byPlace.pitfalls) append(dist, byPlace.pitfalls);
-    if (byPlace.lens) {
+    var distParts = byStage.distinguish || [];
+    distParts.forEach(function (c) { dist.appendChild(block(c)); });
+    article.appendChild(dist);
+    if (distParts.length) present.push('distinguish');
+    else dist.dataset.pending = 'true';
+
+    /* PRACTICE */
+    var practice = stage('practice');
+    var labCard = null;
+    if (!foundation) {
+      practice.appendChild(node('h2', null, 'Practice'));
+      labCard = node('div', 'lab-card');
+      practice.appendChild(labCard);
+    }
+    (byStage.practice || []).forEach(function (c) {
+      if (c.role === 'handson') {
+        /* The original "Hands-on" section is only a link to the lab; the card
+           replaces it. Keep any other prose it contains. */
+        c.nodes.forEach(function (n) {
+          if (n.nodeType === 1 && /^\s*See\s/.test(n.textContent) && n.querySelector('a')) return;
+          if (n.nodeType === 1 && n.textContent.trim()) practice.appendChild(n);
+        });
+        return;
+      }
+      practice.appendChild(block(c));
+    });
+    if (practice.children.length > 1) { article.appendChild(practice); present.push('practice'); }
+
+    /* EXAM LENS */
+    if (byRole.lens) {
+      var lensS = stage('lens');
       var lens = node('aside', 'exam-lens');
       lens.setAttribute('aria-labelledby', 'exam-lens-title');
-      var lh = byPlace.lens.head;
+      var lh = byRole.lens.head;
       lh.id = 'exam-lens-title';
       lh.textContent = 'SC-500 Exam Lens';
       lens.appendChild(lh);
       lens.appendChild(node('p', 'exam-lens__sub',
-        'How this is tested. For SC-500, make sure you can recognise the deciding constraint in a scenario and select the control it points to.'));
-      byPlace.lens.nodes.forEach(function (n) { lens.appendChild(n); });
-      dist.appendChild(lens);
+        'How this is tested. Recognise the deciding constraint in a scenario, then select the control it points to - and know why the nearly-right answer is wrong.'));
+      byRole.lens.nodes.forEach(function (n) { lens.appendChild(n); });
+      lensS.appendChild(lens);
+      article.appendChild(lensS);
+      present.push('lens');
     }
-    if (byPlace.pitfalls || byPlace.lens) { article.appendChild(dist); present.push('distinguish'); }
-    else { article.appendChild(dist); dist.dataset.pending = 'true'; }
-
-    /* PRACTICE */
-    var practice = stage('practice');
-    practice.appendChild(node('h2', null, 'Practice'));
-    var labCard = node('div', 'lab-card');
-    practice.appendChild(labCard);
-    if (byPlace.practice) {
-      /* The original "Hands-on" section is only a link to the lab; the card
-         replaces it. Keep any other prose it contains. */
-      byPlace.practice.nodes.forEach(function (n) {
-        if (n.nodeType === 1 && /^\s*See\s/.test(n.textContent) && n.querySelector('a')) return;
-        if (n.nodeType === 1 && n.textContent.trim()) practice.appendChild(n);
-      });
-    }
-    article.appendChild(practice);
-    present.push('practice');
 
     /* CHECK */
     var check = stage('check');
-    var slot = node('div', 'kc-slot');
-    slot.dataset.slot = 'knowledge-check';
-    slot.appendChild(node('h2', null, 'Knowledge check'));
-    check.appendChild(slot);
-    if (byPlace.selfcheck) {
-      var sc = node('div', 'selfcheck');
-      var h = node('h3', null, 'Explain it yourself');
-      sc.appendChild(h);
-      sc.appendChild(node('p', 'lede',
-        'Open questions with no scoring. Answer them out loud or in writing before moving on; if one is hard, that is the section to re-read.'));
-      byPlace.selfcheck.nodes.forEach(function (n) { sc.appendChild(n); });
-      check.appendChild(sc);
+    var slot = null;
+    if (!foundation && !labSafety) {
+      slot = node('div', 'kc-slot');
+      slot.dataset.slot = 'knowledge-check';
+      slot.appendChild(node('h2', null, 'Knowledge check'));
+      check.appendChild(slot);
     }
-    article.appendChild(check);
-    present.push('check');
+    (byStage.check || []).forEach(function (c) {
+      if (c.role === 'selfcheck') {
+        var sc = node('div', 'selfcheck');
+        sc.appendChild(node('h3', null, 'Explain it yourself'));
+        sc.appendChild(node('p', 'lede',
+          'Open questions with no scoring. Answer them out loud or in writing before moving on; if one is hard, that is the section to re-read.'));
+        c.nodes.forEach(function (n) { sc.appendChild(n); });
+        check.appendChild(sc);
+        return;
+      }
+      var w = block(c);
+      if (c.role === 'teachback') teachBack(w, route.moduleId);
+      check.appendChild(w);
+    });
+    if (check.children.length > 1) { article.appendChild(check); present.push('check'); }
 
     /* REVIEW */
     var review = stage('review');
-    if (byPlace.takeaways) append(review, byPlace.takeaways);
+    if (byRole.takeaways) review.appendChild(block(byRole.takeaways));
+    if (byRole.supports) review.appendChild(block(byRole.supports));
     var next = node('nav', 'next-step');
     next.setAttribute('aria-label', 'Next step');
     review.appendChild(next);
-    if (byPlace.sources) append(review, byPlace.sources);
+    if (byRole.sources) review.appendChild(block(byRole.sources));
+    (byStage.review || []).forEach(function (c) {
+      if (c === byRole.takeaways || c === byRole.supports || c === byRole.sources) return;
+      review.appendChild(block(c));
+    });
     if (fm && fm.forensic_relevance) {
       var beyond = node('details', 'beyond');
-      var sum = node('summary', null, 'Beyond the exam: how this shows up in an investigation');
-      beyond.appendChild(sum);
+      beyond.appendChild(node('summary', null, 'Beyond the exam: how this shows up in an investigation'));
       beyond.appendChild(node('p', 'field__note', 'Not measured by SC-500. Kept for context.'));
       beyond.appendChild(node('p', null, String(fm.forensic_relevance)));
       review.appendChild(beyond);
@@ -302,10 +508,12 @@
     /* Header needs the stage list, so build it last. */
     var refs = buildHeader(header, route, fm, present, orient);
     refs.outcomes = outcomes;
+    refs.supportsHost = supportsHost;
     refs.prereqHost = prereqHost;
     refs.trainingHost = trainingHost;
     refs.distHost = distHost;
     refs.distList = distList;
+    refs.cmpList = cmpList;
     refs.dist = dist;
     refs.labCard = labCard;
     refs.next = next;
@@ -318,7 +526,7 @@
 
   /* --------------------------------------------------------------- header */
 
-  function buildHeader(header, route, fm, present, orient) {
+  function buildHeader(header, route, fm, present) {
     var refs = {};
     var crumbs = node('nav', 'crumbs');
     crumbs.setAttribute('aria-label', 'You are here');
@@ -382,7 +590,7 @@
     });
     function paintMark() {
       var on = P() && P().isMarked('module:' + route.moduleId);
-      mark.textContent = on ? '\u2605 In Review later' : '\u2606 Review later';
+      mark.textContent = on ? '★ In Review later' : '☆ Review later';
       mark.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
     paintMark();
@@ -390,7 +598,7 @@
 
     var mode = node('button', 'btn btn--toggle', '');
     mode.type = 'button';
-    mode.title = 'Review pass folds the Learn stage and keeps distinctions, exam lens and checks open';
+    mode.title = 'Review pass folds Understand and Learn and keeps takeaways, distinctions, the exam lens and checks open';
     mode.addEventListener('click', function () { setMode(readMode() === 'review' ? 'full' : 'review'); });
     actions.appendChild(mode);
     refs.modeBtn = mode;
@@ -439,7 +647,7 @@
       function crumb(el) { var li = node('li'); li.appendChild(el); ol.appendChild(li); }
       crumb(link('SC-500', '#/'));
       if (L.exam) crumb(link(D().info(L.domainId).short, '#/domain/' + L.domainId));
-      else crumb(link('Lab safety', '#/'));
+      else crumb(link((L.label ? L.label + ' · ' : '') + D().info(L.domainId).short, '#/'));
       var obj = L.objectiveId ? model.objectiveById[L.objectiveId] : null;
       if (obj) crumb(node('span', null, obj.text));
       var here = node('span', null, L.title);
@@ -450,7 +658,7 @@
       /* Domain badge and status */
       refs.top.textContent = '';
       refs.top.appendChild(D().badge(L.domainId, { weight: L.weight }));
-      refs.top.appendChild(node('span', 'lesson-head__id', 'Lesson ' + L.id));
+      refs.top.appendChild(node('span', 'lesson-head__id', (L.foundation ? 'Primer ' : 'Lesson ') + L.id));
       if (L.fm.status) {
         var st = node('span', 'status', String(L.fm.status));
         st.dataset.status = String(L.fm.status);
@@ -462,6 +670,9 @@
       if (obj) {
         refs.obj.appendChild(node('span', 'obj-chip', obj.id));
         refs.obj.appendChild(document.createTextNode(' ' + obj.text));
+      } else if (L.foundation) {
+        refs.obj.textContent = 'Required foundation · not an exam objective · supports ' +
+          (L.supports.length ? L.supports.length + (L.supports.length === 1 ? ' objective' : ' objectives') : 'the exam lessons');
       } else {
         refs.obj.textContent = L.objectiveText || '';
       }
@@ -471,17 +682,21 @@
       f.textContent = '';
       function fact(text, cls) { var li = node('li', cls || null); if (typeof text === 'string') li.textContent = text; else li.appendChild(text); f.appendChild(li); }
       if (L.bulletIds.length) fact(L.bulletIds.length + (L.bulletIds.length === 1 ? ' sub-objective' : ' sub-objectives'));
-      if (L.hasLab) fact(link('Lab available', '#/lab/' + L.id));
-      else fact('No lab for this lesson');
+      if (!L.foundation) {
+        if (L.hasLab) fact(link('Lab available', '#/lab/' + L.id));
+        else fact('No lab for this lesson');
+      }
       if (L.questionIds.length) fact(L.questionIds.length + '-question knowledge check');
+      if (L.comparisonIds && L.comparisonIds.length) fact(L.comparisonIds.length + (L.comparisonIds.length === 1 ? ' comparison' : ' comparisons'));
       if (L.fm.last_verified) fact('Verified ' + L.fm.last_verified);
 
       paintStates(model, L);
       paintOutcomes(model, L);
+      paintSupports(model, L);
       paintPrereqs(model, L);
       paintTraining(model, L);
       paintDistinctions(model, L);
-      paintLabCard(model, L);
+      if (refs.labCard) paintLabCard(model, L);
       paintNext(model, L);
     }).catch(function () { /* the page still reads without enrichment */ });
   }
@@ -490,21 +705,33 @@
     var s = current.refs.states;
     s.textContent = '';
     var studied = P().isComplete('module', L.id);
-    var practised = L.hasLab ? P().isComplete('lab', L.id) : null;
-    var chk = P().lessonCheck(L.id, L.questionIds);
-    function pill(name, on, text, st) {
+    function pill(name, on, text, st, title) {
       var p = node('span', 'lstate');
       p.dataset.state = st;
-      p.appendChild(node('span', 'lstate__mark', on === true ? '\u2713' : on === 'warn' ? '!' : on === null ? '\u2013' : '\u25cb'));
+      if (title) p.title = title;
+      p.appendChild(node('span', 'lstate__mark', on === true ? '✓' : on === 'warn' ? '!' : on === null ? '–' : '○'));
       p.appendChild(node('span', 'lstate__name', name));
       p.appendChild(node('span', 'lstate__val', text));
       s.appendChild(p);
     }
     pill('Studied', studied, studied ? 'Done' : 'Not yet', studied ? 'done' : 'todo');
+    if (L.foundation) return;
+    var practised = L.hasLab ? P().isComplete('lab', L.id) : null;
     if (practised === null) pill('Practised', null, 'No lab', 'na');
     else pill('Practised', practised, practised ? 'Lab complete' : 'Not yet', practised ? 'done' : 'todo');
+    if (!L.exam) return;
+    var chk = P().lessonCheck(L.id, L.questionIds);
     pill('Checked', chk === 'checked' ? true : chk === 'review' ? 'warn' : chk === 'noq' ? null : false,
       stateLabel(chk), chk === 'checked' ? 'done' : chk === 'review' ? 'review' : chk === 'noq' ? 'na' : 'todo');
+    if (P().depth) {
+      var d = P().depth(L.questionIds);
+      if (L.questionIds.length) {
+        pill('Applied', d.applied ? true : false, d.applied ? d.applied + ' in mixed sets' : 'Not yet', d.applied ? 'done' : 'todo',
+          'Questions from this lesson answered correctly outside the lesson: in a domain review, Exam prep or the mock exam.');
+        pill('Retained', d.retained ? true : false, d.retained ? d.retained + ' after 7+ days' : 'Not yet', d.retained ? 'done' : 'todo',
+          'Questions answered correctly again at least seven days after you first got them right.');
+      }
+    }
   }
 
   function paintOutcomes(model, L) {
@@ -522,25 +749,61 @@
     }
   }
 
+  /* Foundation primers: the official objectives this primer supports, each
+     with the lesson that teaches it. */
+  function paintSupports(model, L) {
+    var host = current.refs.supportsHost;
+    if (!host || !L.foundation) return;
+    host.textContent = '';
+    var objs = L.supports.map(function (id) { return model.objectiveById[id]; }).filter(Boolean);
+    if (!objs.length) { host.hidden = true; return; }
+    host.hidden = false;
+    host.appendChild(node('h3', null, 'Supports these SC-500 objectives'));
+    var ul = node('ul', 'supports__list');
+    objs.forEach(function (o) {
+      var li = node('li');
+      D().paint(li, o.domainId);
+      li.appendChild(node('span', 'obj-chip', o.id));
+      li.appendChild(document.createTextNode(' ' + o.text + ' '));
+      o.lessonIds.forEach(function (lid, i) {
+        if (i) li.appendChild(document.createTextNode(' · '));
+        var a = link(lid, '#/module/' + lid, 'dom-link');
+        a.title = model.lessons[lid].title;
+        D().paint(a, model.lessons[lid].domainId);
+        li.appendChild(a);
+      });
+      ul.appendChild(li);
+    });
+    host.appendChild(ul);
+  }
+
   function paintPrereqs(model, L) {
     var host = current.refs.prereqHost;
     host.textContent = '';
     var ids = L.prerequisites.filter(function (id) { return model.lessons[id]; });
     if (!ids.length) { host.hidden = true; return; }
     host.hidden = false;
-    host.appendChild(node('h3', null, 'Recommended before this lesson'));
-    var ul = node('ul', 'prereqs__list');
-    ids.forEach(function (id) {
-      var p = model.lessons[id];
-      var done = P().isComplete('module', id);
-      var li = node('li');
-      li.dataset.done = done ? 'true' : 'false';
-      li.appendChild(node('span', 'prereqs__mark', done ? '\u2713' : '\u25cb'));
-      li.appendChild(link(p.id + ' \u00b7 ' + p.title, '#/module/' + id));
-      li.appendChild(node('span', 'visually-hidden', done ? ' (studied)' : ' (not studied yet)'));
-      ul.appendChild(li);
-    });
-    host.appendChild(ul);
+    var found = ids.filter(isFoundation);
+    var rest = ids.filter(function (id) { return !isFoundation(id); });
+    function list(title, note, arr) {
+      if (!arr.length) return;
+      host.appendChild(node('h3', null, title));
+      if (note) host.appendChild(node('p', 'prereqs__note', note));
+      var ul = node('ul', 'prereqs__list');
+      arr.forEach(function (id) {
+        var p = model.lessons[id];
+        var done = P().isComplete('module', id);
+        var li = node('li');
+        li.dataset.done = done ? 'true' : 'false';
+        li.appendChild(node('span', 'prereqs__mark', done ? '✓' : '○'));
+        li.appendChild(link(p.id + ' · ' + p.title, '#/module/' + id));
+        li.appendChild(node('span', 'visually-hidden', done ? ' (studied)' : ' (not studied yet)'));
+        ul.appendChild(li);
+      });
+      host.appendChild(ul);
+    }
+    list('New to this? Read these foundations first', 'Short primers from Module 0A. Skip any you already understand.', found);
+    list(found.length ? 'Earlier lessons this one builds on' : 'Recommended before this lesson', null, rest);
   }
 
   /* Microsoft's own training for this lesson's objective: the Microsoft Learn
@@ -561,8 +824,6 @@
     host.hidden = false;
     host.appendChild(node('h3', null, 'Official Microsoft training for this lesson'));
     var ul = node('ul', 'official__list');
-    /* The modules that cover THIS lesson come first: they are the precise
-       match. The whole learning path follows, for the objective as a whole. */
     (L.officialModules || []).forEach(function (mod) {
       var li = node('li');
       li.appendChild(node('span', 'official__kind', 'Module'));
@@ -573,53 +834,60 @@
       var li = node('li');
       li.appendChild(node('span', 'official__kind', 'Learning path'));
       li.appendChild(extLink(o.path.title, o.path.url));
-      li.appendChild(node('span', 'official__meta', 'all ' + o.path.modules + ' modules for objective ' + o.id + ' \u00b7 Course ' + model.training.course.code));
+      li.appendChild(node('span', 'official__meta', 'all ' + o.path.modules + ' modules for objective ' + o.id + ' · Course ' + model.training.course.code));
       ul.appendChild(li);
     }
     (L.officialLabs || []).forEach(function (l) {
       var li = node('li');
       li.appendChild(node('span', 'official__kind', l.supplemental ? 'Lab (supplemental)' : 'Lab'));
-      li.appendChild(extLink(l.id + ' \u00b7 ' + l.title, l.url));
+      li.appendChild(extLink(l.id + ' · ' + l.title, l.url));
       ul.appendChild(li);
     });
     host.appendChild(ul);
-    var note = node('p', 'field__note',
-      'Microsoft\u2019s course and this guide cover the same objective from different angles; use both. ' +
-      (L.officialLabs ? 'Microsoft\u2019s labs deploy real resources too: apply this guide\u2019s Module 0 budget and teardown rules to them.' : 'Microsoft publishes no lab for this lesson\u2019s topics; this guide\u2019s lab covers them.'));
-    host.appendChild(note);
+    host.appendChild(node('p', 'field__note',
+      'Microsoft’s course and this guide cover the same objective from different angles; use both. ' +
+      (L.officialLabs ? 'Microsoft’s labs deploy real resources too: apply this guide’s Module 0B budget and teardown rules to them.' : 'Microsoft publishes no lab for this lesson’s topics; this guide’s lab covers them.')));
+  }
+
+  function revealDistinguish(refs) {
+    if (!refs.dist.dataset.pending) return;
+    delete refs.dist.dataset.pending;
+    var after = refs.rail.querySelector('li[data-stage="visualize"]') || refs.rail.querySelector('li[data-stage="learn"]') ||
+      refs.rail.querySelector('li[data-stage="understand"]');
+    if (after && !refs.rail.querySelector('li[data-stage="distinguish"]')) {
+      var nli = node('li'); nli.dataset.stage = 'distinguish';
+      nli.appendChild(link('Distinguish', '#stage-distinguish'));
+      after.parentNode.insertBefore(nli, after.nextSibling);
+    }
   }
 
   function paintDistinctions(model, L) {
     var refs = current.refs;
-    var list = refs.distList;
-    list.textContent = '';
+    refs.distList.textContent = '';
+    refs.cmpList.textContent = '';
+    var cmps = (L.comparisonIds || []).map(function (id) { return model.comparisonById && model.comparisonById[id]; }).filter(Boolean);
     var items = model.distinctions.filter(function (x) { return L.distinctionNs.indexOf(x.n) !== -1; });
-    if (!items.length) {
-      refs.distHost.hidden = true;
-      return;
-    }
+    if (!cmps.length && !items.length) { refs.distHost.hidden = true; return; }
     refs.distHost.hidden = false;
-    if (refs.dist.dataset.pending) {
-      delete refs.dist.dataset.pending;
-      var li = refs.rail.querySelector('li[data-stage="learn"]');
-      if (li && !refs.rail.querySelector('li[data-stage="distinguish"]')) {
-        var nli = node('li'); nli.dataset.stage = 'distinguish';
-        nli.appendChild(link('Distinguish', '#stage-distinguish'));
-        li.parentNode.insertBefore(nli, li.nextSibling);
-      }
+    revealDistinguish(refs);
+    var CM = global.SC500Compare;
+    if (cmps.length && CM) {
+      cmps.forEach(function (x) { refs.cmpList.appendChild(CM.card(x, model, { lessonId: L.id })); });
     }
-    var parse = global.marked ? (global.marked.parse || global.marked) : null;
-    items.forEach(function (x) { list.appendChild(comparison(x, model, L, parse)); });
+    if (items.length) {
+      var parse = global.marked ? (global.marked.parse || global.marked) : null;
+      if (cmps.length) refs.distList.appendChild(node('h3', 'distinctions__sub', 'More traps from appendix A6'));
+      items.forEach(function (x) { refs.distList.appendChild(comparison(x, model, L, parse)); });
+    }
   }
 
-  /* The comparison component. Input is one A6 section: a table whose first
+  /* The A6 trap component. Input is one A6 section: a table whose first
      column names the options, facts, and a "> **The trap.**" blockquote.
      The trap stays visible - it is the point - and the full comparison opens
      on demand. On narrow screens the table becomes one card per option. */
   function comparison(x, model, L, parse) {
     var art = node('article', 'cmp');
-    var h = node('h3', 'cmp__title', x.title);
-    art.appendChild(h);
+    art.appendChild(node('h3', 'cmp__title', x.title));
 
     var others = x.modules.filter(function (id) { return id !== L.id && model.lessons[id]; });
     if (others.length) {
@@ -640,7 +908,6 @@
 
     var tmp = node('div');
     tmp.innerHTML = parse(x.markdown, { mangle: false, headerIds: false });
-    /* Drop the "**Modules ...**" line; it is shown as links above. */
     var first = tmp.querySelector('p');
     if (first && /^\s*Modules?\s/.test(first.textContent)) first.remove();
 
@@ -664,7 +931,7 @@
     if (global.SC500App && global.SC500App.enhance) global.SC500App.enhance(body, model.a6Path);
 
     if (model.a6Index >= 0) {
-      art.appendChild(link('Open in appendix A6 \u2192', '#/appendix/a6', 'cmp__src'));
+      art.appendChild(link('Open in appendix A6 →', '#/appendix/a6', 'cmp__src'));
     }
     return art;
   }
@@ -679,6 +946,7 @@
 
   function paintLabCard(model, L) {
     var card = current.refs.labCard;
+    if (!card) return;
     card.textContent = '';
     D().paint(card, L.domainId);
     if (!L.hasLab) {
@@ -710,13 +978,13 @@
     var timeLi = node('li', null, '');
     timeLi.hidden = true;
     meta.appendChild(timeLi);
-    meta.appendChild(node('li', null, practised ? 'Complete, teardown included' :
+    meta.appendChild(node('li', null, practised ? 'Complete: outcome validated, teardown done' :
       (stats.total ? stats.done + ' of ' + stats.total + ' checklist items ticked' : 'Not started')));
     card.appendChild(meta);
 
     if (L.fm.lab_cost_estimate) card.appendChild(node('p', 'field__note', String(L.fm.lab_cost_estimate)));
     card.appendChild(node('p', 'lab-card__safety',
-      'Creates real resources in your test tenant. Module 0 first; activate roles through PIM; every lab ends in a mandatory teardown.'));
+      'Understand, implement, observe, validate, explain, clean up. The lab creates real resources in your test tenant: Module 0B first, roles through PIM, and a mandatory teardown.'));
     card.appendChild(link(practised ? 'Review the lab' : 'Open the lab', '#/lab/' + L.id, 'btn btn--primary'));
 
     fetch(L.lab, { cache: 'force-cache' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (md) {
@@ -737,20 +1005,25 @@
       var a = link('', '#/module/' + id, 'next-card ' + (cls || ''));
       D().paint(a, l.domainId);
       a.appendChild(node('span', 'next-card__label', label));
-      a.appendChild(node('span', 'next-card__title', l.id + ' \u00b7 ' + l.title));
+      a.appendChild(node('span', 'next-card__title', l.id + ' · ' + l.title));
       row.appendChild(a);
     }
-    if (L.prev) card('\u2190 Previous', L.prev, 'next-card--prev');
+    if (L.prev) card('← Previous', L.prev, 'next-card--prev');
     /* Recommended next: the next lesson in study order that is not studied
-       yet, starting after this one; the plain next lesson if all are. */
+       yet, starting after this one; the plain next lesson if all are. On the
+       experienced path, foundation primers are offered just-in-time rather
+       than recommended in sequence. */
+    var skipFoundations = P().pref && P().pref('path') === 'experienced' && !L.foundation;
     var rec = null;
     for (var i = model.order.indexOf(L.id) + 1; i < model.order.length; i++) {
-      if (!P().isComplete('module', model.order[i])) { rec = model.order[i]; break; }
+      var cand = model.order[i];
+      if (skipFoundations && isFoundation(cand)) continue;
+      if (!P().isComplete('module', cand)) { rec = cand; break; }
     }
-    card('Recommended next \u2192', rec || L.next, 'next-card--rec');
+    card('Recommended next →', rec || L.next, 'next-card--rec');
     nav.appendChild(row);
 
-    /* Related: shares an objective, shares a distinction, or is a prerequisite. */
+    /* Related: shares an objective, shares a comparison, or is a prerequisite. */
     var related = [];
     function add(id, why) {
       if (id === L.id || !model.lessons[id] || id === rec) return;
@@ -758,10 +1031,18 @@
       related.push({ id: id, why: why });
     }
     if (L.objectiveId) model.objectiveById[L.objectiveId].lessonIds.forEach(function (id) { add(id, 'same objective'); });
+    (L.comparisonIds || []).forEach(function (cid) {
+      var x = model.comparisonById[cid];
+      if (x) x.lessons.forEach(function (id) { add(id, 'compared side by side'); });
+    });
     model.distinctions.forEach(function (x) {
       if (x.modules.indexOf(L.id) !== -1) x.modules.forEach(function (id) { add(id, 'compared in A6'); });
     });
-    L.prerequisites.forEach(function (id) { add(id, 'prerequisite'); });
+    L.prerequisites.forEach(function (id) { add(id, isFoundation(id) ? 'foundation' : 'prerequisite'); });
+    if (L.foundation) L.supports.forEach(function (oid) {
+      var o = model.objectiveById[oid];
+      if (o) o.lessonIds.forEach(function (id) { add(id, 'uses this foundation'); });
+    });
 
     if (related.length) {
       nav.appendChild(node('h3', null, 'Related'));
@@ -769,7 +1050,7 @@
       related.forEach(function (r) {
         var l = model.lessons[r.id];
         var li = node('li');
-        var a = link(l.id + ' \u00b7 ' + l.title, '#/module/' + l.id, 'dom-link');
+        var a = link(l.id + ' · ' + l.title, '#/module/' + l.id, 'dom-link');
         D().paint(a, l.domainId);
         li.appendChild(a);
         li.appendChild(node('span', 'related__why', r.why));
@@ -779,8 +1060,7 @@
     }
 
     if (L.exam) {
-      var dr = link('Domain review: ' + D().info(L.domainId).short + ' \u2192', '#/domain/' + L.domainId, 'btn');
-      nav.appendChild(dr);
+      nav.appendChild(link('Domain review: ' + D().info(L.domainId).short + ' →', '#/domain/' + L.domainId, 'btn'));
     }
   }
 
@@ -807,14 +1087,13 @@
     root.insertBefore(banner, h1);
     var eyebrow = node('p', 'lab-head__mode');
     eyebrow.appendChild(node('span', 'lab-head__pill', 'LAB MODE'));
-    eyebrow.appendChild(document.createTextNode(' Hands-on in your test tenant. Real resources, real cost, mandatory teardown.'));
+    eyebrow.appendChild(document.createTextNode(' Understand → implement → observe → validate → explain → clean up. Real resources, real cost, mandatory teardown.'));
     banner.appendChild(eyebrow);
     banner.appendChild(h1);
 
     var facts = node('ul', 'facts');
     banner.appendChild(facts);
 
-    /* Parts: the lab's own "## Part N" headings, plus the fixed sections. */
     var heads = Array.prototype.slice.call(root.querySelectorAll('h2'));
     var parts = heads.filter(function (h) { return /^part\s+\d/i.test(key(h)); });
     var hasTeardown = heads.some(function (h) { return key(h) === 'teardown'; });
@@ -849,6 +1128,31 @@
       });
       banner.appendChild(res);
     }
+
+    /* Lab anatomy sections get their own treatment. The desired outcome is
+       the contract the Validation section proves, so it is framed as one. */
+    heads.forEach(function (h) {
+      var k = key(h);
+      var role = ({
+        'why this lab matters': 'why', 'desired security outcome': 'outcome', 'architecture': 'architecture',
+        'validation': 'validation', 'what just happened?': 'happened', 'limitations': 'limits', 'completion': 'completion'
+      })[k];
+      if (!role) return;
+      var wrap = node('div', 'labpart labpart--' + role);
+      h.parentNode.insertBefore(wrap, h);
+      var n = h;
+      /* Stop at the next h2, at a horizontal rule, or at a block another
+         script already wrapped around an h2 (the teardown section). */
+      while (n && !(n !== h && n.nodeType === 1 &&
+             (n.tagName === 'H2' || n.tagName === 'HR' || (n.querySelector && n.querySelector('h2'))))) {
+        var nx = n.nextSibling;
+        wrap.appendChild(n);
+        n = nx;
+      }
+      if (role === 'outcome') {
+        wrap.insertBefore(node('p', 'labpart__eyebrow', 'The contract for this lab. The lab is not done until Validation proves each statement.'), h.nextSibling);
+      }
+    });
 
     /* Part tracker: "Part 3 of 7", with a resume link. */
     if (parts.length) {
@@ -887,7 +1191,7 @@
       var saved = 0;
       try { saved = (JSON.parse(localStorage.getItem(LABPOS_KEY) || '{}')[route.moduleId]) || 0; } catch (e) {}
       function show(i) {
-        where.textContent = 'Part ' + (i + 1) + ' of ' + parts.length + ' \u00b7 ' + parts[i].textContent.replace(/^part\s+\d+\s*[-\u2013\u2014:]\s*/i, '').replace(/§$/, '').trim();
+        where.textContent = 'Part ' + (i + 1) + ' of ' + parts.length + ' · ' + parts[i].textContent.replace(/^part\s+\d+\s*[-–—:]\s*/i, '').replace(/§$/, '').trim();
         fill.style.width = Math.round(((i + 1) / parts.length) * 100) + '%';
         bar.setAttribute('aria-valuenow', String(i + 1));
         ol.querySelectorAll('li').forEach(function (li, k) { li.dataset.at = k === i ? 'true' : (k < i ? 'past' : 'false'); });
@@ -918,17 +1222,20 @@
       }
     }
 
-    /* Completion: say plainly what "practised" means. */
-    var done = node('section', 'lab-complete');
+    /* Completion: say plainly what "practised" means. A lab written with its
+       own "## Completion" checklist keeps it; the explanation joins it. */
+    var own = root.querySelector('.labpart--completion');
+    var done = own || node('section', 'lab-complete');
     done.id = 'lab-completion';
-    done.appendChild(node('h2', null, 'Completion'));
+    done.classList.add('lab-complete');
+    if (!own) done.appendChild(node('h2', null, 'Completion'));
     done.appendChild(node('p', null,
-      'This lab counts as practised when every checklist item on this page is ticked. The checklist includes the teardown, on purpose: a lab that is still billing is not finished.'));
+      'This lab counts as practised only when every checklist item on this page is ticked: the teardown, and the explicit confirmation that you validated the outcome rather than only completing the steps. A lab that is still billing, or whose outcome was never proven, is not finished.'));
     var back = node('div', 'field__links');
     back.appendChild(link('Back to lesson ' + route.moduleId, '#/module/' + route.moduleId, 'btn'));
-    back.appendChild(link('Go to the knowledge check', '#/module/' + route.moduleId + '/check', 'btn'));
+    if (!isLabSafety(route.moduleId)) back.appendChild(link('Go to the knowledge check', '#/module/' + route.moduleId + '/check', 'btn'));
     done.appendChild(back);
-    root.appendChild(done);
+    if (!own) root.appendChild(done);
 
     if (C()) {
       C().load().then(function (model) {

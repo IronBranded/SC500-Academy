@@ -125,6 +125,16 @@ body {
 
 .content:focus { outline: none; }
 
+/* Bare Microsoft Learn URLs in source lists are longer than a phone is wide.
+   Let them wrap instead of widening the page. */
+.content a { overflow-wrap: anywhere; }
+/* The same for long inline code (cmdlets, resource provider operations) and
+   for fieldsets, which default to min-width: min-content. */
+.content :not(pre) > code { overflow-wrap: anywhere; }
+.content fieldset { min-width: 0; }
+.kc-set > * { min-width: 0; }
+.kc { overflow-wrap: anywhere; }
+
 /* The reading column. Tables, code and figures are allowed to exceed it. */
 .content > * { max-width: var(--measure); }
 .content > .u-wide,
@@ -138,6 +148,14 @@ body {
   color: var(--ink-faint);
   font-family: var(--face-ui);
   font-size: var(--t-sm);
+}
+
+/* Views with nothing in the field-card column (dashboard, coverage, compare,
+   reviews) give that column back to the content, so wide tables are not
+   squeezed next to an empty rail. Browsers without :has() keep the rail. */
+@media (min-width: 1181px) {
+  .shell:has(> .meta:empty) { grid-template-columns: var(--w-sidebar) minmax(0, 1fr); }
+  .shell > .meta:empty { display: none; }
 }
 
 /* --- responsive --------------------------------------------------------- */

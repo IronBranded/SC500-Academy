@@ -1,7 +1,7 @@
 ---
 objective: "(Project prerequisite - not an SC-500 exam objective)"
 sub_objectives: []
-domain: "Lab Safety and Environment Setup"
+domain: "Safe Lab Foundations"
 domain_weight: "n/a"
 status: GA
 prerequisites: ["00-00"]
@@ -45,6 +45,13 @@ whole way down. The budget object has no enforcement semantics. It has a
 threshold and a list of people to tell.
 
 That single fact drives the entire design of this module.
+
+## In plain English
+
+Azure bills you for what exists, not for what you meant to keep. A budget is an alarm,
+not a brake: it emails you when spending passes a line, but it never stops anything.
+This lesson sets up the alarm, adds a simple automatic brake for the most expensive
+mistakes, and names the services that cost the most if you forget them.
 
 ## How it works under the hood
 
@@ -164,7 +171,7 @@ You will meet these later. Plan for them now.
 
 | Module | Service | Billing behaviour |
 | --- | --- | --- |
-| 04-05 | Security Copilot | Provisioned Security Compute Units bill **hourly while provisioned**, used or not. Highest spend risk in the guide by a wide margin. Provision, work, deprovision in one sitting. |
+| 04-05 | Security Copilot | Provisioned Security Compute Units bill **hourly while provisioned**, used or not. Highest spend risk in the guide by a wide margin. Provision, work, deprovision in one sitting. (Microsoft 365 E5/E7 tenants get an included monthly SCU allocation instead - check before provisioning.) |
 | 02-04 | Azure Firewall | Hourly deployment charge plus per-GB data processing, independent of whether traffic flows. |
 | 03-04 | Azure Bastion | Hourly per host. Also Defender for Servers Plan 2, which is per-server per-hour. |
 | 03-05 | AKS | The control plane may be free on the tier you pick; **the node pool VMs are not**. |
@@ -187,6 +194,14 @@ See [00-01 lab](../../labs/00-lab-safety/00-01-lab.md).
    actually happens?
 5. The brake runbook needs to disable Defender plans. What identity should it
    run as, what role does that identity need, and at what scope?
+
+## Key takeaways
+
+- Pay-as-you-go Azure has no spending cap. A budget only notifies.
+- Cost data arrives hours late, so alerts arrive after the spend.
+- An action group plus an automation runbook is the only part with teeth.
+- Teardown discipline is the real control; the brake is the backstop.
+- Know the hourly-billed services before you deploy them.
 
 ## Sources
 

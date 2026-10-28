@@ -25,7 +25,14 @@ If a module cannot explain why the control exists without using a Microsoft
 product name, the module is not finished.
 
 The reader is assumed to be capable and starting from zero **on the specific
-control being taught**, whatever their background elsewhere.
+control being taught**, whatever their background elsewhere - and possibly with
+limited exposure to Azure, Microsoft 365, Entra, networking or AI at all.
+
+**Beginner-first in how it explains; certification-first in what it teaches.** The
+official study guide decides the scope; the teaching sequence (problem, plain
+English, mental model, Microsoft terminology, mechanism, cause and effect,
+distinctions, implementation, validation, exam lens, check, teach back) decides how
+it is taught. `docs/BEGINNER-FIRST-REDESIGN.md` is the full record.
 
 ---
 
@@ -33,11 +40,13 @@ control being taught**, whatever their background elsewhere.
 
 | Thing | Count | Where |
 | --- | --- | --- |
-| Exam modules, each a content + lab pair | 22 | `content/NN-domain/`, `labs/NN-domain/` |
-| Lab-safety modules, run before anything billable | Module 0 | `content/00-lab-safety/` |
-| Appendices, including two case studies | A1 to A10 | `content/appendix/` |
-| Verbatim sub-objectives, each owned by exactly one module | 87 | `docs/SKILLS-MEASURED-SNAPSHOT.md` |
-| Quizzes | one per module | `quizzes/<id>.json` |
+| Exam lessons, each a content + lab pair | 18 | `content/0[1-4]-*/`, `labs/0[1-4]-*/` |
+| Foundation primers (Module 0A), not exam content | 17 | `content/00a-foundations/` |
+| Lab-safety modules (Module 0B), run before anything billable | 4 lessons, 2 labs | `content/00-lab-safety/`, `labs/00-lab-safety/` |
+| Appendices, including three case studies | A1 to A11 | `content/appendix/` |
+| Verbatim sub-objectives, each owned by exactly one exam lesson | 87 | `docs/SKILLS-MEASURED-SNAPSHOT.md`, `content/skills-measured.json` |
+| Structured comparisons | 19 | `content/comparisons.json` |
+| Quizzes | one per exam lesson, 112 questions | `quizzes/<id>.json` |
 | Site | plain HTML/CSS/JS, no build step | `index.html`, `assets/` |
 | Derived views | dashboard, cost, readiness, exam, cards, review | `assets/js/views.js`, `assets/js/practice.js` |
 | Flashcard deck | 65 distinction cards | `flashcards/deck.json` |
@@ -46,15 +55,17 @@ control being taught**, whatever their background elsewhere.
 **`content/manifest.json` is the only file that defines site structure.** It is
 patched by hand, never generated.
 
-**Twenty-two modules, not the twelve in the original prompt.** Three
-sub-headings carry nine to eleven bullets each and were split. Every one of the
-87 bullets lands in exactly one file, and the validator enforces that.
+**Eighteen exam lessons, not the twelve objectives.** Four objectives carry nine to
+eleven bullets each and were split. Every one of the 87 bullets lands in exactly one
+exam lesson, and the validator enforces that.
 
 ---
 
 ## 3. Non-negotiables
 
-1. **Microsoft Learn is the only source of factual content.** Third-party
+1. **Microsoft Learn is the only source of factual content.** Retrieve it through
+   the Microsoft Learn MCP server where available; your confidence is not a
+   substitute for retrieval. Third-party
    material may be used to sanity-check emphasis and never as the source of a
    claim. Four prep sites contradicted each other and Microsoft on this exam's
    basic facts while A4 was being written; that is the failure mode this rule
@@ -158,8 +169,9 @@ Before writing, and again before an exam sitting:
 4. Bump `last_verified` when you re-checked the documentation, not when you
    edited prose.
 
-**Outline status: verified unchanged on 2026-09-20.** Live page last updated
-2026-07-31; snapshot captured 2026-09-15; all 87 bullets identical.
+**Outline status: verified unchanged on 2026-10-07** through the Microsoft Learn MCP
+server. Live page last updated 2026-07-31; all 87 bullets identical to the snapshot.
+See `docs/OBJECTIVE-VALIDATION.md`.
 
 ---
 
@@ -178,6 +190,9 @@ Before writing, and again before an exam sitting:
   questions that cut across modules, with collapsed answers. This is the only
   place the guide tests control *selection*, which module-local quizzes
   structurally cannot.
+- **Structured comparisons** (`content/comparisons.json`, 19 of them), each
+  option answering the same nine questions, rendered in lessons, domain reviews and
+  `#/compare`. Every quiz question also carries a scenario clue.
 - **A6**, the decision layer: fourteen comparison tables, each ending in the
   attractive wrong answer rather than the right one.
 - **A7**, adjacent topics Microsoft links with no bullet - explicitly outside
@@ -194,10 +209,11 @@ Before writing, and again before an exam sitting:
   "analyze") ends in a written judgement rather than a click path, and confirm
   the minimum KQL needed to *configure* DCR transformations, table plans and
   Purview Audit queries survived the decision to drop hunting content.
-- **04-04 against the current tier model.** Sentinel now has Analytics and Data
-  Lake tiers, with Basic and Auxiliary being folded in. If the module still
-  teaches Analytics/Basic/Auxiliary/Archive it is describing a model that no
-  longer exists.
+- **Lab re-runs.** The beginner-first pass checked lab procedures against
+  Microsoft Learn but did not re-run them in a live tenant. Run each end to end
+  and record the date.
+- **Advanced Challenge content** (deliberate misconfiguration, break/fix),
+  clearly labelled and outside the core path.
 - **Quiz depth.** The mock exam is only as good as the pool it samples. Three to
   five questions a module is thin for a 60-question attempt; the mix repeats.
 

@@ -40,29 +40,41 @@ retirement date. Assume something has moved.
 2. **Write the front matter first**, all eighteen keys. It drives the site's field
    card, so an empty `licensing` or a wrong `lab_cost_estimate` is visible to the
    reader.
-3. **Write `Why this exists` before opening any portal.** If you cannot explain the
-   threat without naming a product, you do not understand the control yet.
-4. **Write the lab second**, and actually run it. Every cmdlet in this repository
+3. **Write `The security problem` before opening any portal.** If you cannot explain
+   the threat without naming a product, you do not understand the control yet. Then
+   follow the lesson anatomy in `docs/STYLE-GUIDE.md` §2: plain English, words,
+   mental model, mechanism, why security cares, validate the outcome, exam lens,
+   teach it back. List the Module 0A primers the lesson relies on in
+   `prerequisites`.
+4. **Retrieve before you write.** Pull the current objective and product pages from
+   Microsoft Learn (the MCP server, where you have it) and write from them. A claim
+   you cannot verify is flagged, not stated; a conflict between Microsoft pages is
+   recorded in `docs/OBJECTIVE-VALIDATION.md` §6.
+5. **Write the lab second**, and actually run it. Start from the security outcome:
+   `Desired security outcome` lists what will be true, and every statement must be
+   proven by a `Validation` check. Every cmdlet in this repository
    was either executed or explicitly flagged as version-sensitive.
-5. **Add the AZ-500 divergence note**, and mirror it into `content/appendix/a5-*`.
-6. **Add the quiz** at `quizzes/<id>.json`. Scenario questions, one deciding
-   constraint each, tagged with a verbatim `sub_skill`. Every question in the
-   repository carries `why_not`: one note per wrong option, `null` for correct ones,
-   restating what the explanation or the module already says. `difficulty`,
-   `concept` and `misconception` are optional. Write every question from the
+6. **Add the AZ-500 divergence note**, and mirror it into `content/appendix/a5-*`.
+7. **Add the quiz** at `quizzes/<id>.json`. Scenario questions, one deciding
+   constraint each, tagged with a verbatim `sub_skill`. Every question carries
+   `why_not` (one note per wrong option, `null` for correct ones) and a
+   `scenario_clue` (the words that point to the answer). `misconception` is expected
+   wherever there is a real one; `difficulty` and `concept` are optional. Write every question from the
    documentation. Never use exam dumps or recalled exam questions.
-7. **Add a diagram only where it beats a paragraph** - decision order, two paths
+8. **Add a comparison** to `content/comparisons.json` when the lesson introduces a
+   control learners confuse with another - only if it maps to an official bullet.
+9. **Add a diagram only where it beats a paragraph** - decision order, two paths
    that are easy to confuse, a pipeline. Use a ` ```mermaid ` flowchart:
    - put `accTitle:` and `accDescr:` on its first lines;
    - use `:::d01` to `:::d04` for domain colour, and keep a text label on every
      node;
    - draw nothing the lesson text does not already say;
    - prefer top-down; left-to-right diagrams become unreadable on a phone.
-8. **If an objective heading changes**, update `content/official-training.json` in
+10. **If an objective heading changes**, update `content/official-training.json` in
    the same commit. It joins Microsoft's learning paths and labs to objectives by
    heading text.
-9. **Update `content/manifest.json` and `docs/SYLLABUS.md`** if the module is new.
-10. **Tear down your own lab** before committing. Then run the sweep from
+11. **Update `content/manifest.json` and `docs/SYLLABUS.md`** if the module is new.
+12. **Tear down your own lab** before committing. Then run the sweep from
    `content/appendix/a2-licensing-and-lab-cost-matrix.md` §6.
 
 ---
@@ -125,20 +137,25 @@ negative-tested - broken on purpose, confirmed to fire, then restored.
 | Check | Catches |
 | --- | --- |
 | Front-matter schema | Any of the 18 keys missing; bad `domain_weight` or `status`; malformed or stale `last_verified` |
-| Required sections | A content file missing any of the nine required `##` sections |
-| Lab schema | A lab missing `## Prerequisites`, `## Validation` or `## Teardown`, or with no numbered parts |
+| Lesson anatomy | An exam lesson missing any of the sixteen required `##` sections, or with them out of order |
+| Primer anatomy | A Module 0A primer missing any of its twelve sections or out of order; no `supports_objectives`, an objective id that does not exist, or a claimed sub-objective |
+| Prerequisites | A `prerequisites` entry that is not a module id in the manifest |
+| Lab anatomy | A lab missing any of `Why this lab matters`, `Architecture`, `Desired security outcome`, `Prerequisites`, `Validation`, `What just happened?`, `Limitations`, `Teardown`, `Completion`, or with them out of order; `Part 1` outside Prerequisites–Validation; a Completion with fewer than two checkboxes |
 | Outline diff | A bullet in `SKILLS-MEASURED-SNAPSHOT.md` that no module covers, or a `sub_objective` not in the captured outline |
 | Front matter vs body | `sub_objectives` disagreeing with the `## Sub-objectives covered` list |
 | Duplicate ownership | The same sub-objective claimed by two **exam** modules. Module 0 may list one it also practises, as 00-02 does for PIM |
 | Cost parity | A module's `lab_cost_estimate` level disagreeing with its lab's `**Estimated cost:**` header |
-| Quizzes | Malformed JSON, an `answer` index out of range, a `sub_skill` that is not a verbatim sub-objective, duplicate options or ids, fewer than three options, a missing explanation |
+| Quizzes | Malformed JSON, an `answer` index out of range, a `sub_skill` that is not a verbatim sub-objective, duplicate options or ids, fewer than three options, a missing explanation, a missing `scenario_clue`, a `why_not` that does not line up with the options |
+| Comparisons | `content/comparisons.json` malformed; a duplicate id; an option with any of the nine fields empty; a lesson not in the manifest; no official objective, or an objective id not in the outline |
+| Objective manifest | `content/skills-measured.json` disagreeing with the snapshot, bullet for bullet |
 | Manifest | Module *and appendix* paths that do not resolve; a module with no lab or no quiz |
 | Orphans | Markdown on disk that no manifest entry references |
 | Links | Unresolved relative links; with `-CheckExternalLinks`, every `learn.microsoft.com` URL |
 
-Module 0 is exempt from the exam-module rules, since `domain_weight: n/a` marks it
-as lab safety rather than an exam domain: it needs no `sub_objectives`, no lab on
-every file, and no knowledge check.
+Module 0B (lab safety) and Module 0A (foundations) are exempt from the exam-module
+rules, since `domain_weight: n/a` marks them as outside the exam domains: they need no
+`sub_objectives`, no lab on every file, and no knowledge check. Primers have their
+own anatomy and must name the objectives they support.
 
 ```powershell
 .\tools\Test-GuideContent.ps1                       # per commit
@@ -196,8 +213,10 @@ The README is written for learners. This is the map for maintainers.
 
 | Path | What it holds |
 | --- | --- |
-| `content/` | 22 lesson files: four in Module 0 (lab safety) and 18 mapped to the exam objectives. Theory only - why a control exists, how it works, how it is tested |
-| `labs/` | One lab per exam lesson: numbered steps, portal and PowerShell, validation, and a mandatory teardown |
+| `content/` | 39 lesson files: 17 Module 0A foundation primers, four Module 0B lab-safety lessons, and 18 mapped to the exam objectives. Theory only - why a control exists, how it works, how it is tested |
+| `content/skills-measured.json` | The official outline as data: 4 domains, 12 objectives, 87 bullets, verbatim. Regenerate with `tools/Update-SkillsManifest.ps1` |
+| `content/comparisons.json` | The structured comparisons: every option answers the same nine questions |
+| `labs/` | One lab per exam lesson, plus two lab-safety labs: why it matters, architecture, desired outcome, numbered steps (portal and PowerShell), validation, what just happened, limitations, teardown, completion |
 | `content/appendix/` | Eleven appendices, including three case studies |
 | `content/manifest.json` | The only file that defines the site's structure. Patched by hand |
 | `content/official-training.json` | Course SC-500T00-A: learning paths, the 63 modules and Microsoft's 16 labs, mapped to lessons |
@@ -205,7 +224,7 @@ The README is written for learners. This is the map for maintainers.
 | `flashcards/` | The distinctions deck |
 | `assets/` | The site: dependency-free HTML, CSS and JavaScript, no build step |
 | `tools/`, `.github/workflows/` | The validator, the accessibility check, and the CI that runs them |
-| `docs/` | This guide, the style guide, the skills-outline snapshot, the syllabus, and `UX-REDESIGN.md`, which records how the site is structured |
+| `docs/` | This guide, the style guide, the skills-outline snapshot, the syllabus, `OBJECTIVE-VALIDATION.md` (the outline check and verification log), `BEGINNER-FIRST-REDESIGN.md` (the teaching model) and `UX-REDESIGN.md` (how the site is structured) |
 
 **The split between `content/` and `labs/` is deliberate.** Theory files contain no
 numbered configuration steps; labs contain no conceptual explanation. A review pass
@@ -215,7 +234,7 @@ reads `content/`; someone at a terminal reads `labs/`.
 
 | Check | When | What fails it |
 | --- | --- | --- |
-| **Validate** (`tools/Test-GuideContent.ps1`) | Every push and pull request; weekly with external links | Front-matter schema, required sections, lab structure including teardown, objective mapping against the snapshot, quiz integrity, manifest and orphans, broken internal links. The weekly run also checks every Microsoft Learn URL |
+| **Validate** (`tools/Test-GuideContent.ps1`) | Every push and pull request; weekly with external links | Front-matter schema, lesson, primer and lab anatomy, objective mapping against the snapshot and `skills-measured.json`, quiz integrity including scenario clues, comparisons, manifest and orphans, broken internal links. The weekly run also checks every Microsoft Learn URL |
 | **Outline drift** | Weekly | The live skills outline differing from `docs/SKILLS-MEASURED-SNAPSHOT.md`, the practice-assessment status changing, or a linked learning path, its module list, or a Microsoft lab changing. Any of these opens an issue |
 | **Accessibility** (`tools/a11y-check.js`) | Every push and pull request | Any WCAG 2.0/2.1 A or AA violation, or a script error, on any page type in either theme |
 

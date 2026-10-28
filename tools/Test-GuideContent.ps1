@@ -20,6 +20,22 @@
     parity between a module's front matter and its lab header - both of which
     caught real defects when this was written.
 
+    Beginner-first redesign (v3) checks:
+      -   exam lessons carry the sixteen-section lesson anatomy, in order
+      -   Module 0A primers carry the twelve-section primer anatomy, and
+          supports_objectives names real objectives
+      -   prerequisites name modules that exist (exam lessons, Module 0B, 0A)
+      -   labs carry the lab anatomy, in order, ending in a Completion checklist
+      -   every quiz question has a scenario clue, and why_not lines up with
+          the options (null for correct answers, an explanation for wrong ones)
+      -   content/comparisons.json: every option answers all nine questions,
+          and every lesson and objective it names exists
+      -   content/skills-measured.json matches the captured study guide
+      -   content/cases.json and content/drills.json: every question joins to
+          an official bullet by id and verbatim text, answers and why_not line
+          up, conflict rules point at real options, evidence is labelled
+          simplified, and every source is a Microsoft Learn URL
+
 .PARAMETER Root
     Repository root. Defaults to the parent of the folder holding this script.
 
@@ -156,13 +172,46 @@ $RequiredKeys = @(
 $ValidWeights = @('20-25%', '25-30%', 'n/a')
 $ValidStatus  = @('GA', 'Preview')
 
+# The lesson anatomy (docs/STYLE-GUIDE.md), in reading order: problem first,
+# Microsoft's control in the middle, outcome validation and exam reasoning last.
 $ContentSections = @(
-    '## Sub-objectives covered', '## Why this exists',
-    '## How it works under the hood', '## Configuration surface',
-    '## Common failure modes', '## How this is tested', '## Hands-on',
-    '## Check yourself', '## Sources'
+    '## Sub-objectives covered', '## The security problem', '## In plain English',
+    '## Words you need to know', '## Mental model', '## How it works under the hood',
+    '## Why security cares', '## Configuration surface', '## Common failure modes',
+    '## Hands-on', '## Validate the security outcome', '## How this is tested',
+    '## Check yourself', '## Teach it back', '## Key takeaways', '## Sources'
 )
-$LabSections = @('## Prerequisites', '## Validation', '## Teardown')
+# Module 0A foundation primers.
+$PrimerSections = @(
+    '## Why this matters for security', '## In plain English', '## Words you need to know',
+    '## Mental model', '## Microsoft cloud translation', '## How it works',
+    '## Why security cares', '## Common misunderstandings', '## Where SC-500 uses this',
+    '## Teach it back', '## Key takeaways', '## Sources'
+)
+# Lab anatomy: understand -> implement -> observe -> validate -> explain -> clean up.
+# '## Part 1' is checked separately; it sits between Prerequisites and Validation.
+$LabSections = @(
+    '## Why this lab matters', '## Architecture', '## Desired security outcome',
+    '## Prerequisites', '## Validation', '## What just happened?', '## Limitations',
+    '## Teardown', '## Completion'
+)
+
+# Required sections must exist AND appear in this order.
+function Test-SectionOrder {
+    param([string] $Body, [string[]] $Sections, [string] $Rel, [string] $Kind)
+    $last = -1; $lastName = $null
+    foreach ($sec in $Sections) {
+        $m = [regex]::Match($Body, '(?m)^' + [regex]::Escape($sec) + '\s*$')
+        if (-not $m.Success) {
+            Add-Issue Error $Rel "Missing required $Kind section: $sec"
+            continue
+        }
+        if ($m.Index -lt $last) {
+            Add-Issue Error $Rel "$Kind section out of order: '$sec' appears before '$lastName'."
+        }
+        $last = $m.Index; $lastName = $sec
+    }
+}
 
 # Mirrors SC500FrontMatter.costLevel in assets/js/frontmatter.js: read the
 # LEADING token, because estimates routinely say "back to Free in teardown"
@@ -199,10 +248,12 @@ else {
 }
 
 $modules = @()
+$moduleIds = [System.Collections.Generic.HashSet[string]]::new()
 
 if ($manifest) {
     foreach ($domain in $manifest.domains) {
         foreach ($mod in $domain.modules) {
+            [void]$moduleIds.Add($mod.id)
             $modules += [pscustomobject]@{
                 Id      = $mod.id
                 Title   = $mod.title
@@ -263,6 +314,28 @@ if ($manifest) {
     }
 }
 
+# -------------------------------------------- objective ids (for primers) --
+
+$skillsJsonPath = Join-RepoPath 'content/skills-measured.json'
+$skillsJson = $null
+$objectiveIds = [System.Collections.Generic.HashSet[string]]::new()
+$bulletIds    = [System.Collections.Generic.HashSet[string]]::new()
+if (-not (Test-Path -LiteralPath $skillsJsonPath)) {
+    Add-Issue Error 'content/skills-measured.json' 'Not found - objective ids cannot be checked.'
+}
+else {
+    try {
+        $skillsJson = Get-Content -LiteralPath $skillsJsonPath -Raw | ConvertFrom-Json
+        foreach ($sd in $skillsJson.domains) {
+            foreach ($so in $sd.objectives) {
+                [void]$objectiveIds.Add($so.id)
+                foreach ($sb in $so.bullets) { [void]$bulletIds.Add($sb.id) }
+            }
+        }
+    }
+    catch { Add-Issue Error 'content/skills-measured.json' "Invalid JSON: $($_.Exception.Message)" }
+}
+
 # -------------------------------------------- 2/3. front matter, sections --
 
 $allSubObjectives = [System.Collections.Generic.List[string]]::new()
@@ -309,6 +382,32 @@ foreach ($f in $contentFiles) {
 
     $subs = @($d.sub_objectives)
     $isExamModule = $d.domain_weight -ne 'n/a'
+    $isPrimer = $rel -like 'content/00a-foundations/*'
+
+    # Prerequisites must name modules that exist - a typo here is a dead
+    # "read this first" link on the lesson page.
+    foreach ($pr in @($d.prerequisites)) {
+        if ($pr -and $manifest -and -not $moduleIds.Contains($pr)) {
+            Add-Issue Error $rel "Prerequisite '$pr' is not a module id in content/manifest.json."
+        }
+    }
+
+    if ($isPrimer) {
+        Test-SectionOrder $fm.Body $PrimerSections $rel 'primer'
+        $sup = @($d.supports_objectives | Where-Object { $_ })
+        if ($sup.Count -eq 0) {
+            Add-Issue Error $rel 'Primer has no supports_objectives - every foundation must name the SC-500 objective it supports.'
+        }
+        foreach ($o in $sup) {
+            if ($objectiveIds.Count -and -not $objectiveIds.Contains($o)) {
+                Add-Issue Error $rel "supports_objectives '$o' is not an objective id in content/skills-measured.json."
+            }
+        }
+        if ($subs.Count -gt 0) {
+            Add-Issue Error $rel 'A primer must not claim sub_objectives - foundations support objectives, they do not own them.'
+        }
+        continue
+    }
 
     # Gap 1: required sections were never checked.
     # The exam-module skeleton applies to exam modules only. Module 0 is a
@@ -316,11 +415,7 @@ foreach ($f in $contentFiles) {
     # skeleton produced 22 errors on every run and kept CI permanently red,
     # which made the gate useless for catching real regressions.
     if ($isExamModule) {
-        foreach ($sec in $ContentSections) {
-            if ($fm.Body -notmatch ('(?m)^' + [regex]::Escape($sec) + '\s*$')) {
-                Add-Issue Error $rel "Missing required section: $sec"
-            }
-        }
+        Test-SectionOrder $fm.Body $ContentSections $rel 'lesson'
         if ($fm.Body -notmatch '\*\*AZ-500 divergence\.\*\*') {
             Add-Issue Warning $rel 'No AZ-500 divergence note in "How this is tested".'
         }
@@ -329,8 +424,8 @@ foreach ($f in $contentFiles) {
         Add-Issue Error $rel 'sub_objectives is empty on an exam module.'
     }
 
-    $modId = if ($f.BaseName -match '^(\d{2}-\d{2})') { $Matches[1] } else { $null }
-    $moduleCost[$modId] = Get-CostLevel $d.lab_cost_estimate
+    $modId = if ($f.BaseName -match '^(\d{2}-\d{2}|0A-\d{2})') { $Matches[1] } else { $null }
+    if ($modId) { $moduleCost[$modId] = Get-CostLevel $d.lab_cost_estimate }
 
     foreach ($s in $subs) {
         $n = ConvertTo-Norm $s
@@ -364,17 +459,34 @@ foreach ($f in $labFiles) {
     $rel  = ConvertTo-RelPath $f.FullName
     $body = Get-Content -LiteralPath $f.FullName -Raw
 
-    foreach ($sec in $LabSections) {
-        if ($body -notmatch ('(?m)^' + [regex]::Escape($sec) + '\s*$')) {
-            Add-Issue Error $rel "Missing required section: $sec"
+    Test-SectionOrder $body $LabSections $rel 'lab'
+    $p1 = [regex]::Match($body, '(?m)^## Part 1')
+    if (-not $p1.Success) {
+        Add-Issue Warning $rel 'No "## Part 1" - labs are expected to be structured in numbered parts.'
+    }
+    else {
+        $pre = [regex]::Match($body, '(?m)^## Prerequisites\s*$')
+        $val = [regex]::Match($body, '(?m)^## Validation\s*$')
+        if (($pre.Success -and $p1.Index -lt $pre.Index) -or ($val.Success -and $p1.Index -gt $val.Index)) {
+            Add-Issue Error $rel '"## Part 1" must sit between Prerequisites and Validation.'
         }
     }
-    if ($body -notmatch '(?m)^## Part 1') {
-        Add-Issue Warning $rel 'No "## Part 1" - labs are expected to be structured in numbered parts.'
+    # The Completion checklist is what makes a lab count as practised: it
+    # needs the outcome confirmation and the teardown confirmation.
+    $comp = [regex]::Match($body, '(?s)(?m)^## Completion\s*$(.*)$')
+    if ($comp.Success) {
+        $boxes = [regex]::Matches($comp.Groups[1].Value, '(?m)^\s*- \[ \] ').Count
+        if ($boxes -lt 2) {
+            Add-Issue Error $rel "Completion has $boxes checkbox(es); expected the outcome and teardown confirmations."
+        }
+    }
+    $outc = [regex]::Match($body, '(?s)(?m)^## Desired security outcome\s*$(.*?)^## ')
+    if ($outc.Success -and [regex]::Matches($outc.Groups[1].Value, '(?m)^- ').Count -lt 2) {
+        Add-Issue Warning $rel 'Desired security outcome lists fewer than two statements for Validation to prove.'
     }
 
     # Cost parity: the module's chip and the lab header must agree.
-    $modId = if ($f.BaseName -match '^(\d{2}-\d{2})') { $Matches[1] } else { $null }
+    $modId = if ($f.BaseName -match '^(\d{2}-\d{2}|0A-\d{2})') { $Matches[1] } else { $null }
     if ($modId -and $moduleCost.ContainsKey($modId)) {
         $hdr = [regex]::Match($body, '\*\*Estimated cost:\*\*(.*)')
         if (-not $hdr.Success) {
@@ -436,6 +548,27 @@ else {
             }
         }
         Add-Issue Info 'docs/SKILLS-MEASURED-SNAPSHOT.md' "Outline bullets: $($liveSet.Count); guide sub-objectives: $($mineSet.Count)."
+
+        # The structured objective manifest must say exactly what the snapshot says.
+        if ($skillsJson) {
+            $jsonBullets = @($skillsJson.domains | ForEach-Object { $_.objectives } |
+                ForEach-Object { $_.bullets } | ForEach-Object { ConvertTo-Norm $_.text })
+            if ($jsonBullets.Count -ne $live.Count) {
+                Add-Issue Error 'content/skills-measured.json' "Has $($jsonBullets.Count) bullets; the snapshot has $($live.Count). Regenerate it."
+            }
+            $jsonSet = [System.Collections.Generic.HashSet[string]]::new(
+                [string[]]$jsonBullets, [System.StringComparer]::OrdinalIgnoreCase)
+            foreach ($s in $liveSet) {
+                if (-not $jsonSet.Contains($s)) {
+                    Add-Issue Error 'content/skills-measured.json' "Snapshot bullet missing from the objective manifest: $s"
+                }
+            }
+            foreach ($s in $jsonSet) {
+                if (-not $liveSet.Contains($s)) {
+                    Add-Issue Error 'content/skills-measured.json' "Objective manifest bullet is not in the snapshot: $s"
+                }
+            }
+        }
     }
 }
 
@@ -489,6 +622,34 @@ if (Test-Path -LiteralPath $quizDir) {
             if ((ConvertTo-Norm $item.sub_skill) -notin $owned) {
                 Add-Issue Error $rel "$qid : sub_skill is not a verbatim sub_objective of $($q.module)."
             }
+
+            # Every answer explains the scenario clue that points to it.
+            if (-not $item.scenario_clue) {
+                Add-Issue Error $rel "$qid : no scenario_clue."
+            }
+
+            # why_not lines up with options: null for a correct answer, an
+            # explanation for every wrong one.
+            $answers = @($item.answer | ForEach-Object { $_ -as [int] })
+            if ($null -ne $item.why_not) {
+                $wn = @($item.why_not)
+                if ($wn.Count -ne $opts.Count) {
+                    Add-Issue Error $rel "$qid : why_not has $($wn.Count) entries for $($opts.Count) options."
+                }
+                else {
+                    for ($k = 0; $k -lt $wn.Count; $k++) {
+                        if ($k -in $answers -and $null -ne $wn[$k]) {
+                            Add-Issue Error $rel "$qid : why_not[$k] explains a correct answer; it should be null."
+                        }
+                        if ($k -notin $answers -and -not $wn[$k]) {
+                            Add-Issue Error $rel "$qid : why_not[$k] is empty for a wrong answer."
+                        }
+                    }
+                }
+            }
+            else {
+                Add-Issue Warning $rel "$qid : no why_not - learners are not told why the alternatives are wrong."
+            }
         }
     }
 }
@@ -501,6 +662,236 @@ foreach ($m in $modules) {
         Add-Issue Warning 'quizzes' "$($m.Id): no knowledge check."
     }
 }
+
+# ------------------------------------------------------ 8. comparisons -----
+
+$cmpPath = Join-RepoPath 'content/comparisons.json'
+$cmpFields = @('security_problem', 'purpose', 'layer', 'scope', 'when_to_use',
+               'major_difference', 'limitation', 'dependency', 'validation')
+if (-not (Test-Path -LiteralPath $cmpPath)) {
+    Add-Issue Error 'content/comparisons.json' 'Not found - the comparison component has no data.'
+}
+else {
+    $cmp = $null
+    try { $cmp = Get-Content -LiteralPath $cmpPath -Raw | ConvertFrom-Json }
+    catch { Add-Issue Error 'content/comparisons.json' "Invalid JSON: $($_.Exception.Message)" }
+    if ($cmp) {
+        $seenCmp = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($x in @($cmp.comparisons)) {
+            $cid = if ($x.id) { $x.id } else { '(no id)' }
+            if (-not $seenCmp.Add($cid)) { Add-Issue Error 'content/comparisons.json' "$cid : duplicate id." }
+            foreach ($k in @('title', 'question', 'takeaway', 'trap')) {
+                if (-not $x.$k) { Add-Issue Error 'content/comparisons.json' "$cid : no $k." }
+            }
+            if (@($x.clues).Count -lt 1) { Add-Issue Warning 'content/comparisons.json' "$cid : no scenario clues." }
+            if (@($x.sources).Count -lt 1) { Add-Issue Warning 'content/comparisons.json' "$cid : no Microsoft Learn sources." }
+            $opts = @($x.options)
+            if ($opts.Count -lt 2) { Add-Issue Error 'content/comparisons.json' "$cid : fewer than two options." }
+            foreach ($o in $opts) {
+                foreach ($fld in $cmpFields) {
+                    if (-not $o.$fld) { Add-Issue Error 'content/comparisons.json' "$cid / $($o.name) : '$fld' is empty." }
+                }
+            }
+            foreach ($lid in @($x.lessons)) {
+                if ($manifest -and -not $moduleIds.Contains($lid)) {
+                    Add-Issue Error 'content/comparisons.json' "$cid : lesson '$lid' is not in the manifest."
+                }
+            }
+            if (@($x.objectives).Count -eq 0) {
+                Add-Issue Error 'content/comparisons.json' "$cid : maps to no official objective - comparisons must stay inside the exam scope."
+            }
+            foreach ($bid in @($x.objectives)) {
+                if ($bulletIds.Count -and -not $bulletIds.Contains($bid)) {
+                    Add-Issue Error 'content/comparisons.json' "$cid : objective '$bid' is not a bullet id in content/skills-measured.json."
+                }
+            }
+        }
+        Add-Issue Info 'content/comparisons.json' "Structured comparisons: $(@($cmp.comparisons).Count)."
+    }
+}
+
+# ------------------------------------------- 9. case studies and drills ----
+# Both join to the official outline on objective id AND verbatim bullet text,
+# so a renamed bullet breaks loudly instead of silently unmapping.
+
+$bulletText = @{}
+if ($skillsJson) {
+    foreach ($sd in $skillsJson.domains) { foreach ($so in $sd.objectives) {
+        foreach ($sb in $so.bullets) { $bulletText[$sb.id] = ConvertTo-Norm $sb.text } } }
+}
+
+function Test-ObjectiveJoin {
+    param([string] $File, [string] $Where, [string] $Objective, [string] $SubSkill)
+    if (-not $bulletText.ContainsKey($Objective)) {
+        Add-Issue Error $File "$Where : objective '$Objective' is not a bullet id in content/skills-measured.json."
+    }
+    elseif ((ConvertTo-Norm $SubSkill) -ne $bulletText[$Objective]) {
+        Add-Issue Error $File "$Where : sub_skill is not the verbatim text of bullet $Objective."
+    }
+}
+
+function Test-Choice {
+    # options / answer / why_not alignment, shared by case and drill questions.
+    param([string] $File, [string] $Where, $Item, [int[]] $Answers, [int] $MinOptions = 3)
+    $opts = @($Item.options)
+    if ($opts.Count -lt $MinOptions) { Add-Issue Error $File "$Where : only $($opts.Count) options." }
+    if (($opts | Select-Object -Unique).Count -ne $opts.Count) { Add-Issue Error $File "$Where : duplicate option text." }
+    foreach ($a in $Answers) {
+        if ($a -lt 0 -or $a -ge $opts.Count) { Add-Issue Error $File "$Where : answer index $a out of range." }
+    }
+    $wn = @($Item.why_not)
+    if ($wn.Count -ne $opts.Count) { Add-Issue Error $File "$Where : why_not has $($wn.Count) entries for $($opts.Count) options." }
+    else {
+        for ($k = 0; $k -lt $wn.Count; $k++) {
+            if ($k -in $Answers -and $null -ne $wn[$k]) { Add-Issue Error $File "$Where : why_not[$k] explains a correct answer; it should be null." }
+            if ($k -notin $Answers -and -not $wn[$k]) { Add-Issue Error $File "$Where : why_not[$k] is empty for a wrong answer." }
+        }
+    }
+    if (-not $Item.explanation) { Add-Issue Error $File "$Where : no explanation." }
+}
+
+function Test-Sources {
+    param([string] $File, [string] $Where, $Sources)
+    if (@($Sources).Count -lt 1) { Add-Issue Error $File "$Where : no Microsoft Learn sources." }
+    foreach ($u in @($Sources)) {
+        if ($u -notmatch '^https://learn\.microsoft\.com/') { Add-Issue Error $File "$Where : source is not a Microsoft Learn URL: $u" }
+    }
+}
+
+$casePath = Join-RepoPath 'content/cases.json'
+if (Test-Path -LiteralPath $casePath) {
+    $F = 'content/cases.json'
+    $cj = $null
+    try { $cj = Get-Content -LiteralPath $casePath -Raw | ConvertFrom-Json }
+    catch { Add-Issue Error $F "Invalid JSON: $($_.Exception.Message)" }
+    if ($cj) {
+        $seenCase = [System.Collections.Generic.HashSet[string]]::new()
+        $nq = 0
+        foreach ($c in @($cj.cases)) {
+            $cid = if ($c.id) { $c.id } else { '(no id)' }
+            if (-not $seenCase.Add($cid)) { Add-Issue Error $F "$cid : duplicate case id." }
+            foreach ($k in @('title', 'summary', 'overview')) { if (-not $c.$k) { Add-Issue Error $F "$cid : no $k." } }
+            if (@($c.environment).Count -lt 1) { Add-Issue Error $F "$cid : no environment." }
+            if (@($c.design).Count -lt 1) { Add-Issue Error $F "$cid : no reference design." }
+            $reqIds = [System.Collections.Generic.HashSet[string]]::new()
+            foreach ($r in @($c.requirements)) {
+                $pair = @($r)
+                if ($pair.Count -ne 2 -or -not $pair[1]) { Add-Issue Error $F "$cid : a requirement is not [id, text]." }
+                elseif (-not $reqIds.Add($pair[0])) { Add-Issue Error $F "$cid : duplicate requirement $($pair[0])." }
+            }
+            $qById = @{}
+            $usedReq = [System.Collections.Generic.HashSet[string]]::new()
+            foreach ($q in @($c.questions)) {
+                $nq++
+                $w = "$cid/$($q.id)"
+                if ($qById.ContainsKey($q.id)) { Add-Issue Error $F "$w : duplicate question id." }
+                $qById[$q.id] = $q
+                if (-not $q.prompt) { Add-Issue Error $F "$w : no prompt." }
+                if (-not $q.scenario_clue) { Add-Issue Error $F "$w : no scenario_clue." }
+                Test-ObjectiveJoin $F $w $q.objective $q.sub_skill
+                if (@($q.requirements).Count -lt 1) { Add-Issue Error $F "$w : names no requirement." }
+                foreach ($rid in @($q.requirements)) {
+                    [void]$usedReq.Add($rid)
+                    if (-not $reqIds.Contains($rid)) { Add-Issue Error $F "$w : requirement '$rid' is not in the case." }
+                }
+                switch ($q.type) {
+                    'single' { Test-Choice $F $w $q @([int]$q.answer) }
+                    'multi' {
+                        $ans = @($q.answer | ForEach-Object { $_ -as [int] })
+                        if ($ans.Count -ne ($q.choose -as [int]) -or $ans.Count -lt 2) { Add-Issue Error $F "$w : 'choose' must equal the number of answers (at least 2)." }
+                        Test-Choice $F $w $q $ans
+                    }
+                    'dropdowns' {
+                        if (@($q.slots).Count -lt 1) { Add-Issue Error $F "$w : no slots." }
+                        if (-not $q.explanation) { Add-Issue Error $F "$w : no explanation." }
+                        $si = 0
+                        foreach ($sl in @($q.slots)) {
+                            $so2 = @($sl.options); $sa = $sl.answer -as [int]
+                            if (-not $sl.label) { Add-Issue Error $F "$w slot $si : no label." }
+                            if ($so2.Count -lt 2) { Add-Issue Error $F "$w slot $si : fewer than two options." }
+                            if ($null -eq $sa -or $sa -lt 0 -or $sa -ge $so2.Count) { Add-Issue Error $F "$w slot $si : answer out of range." }
+                            if (-not $sl.why) { Add-Issue Error $F "$w slot $si : no 'why' - learners are not told why the alternatives are wrong." }
+                            $si++
+                        }
+                    }
+                    default { Add-Issue Error $F "$w : unknown type '$($q.type)'." }
+                }
+            }
+            foreach ($rid in $reqIds) { if (-not $usedReq.Contains($rid)) { Add-Issue Warning $F "$cid : requirement $rid is not tested by any question." } }
+            $ci = 0
+            foreach ($cf in @($c.conflicts)) {
+                if (-not $cf.message) { Add-Issue Error $F "$cid conflict $ci : no message." }
+                foreach ($cond in @($cf.when)) {
+                    $tq = $qById[$cond.q]
+                    if (-not $tq) { Add-Issue Error $F "$cid conflict $ci : question '$($cond.q)' does not exist."; continue }
+                    if ($null -ne $cond.slot) {
+                        $sl = @($tq.slots)[[int]$cond.slot]
+                        if (-not $sl -or [int]$cond.is -ge @($sl.options).Count) { Add-Issue Error $F "$cid conflict $ci : slot or option out of range on $($cond.q)." }
+                    }
+                    elseif ($null -ne $cond.has) { if ([int]$cond.has -ge @($tq.options).Count) { Add-Issue Error $F "$cid conflict $ci : option out of range on $($cond.q)." } }
+                    elseif ($null -ne $cond.is) { if ([int]$cond.is -ge @($tq.options).Count) { Add-Issue Error $F "$cid conflict $ci : option out of range on $($cond.q)." } }
+                    else { Add-Issue Error $F "$cid conflict $ci : condition on $($cond.q) has no is/has." }
+                }
+                $ci++
+            }
+            foreach ($lid in @($c.lessons)) { if ($manifest -and -not $moduleIds.Contains($lid)) { Add-Issue Error $F "$cid : lesson '$lid' is not in the manifest." } }
+            Test-Sources $F $cid $c.sources
+        }
+        Add-Issue Info $F "Case studies: $(@($cj.cases).Count), questions: $nq."
+    }
+}
+else { Add-Issue Warning 'content/cases.json' 'Not found - #/cases has no data.' }
+
+$drillPath = Join-RepoPath 'content/drills.json'
+if (Test-Path -LiteralPath $drillPath) {
+    $F = 'content/drills.json'
+    $dj = $null
+    try { $dj = Get-Content -LiteralPath $drillPath -Raw | ConvertFrom-Json }
+    catch { Add-Issue Error $F "Invalid JSON: $($_.Exception.Message)" }
+    if ($dj) {
+        $seenDrill = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($d in @($dj.drills)) {
+            $did = if ($d.id) { $d.id } else { '(no id)' }
+            if (-not $seenDrill.Add($did)) { Add-Issue Error $F "$did : duplicate drill id." }
+            foreach ($k in @('title', 'takeaway')) { if (-not $d.$k) { Add-Issue Error $F "$did : no $k." } }
+            if (-not $d.ticket -or -not $d.ticket.from -or -not $d.ticket.text) { Add-Issue Error $F "$did : ticket needs 'from' and 'text'." }
+            Test-ObjectiveJoin $F $did $d.objective $d.sub_skill
+            $arts = @{}
+            foreach ($a in @($d.artifacts)) {
+                if ($arts.ContainsKey($a.id)) { Add-Issue Error $F "$did : duplicate artifact id $($a.id)." }
+                if (-not $a.title) { Add-Issue Error $F "$did/$($a.id) : no title." }
+                # Evidence is teaching material, not a product screen: say so.
+                if ($a.note -notin @('Simplified', 'Trimmed')) { Add-Issue Error $F "$did/$($a.id) : note must say Simplified or Trimmed." }
+                if ($a.kind -eq 'table') {
+                    $nc = @($a.columns).Count
+                    $rows = @($a.rows)
+                    foreach ($row in $rows) { if (@($row).Count -ne $nc) { Add-Issue Error $F "$did/$($a.id) : a row has $(@($row).Count) cells for $nc columns." } }
+                    $arts[$a.id] = $rows.Count
+                }
+                elseif ($a.kind -eq 'log') { $arts[$a.id] = @($a.lines).Count }
+                else { Add-Issue Error $F "$did/$($a.id) : unknown kind '$($a.kind)'." }
+            }
+            if (-not $d.proof -or @($d.proof.accept).Count -lt 1) { Add-Issue Error $F "$did : no accepted proof." }
+            else {
+                if (-not $d.proof.prompt -or -not $d.proof.explanation) { Add-Issue Error $F "$did : proof needs a prompt and an explanation." }
+                foreach ($acc in @($d.proof.accept)) {
+                    if (-not $arts.ContainsKey($acc.a)) { Add-Issue Error $F "$did : proof names artifact '$($acc.a)', which does not exist." }
+                    elseif ([int]$acc.r -lt 0 -or [int]$acc.r -ge $arts[$acc.a]) { Add-Issue Error $F "$did : proof row $($acc.r) is out of range for $($acc.a)." }
+                }
+            }
+            $ids = @($d.steps | ForEach-Object { $_.id }) -join ','
+            if ($ids -ne 'cause,fix,validate') { Add-Issue Error $F "$did : steps must be cause, fix, validate in that order (found '$ids')." }
+            foreach ($st in @($d.steps)) {
+                if (-not $st.prompt) { Add-Issue Error $F "$did/$($st.id) : no prompt." }
+                Test-Choice $F "$did/$($st.id)" $st @([int]$st.answer)
+            }
+            foreach ($lid in @($d.lessons)) { if ($manifest -and -not $moduleIds.Contains($lid)) { Add-Issue Error $F "$did : lesson '$lid' is not in the manifest." } }
+            Test-Sources $F $did $d.sources
+        }
+        Add-Issue Info $F "Break-fix drills: $(@($dj.drills).Count)."
+    }
+}
+else { Add-Issue Warning 'content/drills.json' 'Not found - #/drills has no data.' }
 
 # ----------------------------------------------------------- 7. links ------
 

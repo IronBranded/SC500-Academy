@@ -8,7 +8,7 @@ sub_objectives:
 domain: "Secure storage, databases, and networking"
 domain_weight: "25-30%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02", "01-01", "01-03"]
+prerequisites: ["00-00", "00-01", "00-02", "01-01", "01-03", "0A-05", "0A-09", "0A-08"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/en-us/azure/storage/common/secure-storage"
@@ -41,7 +41,7 @@ forensic_relevance: "Storage is where the data an intruder came for actually sit
 - Implement Defender for Storage threat protection configurations
 - Manage access to storage, including access policies
 
-## Why this exists
+## The security problem
 
 Everything in Domain 1 protected a *path* to data. This is the data.
 
@@ -71,6 +71,56 @@ fail:
 3. **Is it already exposed?** - public containers, live SAS tokens, keys in code
 
 Defender for Storage sits behind all three and watches what happens anyway.
+
+## In plain English
+
+A storage account holds files, backups, exports and logs - often exactly what an
+attacker wants. Unlike most Azure services, it can be opened in **four different ways**:
+with an Entra identity and a role, with the account's master key, with a signed link
+(a SAS), or - if allowed - with no credentials at all.
+
+Securing storage means three things. Limit **who can reach it** on the network. Turn off
+the **ways in you do not need**, especially the master key, so that every request is
+tied to a named identity. And switch on **Defender for Storage** to spot unusual access
+and malware in uploads.
+
+## Words you need to know
+
+- **Shared Key (account key)** - one of two master keys with full data access, no
+  identity and no expiry.
+- **Shared access signature (SAS)** - a signed URL granting limited access for a time.
+  **Account SAS** and **service SAS** are signed with the account key; a **user
+  delegation SAS** is signed with an Entra-issued key and limited to that user's own
+  rights.
+- **Stored access policy** - a named policy on a container that a service SAS can
+  reference, so the SAS can be revoked by changing the policy.
+- **`AllowSharedKeyAccess`** - the setting that turns account-key authorization (and
+  every SAS signed with it) on or off.
+- **Anonymous (public) access** - reading blobs with no credentials.
+- **Storage data roles** - such as Storage Blob Data Reader; separate from Owner and
+  Contributor on the account.
+- **Storage firewall** - network rules on the account's public endpoint: virtual network
+  rules, IP rules, resource instance rules and the trusted services exception.
+- **Resource instance rule** - lets one named Azure resource through the firewall.
+- **Defender for Storage** - a Defender for Cloud plan for storage threat detection, with
+  malware scanning as an add-on.
+
+## Mental model
+
+A teaching model: three gates, and an attacker needs only one to fail.
+
+```mermaid
+flowchart LR
+  accTitle: Teaching model - three gates in front of storage data
+  accDescr: A request to a storage account passes three independent gates. The network gate is the storage firewall or a private endpoint, which decides whether the request can reach the account. The authorization gate is whichever authorization systems are enabled - Entra ID with data roles, user delegation SAS, account-key SAS, the account key, or anonymous access. The exposure gate is what is already public or leaked. Defender for Storage watches all activity behind the gates.
+  R["Request"]:::d00 --> N["Gate 1: reach<br/>firewall, private endpoint"]:::d02
+  N --> A["Gate 2: authorization<br/>Entra + data role (named)<br/>SAS / account key (no name)"]:::d01
+  A --> D["Data"]:::d02
+  X["Gate 3: exposure<br/>public containers, leaked SAS"]:::d00 -.-> D
+  DEF["Defender for Storage<br/>activity, malware"]:::d04 -.-> D
+```
+
+Disabling shared key removes most of Gate 2's anonymous doors in one switch.
 
 ## How it works under the hood
 
@@ -128,7 +178,7 @@ Four rule types, evaluated against the account's **public endpoint**:
 
 | Rule type | What it admits |
 | --- | --- |
-| **Virtual network rules** | Subnets with the `Microsoft.Storage` service endpoint enabled - up to 400 per account, any subscription, any tenant, any region |
+| **Virtual network rules** | Subnets with a storage service endpoint enabled - `Microsoft.Storage` for accounts in the same region, `Microsoft.Storage.Global` (cross-region) for any region. Up to 400 per account, from any subscription or tenant |
 | **IP network rules** | Public IPv4 addresses and CIDR ranges. Private RFC 1918 ranges are not accepted |
 | **Resource instance rules** | A named Azure resource and its managed identity |
 | **Trusted service exception** | First-party services that operate outside your network boundary |
@@ -155,6 +205,25 @@ Storage accounts can also be associated with a **network security perimeter**, w
 puts a boundary around the PaaS resource itself - the Domain 2 topic that 02-04
 builds out.
 
+Both gates, in the order a request meets them. Key Vault (01-02) works the same way,
+without the Shared Key branch.
+
+```mermaid
+flowchart TD
+  %% flowchart: order-data
+  accTitle: Two gates for a data request to Key Vault or Storage
+  accDescr: The network gate checks the private endpoint, or the firewall rules and trusted exceptions on the public endpoint. The authorization gate then checks a data role or access policy for an Entra token, or the key or SAS for Shared Key access to Storage. Both must pass.
+  A(["Get a secret,<br/>or read a blob"]):::actor --> N{"Network gate:<br/>private endpoint, or<br/>a public-endpoint<br/>rule or exception?"}:::d02
+  N -->|No| X1["403 from the<br/>network rules"]:::stop
+  N -->|Yes| H{"How does it<br/>authenticate?"}:::d01
+  H -->|"Microsoft Entra<br/>token"| R{"Data role, or access<br/>policy, allows<br/>the action?"}:::d01
+  R -->|No| X2["403: not<br/>authorized"]:::stop
+  R -->|Yes| OK["Data returned"]:::ok
+  H -->|"Storage only:<br/>account key or SAS"| K{"Shared Key allowed,<br/>signature valid,<br/>SAS still valid?"}:::d01
+  K -->|No| X3["403"]:::stop
+  K -->|Yes| OK
+```
+
 ### Exposure settings that are not about access control
 
 | Setting | What it does | Default |
@@ -162,7 +231,7 @@ builds out.
 | `AllowBlobPublicAccess` | Account-level kill switch for anonymous container access. When false, container-level public settings have no effect | Disabled for accounts created in recent years - **verify, do not assume** |
 | Secure transfer required | Rejects plain HTTP | Enabled |
 | Minimum TLS version | Rejects older TLS negotiation | 1.2 |
-| SAS expiration policy | Recommends, and reports on, a maximum SAS lifetime | Not set |
+| SAS expiration policy | Sets a maximum SAS lifetime. **Log** (default) records out-of-policy SAS; **Block** denies them | Not set |
 | Blob soft delete / container soft delete | Retains deleted data for a retention window | Off |
 | Versioning and point-in-time restore | Recovers overwritten data | Off |
 | Immutability policies (WORM) | Time-based retention or legal hold; blocks modification and deletion | Off |
@@ -214,6 +283,33 @@ future accounts, with named exclusions), at individual resource level, or at sca
 through a built-in Azure Policy - which Microsoft recommends, and which is the
 governance pattern from 01-03 applied to a workload protection plan.
 
+## Why security cares
+
+**Without the control**
+
+1. A developer generates a year-long account SAS to share an export with a partner
+2. The SAS is pasted into an email thread that is later forwarded widely
+3. Anyone holding the link can read the container; the logs show valid requests with no
+   identity behind them
+4. The only way to stop it is to rotate the account key - which breaks every other
+   application using that key
+
+**With the control**
+
+1. Shared key authorization is disabled, so account and service SAS stop working
+2. Partners get a short-lived user delegation SAS, which cannot exceed the issuing
+   user's rights and can be revoked on its own
+3. The firewall denies by default and admits only the partner integration's network or
+   resource
+4. Defender for Storage alerts on suspicious SAS-based activity
+
+**What it does not solve.** A legitimate identity with a data role can still misuse it,
+and a private network path still needs authorization. Encryption at rest does not help
+against an authorized request.
+
+**Depends on.** Moving every application to Entra authorization before disabling shared
+key, and choosing the firewall default action deliberately.
+
 ## Configuration surface
 
 | Setting | Default | Set it to | Why |
@@ -223,7 +319,7 @@ governance pattern from 01-03 applied to a workload protection plan.
 | Minimum TLS | 1.2 | 1.2 or higher | Explicit is auditable |
 | Network default action | Allow | **Deny**, plus specific rules | Deny-by-default is the only version that scales |
 | Trusted service exception | off | Prefer a resource instance rule | One named resource beats a whole service class |
-| SAS expiration policy | not set | A lifetime you can defend | Surfaces long-lived SAS as a recommendation |
+| SAS expiration policy | not set | A lifetime you can defend, Log first, then Block | Log only records long-lived SAS; Block denies them (not service SAS bound to a stored access policy) |
 | Blob soft delete | off | On, with a retention window | Ransomware and accidents look identical at 2am |
 | Infrastructure encryption | off | On **at creation** if you need it | Cannot be added later |
 | Defender for Storage | off | On, subscription scope in production | Per-account monthly billing; scope deliberately |
@@ -267,6 +363,21 @@ watching the plan's own telemetry.
 **Classic plan still in place.** Per-transaction pricing, no malware scanning, and no
 new capability will ever ship to it.
 
+## Hands-on
+
+See [02-01 lab](../../labs/02-storage-databases-networking/02-01-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| Shared key disabled | Account key, account SAS and service SAS no longer work | `AllowSharedKeyAccess` is `false`; a request using the account key returns 403 while an Entra-authorized request succeeds |
+| Data roles | Only the intended identity can read data | Owner on the account alone cannot read blobs without a data role (once shared key is off); the app identity holds the narrowest data role |
+| Firewall | Unlisted networks cannot reach data | Default action is **Deny**; a data request from an unlisted network returns 403 |
+| Anonymous access | No container can be made public | `AllowBlobPublicAccess` is `false`; setting a container to public access fails |
+| SAS revocation | A service SAS can be revoked on its own | Deleting or changing the stored access policy makes SAS tokens bound to it fail |
+| Defender for Storage | Threat detection and malware scanning are on | The plan shows as **On** for the account or subscription, and a test upload of a harmless test file shows a scan result |
+
 ## How this is tested
 
 | Phrase in the question | What it steers you to |
@@ -290,9 +401,17 @@ exist only in the current plan, and pricing moved to per-account. Any material t
 describes Defender for Storage purely as per-transaction anomaly detection predates
 the change.
 
-## Hands-on
+### What SC-500 expects you to do
 
-See [02-01 lab](../../labs/02-storage-databases-networking/02-01-lab.md).
+- **Identify** which authorization systems an account accepts and which carry an
+  identity.
+- **Distinguish** account SAS, service SAS and user delegation SAS; network rules from
+  authorization; the classic Defender for Storage plan from the current one.
+- **Select** the revocation mechanism, firewall rule type or Defender capability that a
+  scenario requires.
+- **Implement** shared key disablement, firewall rules, stored access policies and
+  Defender for Storage with malware scanning.
+- **Evaluate** an account's exposure: public access, long-lived SAS, keys in use.
 
 ## Check yourself
 
@@ -311,6 +430,27 @@ See [02-01 lab](../../labs/02-storage-databases-networking/02-01-lab.md).
 5. Your organisation wants Defender for Storage on every account, including ones not
    created yet, with two accounts excluded. What scope do you enable at, and what
    mechanism from 01-03 would you use to keep it that way?
+
+## Teach it back
+
+Explain to a colleague why "we use RBAC for storage" is not the same as "storage access
+is always tied to an identity", and what single setting changes that.
+
+A strong answer covers: shared key, account SAS and service SAS still work alongside
+RBAC and carry no identity; Contributors can list the keys; setting
+`AllowSharedKeyAccess` to false removes all key-signed access, leaving Entra
+authorization and user delegation SAS.
+
+## Key takeaways
+
+- Storage accepts four authorization systems; three carry no identity.
+- Disabling shared key removes the account key, account SAS and service SAS in one step.
+- User delegation SAS is the attributable, narrowly revocable SAS.
+- Network rules subtract reach; they never grant access.
+- Owner and Contributor are not data roles - but Contributors can list keys while shared
+  key is on.
+- Defender for Storage adds activity monitoring, SAS-misuse detection and malware
+  scanning (billed per GB, with a monthly cap).
 
 ## Sources
 

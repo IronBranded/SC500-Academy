@@ -6,6 +6,12 @@ done, and what the content backlog is. Update it when an item moves.
 
 Last updated: 2026-09-22 (second pass: 13 questions added)
 
+> **Superseded in part.** The October 2026 beginner-first redesign changed the lesson
+> and lab anatomy, added Module 0A, the structured comparisons and the applied and
+> retained states. This file remains the record of the site structure it describes;
+> [BEGINNER-FIRST-REDESIGN.md](BEGINNER-FIRST-REDESIGN.md) is the current teaching
+> model.
+
 ---
 
 ## 1. What the learner now sees

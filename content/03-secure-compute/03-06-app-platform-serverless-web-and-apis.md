@@ -9,14 +9,14 @@ sub_objectives:
 domain: "Secure compute"
 domain_weight: "20-25%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02", "01-01", "01-02", "02-04", "03-03"]
+prerequisites: ["00-00", "00-01", "00-02", "01-01", "01-02", "02-04", "03-03", "0A-06", "0A-08", "0A-10"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/azure/frontdoor/web-application-firewall"
   - "https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-waf-faq"
   - "https://learn.microsoft.com/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules"
   - "https://learn.microsoft.com/azure/api-management/genai-gateway-capabilities"
-last_verified: "2026-09-17"
+last_verified: "2026-10-20"
 portal: "Azure portal > App Services / Function App / Logic apps / Front Door and WAF / API Management"
 powershell_module: "Az.Websites, Az.Functions, Az.Network, Az.ApiManagement"
 az_cli_command: "az webapp config set --https-only true"
@@ -42,7 +42,7 @@ forensic_relevance: "A WAF in detection mode is one of the better sources of pre
 - Implement and configure Azure Web Application Firewall
 - Implement security policies for back-end API protection by using API Management
 
-## Why this exists
+## The security problem
 
 Platform as a service removes the machine. There is no OS to patch, no port to close, no
 agent to install - and that genuinely removes a whole category of risk from 03-04.
@@ -68,6 +68,59 @@ Which gives the five bullets their structure:
 - **Is the API being used the way it was intended** - API Management policies
 - **What does the app use to call other things** - managed identity, Key Vault references
 - **What about workflows specifically** - Logic Apps, where the trigger *is* the endpoint
+
+## In plain English
+
+**Platform as a service (PaaS)** means Microsoft runs the servers and you only bring the
+application: a website on **App Service**, a small piece of code that runs on demand in
+**Azure Functions**, an automated workflow in **Logic Apps**. There is no operating system
+for you to patch - but each of these gets a **public web address the moment it is created**.
+
+So the security questions become: **who is allowed to call it** (authentication, access
+restrictions, private endpoints), **is the request itself an attack** (a **Web Application
+Firewall** inspects HTTP traffic for things like SQL injection), **is the API being used as
+intended** (**API Management** checks tokens and limits how often each caller can call), and
+**what does the app use when it calls other services** (a managed identity instead of a
+stored password).
+
+## Words you need to know
+
+- **PaaS** - a service where Microsoft runs the platform and you deploy only the app
+  (0A-01).
+- **App Service / Functions / Logic Apps** - web apps and APIs; event-driven code; and
+  automated workflows (0A-06).
+- **App Service authentication ("Easy Auth")** - sign-in enforced by the platform in front
+  of your code.
+- **Access restrictions** - allow/deny rules for inbound requests by IP, service tag or
+  virtual network.
+- **SCM (Kudu) site** - the separate deployment and management endpoint of an App Service
+  app.
+- **Private endpoint vs VNet integration** - private *inbound* access to the app, versus
+  the app's *outbound* traffic into your network (0A-08).
+- **Function key** - a shared key that satisfies a function's authorization level; it
+  carries no identity.
+- **Key Vault reference** - an app setting that points to a secret in Key Vault instead of
+  containing it.
+- **WAF (Web Application Firewall)** - rules that inspect HTTP requests for attacks; on
+  Application Gateway (regional) or Front Door (global edge).
+- **Detection vs Prevention mode** - log what would be blocked, versus actually block.
+- **Managed rule set (DRS)** - Microsoft-maintained WAF rules; **custom rules** are yours.
+- **API Management policy** - a rule the gateway runs on each call, such as `validate-jwt`
+  or a rate limit (0A-10).
+
+## Mental model
+
+A teaching model: four questions every request to a PaaS app has to pass.
+
+```mermaid
+flowchart LR
+  accTitle: Teaching model - layered protection in front of a PaaS application
+  accDescr: A request from the internet first meets the Web Application Firewall, on Front Door or Application Gateway, which asks whether the request is an attack. Then API Management asks whether this caller may make this call at this rate, validating tokens and applying rate limits. Then the app itself, on App Service, Functions or Logic Apps, asks who the caller is, using platform authentication, access restrictions or private endpoints. When the app calls other services, it uses a managed identity and Key Vault references rather than stored secrets.
+  C["Caller"]:::d00 --> W["WAF<br/>is this an attack?"]:::d02
+  W --> G["API Management<br/>may this caller do this?<br/>validate-jwt, rate limit"]:::d02
+  G --> A["App Service / Functions / Logic Apps<br/>who is calling?<br/>Easy Auth, access restrictions"]:::d03
+  A -->|"managed identity"| KV["Key Vault, data,<br/>other APIs"]:::d01
+```
 
 ## How it works under the hood
 
@@ -110,7 +163,12 @@ hold an Entra identity, use Easy Auth or API Management in front instead, and re
 cases with no alternative.
 
 **Defender for App Service** is the workload protection plan covering this family, detecting
-attacks against the app and suspicious behaviour on the underlying compute.
+attacks against the app and suspicious behaviour on the underlying compute. For posture,
+Defender CSPM's **serverless protection** component discovers Web Apps and Function Apps,
+flags misconfigurations (public endpoints, weak authentication), scans function packages
+for vulnerable dependencies and maps attack paths; it bills per app since April 2026. Its
+**API security posture** feature does the same for APIs in API Management, Function Apps and
+Logic Apps.
 
 ### Logic Apps
 
@@ -136,12 +194,15 @@ The WAF is a set of rules evaluated against HTTP requests, and it exists in two 
 | | Application Gateway WAF | Front Door WAF |
 | --- | --- | --- |
 | Scope | Regional, in your virtual network | Global, at the edge |
-| Managed rules | **DRS 2.1**, or OWASP **CRS 3.2 / 3.1** and older | **DRS**, plus the **Bot Manager rule set** |
-| Tier requirement | WAF v2 | **Premium** for managed rules |
-| Rate limiting | - | Custom rules |
+| Managed rules | **DRS 2.2** (recommended), DRS 2.1, legacy **CRS 3.2** | **DRS 2.2**, 2.1, 2.0 |
+| Bot protection | Bot Manager rule set | Bot Manager rule set (**Premium**) |
+| Tier requirement | WAF v2 | **Premium** for managed rules and bot protection; Standard has custom rules only |
+| Rate limiting, geo-filtering | Custom rules | Custom rules |
 
 **Modes, and the sentence that decides exam answers:** a WAF policy **starts in Detection
-mode**, which logs what it would have done and **blocks nothing**. You tune in detection mode -
+mode**, which logs what it would have done and **blocks nothing**. Managed rules use
+**anomaly scoring**: each matching rule adds to a score (Critical 5, Error 4, Warning 3,
+Notice 2), and in Prevention mode a score of **5 or more** blocks the request. You tune in detection mode -
 adding exclusions, disabling rules that fire on legitimate traffic - and then switch to
 **Prevention mode**. Microsoft's own guidance is blunt: detection mode provides no protection.
 A question describing a WAF that "is configured but attacks are still succeeding" is usually
@@ -159,11 +220,15 @@ intelligence team for additional coverage and fewer false positives.
   an authentication token in a header, which looks like an injection payload to a generic rule.
   Exclusions can apply to one rule, a rule group, or the whole rule set.
 - **Disabling individual rules** - blunter; the rule stops applying to everything.
-- **Custom rules** - your own conditions and actions, evaluated by priority, including IP
-  restrictions and rate limiting.
+- **Custom rules** - your own conditions and actions, evaluated by priority **before the
+  managed rules**, including IP allow and deny lists, geo-filtering and rate limiting. A
+  matching custom rule ends evaluation.
 
-One operational trap worth memorising: **changing rule set version resets every enabled and
-disabled rule customisation to the defaults of the new version.** Your tuning does not migrate.
+One operational trap worth memorising: **changing the rule set version in the portal resets
+your rule-state overrides, action overrides and rule-level exclusions** to the new version's
+defaults (custom rules, policy settings and global exclusions are kept). To keep the tuning,
+make the change with PowerShell, the Azure CLI, the REST API or a template and carry the
+overrides across - dropping any for rules the new version no longer has. Either way, re-test.
 
 **Bot protection** categorises traffic as good, bad, or unknown bots, with signatures managed
 and updated by the platform - so search engine crawlers pass while bad bots are blocked.
@@ -185,12 +250,71 @@ APIs. The policies that matter for this objective:
 
 The architectural point: **the backend should accept traffic only from API Management.** If the
 backend is directly reachable, every policy above is optional from an attacker's point of
-view. Private endpoints, access restrictions, or an internal-mode gateway are what make the
-gateway the only path.
+view. Private endpoints, network access restrictions, an internal-mode gateway, or requiring
+the gateway's own identity (the `authentication-managed-identity` policy plus App Service
+authentication that accepts only that identity) are what make the gateway the only path.
+Restricting by IP needs a gateway with a fixed outbound address; the v2 and Consumption tiers
+have none, and the `ApiManagement` service tag lists control-plane addresses, not the gateway's.
 
 And note how APIM and WAF layer: **WAF inspects the request for attacks; API Management
 decides whether this caller is allowed to make this call at this rate.** They are commonly
 deployed together, with the WAF in front.
+
+### One request through every layer
+
+One request from the internet to your code. Each layer answers a different question and
+refuses in its own way, which is often how a scenario tells you which layer stopped it.
+
+```mermaid
+flowchart TD
+  %% flowchart: flow-web
+  accTitle: A request from the internet reaches your API
+  accDescr: The WAF on Front Door or Application Gateway evaluates custom rules, then managed rules with anomaly scoring. API Management validates the token and applies a rate limit. App Service access restrictions check the source, and App Service authentication checks the user token. Logs go to Sentinel.
+  A(["Client on<br/>the internet"]):::actor --> W0["Front Door or<br/>Application Gateway<br/>with a WAF policy"]:::d03
+  W0 --> B{"WAF custom rules:<br/>a match?"}:::d03
+  B -->|Block| X1["403 from the WAF"]:::stop
+  B -->|Allow| D
+  B -->|No match| C{"Managed rules:<br/>anomaly score<br/>5 or more?"}:::d03
+  C -->|"Yes, in<br/>Prevention mode"| X1
+  C -->|"No, or in<br/>Detection mode"| D{"API Management:<br/>valid JWT?"}:::d03
+  D -->|No| X2["401 Unauthorized"]:::stop
+  D -->|Yes| E{"Rate limit<br/>exceeded?"}:::d03
+  E -->|Yes| X3["429 Too Many<br/>Requests"]:::stop
+  E -->|No| F{"App Service access<br/>restrictions allow<br/>the source?"}:::d03
+  F -->|No| X4["403 Forbidden"]:::stop
+  F -->|Yes| G{"App Service auth:<br/>valid user token?"}:::d01
+  G -->|No| X5["401, or redirect<br/>to sign-in"]:::stop
+  G -->|Yes| H["Your code runs"]:::ok
+  W0 -.->|WAF logs| L["Log Analytics<br/>and Sentinel"]:::d04
+  D -.->|gateway logs| L
+```
+
+## Why security cares
+
+**Without the control**
+
+1. A Function app exposes an HTTP trigger protected only by a function key
+2. The key is pasted into a support ticket and a browser bookmark
+3. Anyone holding it calls the function, which reads customer records with a connection
+   string stored in app settings
+4. The WAF in front of the website is in Detection mode, so injection attempts against the
+   web app are logged and succeed
+
+**With the control**
+
+1. The function requires Entra sign-in through App Service authentication, or sits behind
+   API Management with `validate-jwt`
+2. The app's own data access uses a managed identity and Key Vault references - no
+   connection string to leak
+3. The backend accepts traffic only from API Management (private endpoint, network access
+   restriction, or the gateway's managed identity)
+4. The WAF runs in Prevention mode after tuning, so injection attempts are blocked
+
+**What it does not solve.** A WAF and a gateway filter requests; they do not fix insecure
+code or business-logic flaws that look like normal traffic.
+
+**Depends on.** The backend being reachable only through the gateway, the SCM site being
+restricted as well as the main site, and the WAF actually being switched to Prevention.
 
 ## Configuration surface
 
@@ -209,7 +333,8 @@ deployed together, with the WAF in front.
 | Logic App request trigger | SAS callback URL | IP restriction, Entra OAuth, or a gateway in front | The URL is the credential |
 | Logic App secure inputs/outputs | Off | On for sensitive parameters | Run history is readable |
 | WAF mode | **Detection** | **Prevention**, after tuning | Detection blocks nothing |
-| WAF rule set | latest managed | Latest, and **re-tune after a version change** | Customisations reset on upgrade |
+| WAF rule set | chosen at creation | **DRS 2.2**; change versions by script or template to carry tuning across | The portal resets rule overrides and rule-level exclusions |
+| Front Door tier for WAF | Standard (custom rules only) | **Premium** where managed rules or bot protection are needed | Standard has no managed rules |
 | Bot protection | available | Enabled | Large share of traffic |
 | APIM backend reachability | public | **Only from APIM** | Otherwise policies are bypassable |
 | `validate-jwt` | not applied | Applied on protected APIs | Rejects bad tokens at the edge |
@@ -236,8 +361,8 @@ ticket, and it identifies nobody.
 **Tuning by disabling rules instead of adding exclusions.** The rule stops protecting
 everything, when an exclusion would have protected everything except one header.
 
-**Rule set upgraded, tuning lost.** All enabled and disabled customisations reset to the new
-version's defaults, and false positives return in production.
+**Rule set upgraded, tuning lost.** Rule overrides and exclusions are not carried across to
+the new version, and false positives return in production.
 
 **Front Door WAF on a non-Premium tier.** Managed rules are not available.
 
@@ -245,6 +370,22 @@ version's defaults, and false positives return in production.
 
 **Secrets in app settings rather than Key Vault references.** Readable by anyone with
 Contributor - and Contributor is not a data-plane role anywhere else in this guide either.
+
+## Hands-on
+
+See [03-06 lab](../../labs/03-secure-compute/03-06-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| App Service authentication | Unauthenticated requests never reach the code | An anonymous request is redirected to sign in or receives `401` |
+| Access restrictions | Only allowed sources reach the app **and** the SCM site | A request from a non-allowed IP gets `403` on both the main and `.scm.` hostnames |
+| Private endpoint | The app is not publicly reachable | Public network access is disabled; the hostname resolves privately inside the network |
+| Managed identity + Key Vault references | No secrets in configuration | App settings show `@Microsoft.KeyVault(...)` references, resolved successfully |
+| Logic App trigger | The callback URL alone is not enough | A call without a valid Entra token (or from a non-allowed IP) is rejected |
+| WAF | Attacks are blocked, not just logged | Policy mode is **Prevention**; a test SQL injection string returns `403`; WAF logs show the blocking rule |
+| API Management | Only valid callers reach the backend, at the agreed rate | A request with an invalid token is rejected by `validate-jwt`; exceeding the limit returns `429`; a direct call to the backend fails |
 
 ## How this is tested
 
@@ -263,17 +404,28 @@ Contributor - and Contributor is not a data-plane role anywhere else in this gui
 | "attacks are logged but not blocked" | Still in detection mode - switch to prevention |
 | "false positive on an auth header" | WAF exclusion, not rule disablement |
 | "block bad bots, allow crawlers" | Bot Manager rule set |
-| "limit requests per client IP" | Custom rate-limiting rule (Front Door) |
+| "limit requests per client IP" | Custom rate-limit rule (Front Door or Application Gateway WAF) |
+| "managed rules on Front Door" | Front Door **Premium** |
 | "workflow trigger must not be callable by anyone with the URL" | Entra OAuth on the request trigger, or a gateway |
 
 **AZ-500 divergence.** The controls are broadly continuous, but the WAF rule set landscape has
-moved - DRS 2.1 alongside CRS 3.2, Bot Manager as a separate managed rule set, and managed
-rules gated behind Front Door Premium. Logic Apps Standard running on the App Service platform
+moved - DRS 2.2 is now the recommended rule set with CRS 3.2 legacy, Bot Manager is a
+separate managed rule set, and managed rules are gated behind Front Door Premium. Logic Apps Standard running on the App Service platform
 also changes which controls apply, which older material predating that model gets wrong.
 
-## Hands-on
+### What SC-500 expects you to do
 
-See [03-06 lab](../../labs/03-secure-compute/03-06-lab.md).
+- **Identify** which question a requirement is about: who may call, is it an attack, may
+  this caller make this call, or what does the app use to call others.
+- **Distinguish** private endpoints from VNet integration, the main site from the SCM site,
+  function keys from Entra authentication, Detection from Prevention mode, exclusions from
+  disabling rules, and WAF from API Management.
+- **Select** Application Gateway WAF or Front Door WAF (and its tier), the right tuning tool,
+  and the right API Management policy.
+- **Implement** App Service authentication, access restrictions, managed identity with Key
+  Vault references, Logic App trigger protection, WAF policies and API Management policies.
+- **Evaluate** why a configured control is not protecting the app (detection mode, open
+  SCM site, reachable backend).
 
 ## Check yourself
 
@@ -291,6 +443,28 @@ See [03-06 lab](../../labs/03-secure-compute/03-06-lab.md).
    integration URL. Describe every problem with that arrangement using the vocabulary from
    02-01, and give the replacement.
 
+## Teach it back
+
+A team says: "We put a WAF in front of the API, so we don't need API Management." Explain
+what each layer decides, and when you need both.
+
+A strong answer covers: the WAF inspects each request for attack patterns (injection,
+cross-site scripting, bad bots) and blocks in Prevention mode; API Management decides
+whether this caller may make this call - validating tokens, applying per-consumer rate
+limits and quotas, holding backend credentials; a well-formed request from an unauthorised
+caller passes a WAF; they are usually deployed together with the WAF in front.
+
+## Key takeaways
+
+- PaaS apps are publicly addressable by default; decide who may call them.
+- Restrict the SCM site as well as the main site.
+- Private endpoint = inbound; VNet integration = outbound.
+- Function keys and Logic App callback URLs are credentials without an identity.
+- WAF policies start in Detection mode - nothing is blocked until you switch to Prevention.
+- Front Door WAF managed rules and bot protection need the Premium tier; DRS 2.2 is the
+  recommended rule set.
+- API Management only protects a backend that cannot be reached any other way.
+
 ## Sources
 
 - Microsoft Learn - SC-500 skills measured: <https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500>
@@ -298,3 +472,7 @@ See [03-06 lab](../../labs/03-secure-compute/03-06-lab.md).
 - Application Gateway WAF FAQ (modes and supported rule sets): <https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-waf-faq>
 - WAF DRS and CRS rule groups and rules: <https://learn.microsoft.com/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules>
 - API Management gateway capabilities: <https://learn.microsoft.com/azure/api-management/genai-gateway-capabilities>
+- Upgrade CRS or DRS ruleset version: <https://learn.microsoft.com/azure/web-application-firewall/ag/upgrade-ruleset-version>
+- Web Application Firewall design guide (platform comparison): <https://learn.microsoft.com/azure/networking/design-guide/web-application-firewall>
+- What is Serverless protection: <https://learn.microsoft.com/azure/defender-for-cloud/serverless-protection>
+- Enable API security posture with Defender CSPM: <https://learn.microsoft.com/azure/defender-for-cloud/enable-api-security-posture>

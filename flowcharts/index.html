@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SC-500 Flowcharts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Flowcharts of how SC-500 controls work together: real requests step by step, decision trees for choosing a control, and the order each control evaluates in.">
+<script>
+/* Follow the Academy's theme choice when this page is served with it. */
+(function () {
+  var inAcademy = /\/flowcharts\/?(index\.html)?$/.test(location.pathname);
+  try {
+    var t = localStorage.getItem('sc500:theme:v1');
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    else if (!t && inAcademy) document.documentElement.setAttribute('data-theme', 'dark');
+  } catch (e) { /* storage blocked: follow the system */ }
+  if (inAcademy) document.documentElement.classList.add('fc-wait');
+})();
+</script>
+<style>
+/* A reading page: contents on the left, one flowchart per figure on the right.
+   Palette and type come from SC500 Academy's tokens (Fluent neutrals, one hue per
+   exam domain), so the flowcharts read as part of the same family as the map. */
+:root {
+  --bg: #faf9f8;
+  --surface: #ffffff;
+  --sink: #f3f2f1;
+  --rule: #e1dfdd;
+  --rule-strong: #c8c6c4;
+  --ink: #201f1e;
+  --ink-soft: #484644;
+  --ink-faint: #605e5c;
+  --accent: #005a9e;
+  --d-00: #605e5c; --d-00-tint: #f3f2f1;
+  --d-01: #0078d4; --d-01-tint: #edf6fc;
+  --d-02: #008272; --d-02-tint: #edf6f5;
+  --d-03: #8661c5; --d-03-tint: #f7f4fb;
+  --d-04: #d83b01; --d-04-tint: #fcf1ed;
+  --stop: #c50f1f; --stop-tint: #fdf3f4;
+  --ok: #107c10; --ok-tint: #f1faf1;
+  --warn: #8a6a00; --warn-tint: #fffaeb;
+  --face-ui: "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --face-display: "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --t-xs: 0.75rem; --t-sm: 0.875rem; --t-base: 1rem; --t-md: 1.1875rem; --t-lg: 1.4375rem;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1a19; --surface: #252423; --sink: #141313; --rule: #3b3a39; --rule-strong: #57534f;
+    --ink: #f3f2f1; --ink-soft: #c8c6c4; --ink-faint: #a19f9d;
+    --accent: #4ca8f7;
+    --d-00: #a19f9d; --d-00-tint: #2b2a29;
+    --d-01: #3a96dd; --d-01-tint: #20303c;
+    --d-02: #2aa595; --d-02-tint: #20312e;
+    --d-03: #a48ad6; --d-03-tint: #332d3a;
+    --d-04: #ea6a3a; --d-04-tint: #3e271e;
+    --stop: #f1707b; --stop-tint: #3b2224;
+    --ok: #54b054; --ok-tint: #1f3320;
+    --warn: #efd36b; --warn-tint: #3a3220;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1a19; --surface: #252423; --sink: #141313; --rule: #3b3a39; --rule-strong: #57534f;
+  --ink: #f3f2f1; --ink-soft: #c8c6c4; --ink-faint: #a19f9d;
+  --accent: #4ca8f7;
+  --d-00: #a19f9d; --d-00-tint: #2b2a29;
+  --d-01: #3a96dd; --d-01-tint: #20303c;
+  --d-02: #2aa595; --d-02-tint: #20312e;
+  --d-03: #a48ad6; --d-03-tint: #332d3a;
+  --d-04: #ea6a3a; --d-04-tint: #3e271e;
+  --stop: #f1707b; --stop-tint: #3b2224;
+  --ok: #54b054; --ok-tint: #1f3320;
+  --warn: #efd36b; --warn-tint: #3a3220;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--face-ui);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 3rem;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.skip { position: absolute; left: -999px; }
+.skip:focus { left: max(16px, env(safe-area-inset-left, 0px)); top: 8px; background: var(--surface); padding: .4rem .7rem; z-index: 30; }
+
+/* ------------------------------------------------------------------ header */
+.top { max-width: 80rem; margin: 0 auto; padding: 1.25rem 0 1.5rem; display: grid; gap: .8rem; border-bottom: 1px solid var(--rule); }
+.top__back { font-size: var(--t-sm); color: var(--ink-soft); text-decoration: none; width: fit-content; }
+.top__back:hover { color: var(--accent); text-decoration: underline; }
+.top h1 {
+  margin: 0;
+  font-family: var(--face-display);
+  font-size: clamp(1.9rem, 1.3rem + 2.2vw, 2.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.top__lede { margin: 0; max-width: 44rem; color: var(--ink-soft); font-size: var(--t-md); line-height: 1.45; }
+.top__lede a { font-weight: 600; }
+
+/* Legend: the same shapes and outlines used in every flowchart. */
+.key { display: grid; gap: .6rem; margin-top: .35rem; }
+.key h2 { margin: 0; font-size: var(--t-sm); font-weight: 650; color: var(--ink-soft); }
+.key ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; }
+.key li { display: inline-flex; align-items: center; gap: .5rem; font-size: var(--t-sm); color: var(--ink-soft); }
+.key svg { flex: none; overflow: visible; }
+
+/* ------------------------------------------------------------------ layout */
+.layout { max-width: 80rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 2.5rem; }
+@media (min-width: 64rem) {
+  .layout { grid-template-columns: 15rem minmax(0, 1fr); }
+  .toc { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; padding: 1.5rem 0 2rem; }
+}
+.toc { font-size: var(--t-sm); }
+.toc details { border-bottom: 1px solid var(--rule); padding: .75rem 0; }
+.toc summary { cursor: pointer; font-weight: 650; }
+@media (min-width: 64rem) {
+  .toc details { border: 0; padding: 0; }
+  .toc summary { list-style: none; pointer-events: none; color: var(--ink-faint); font-size: var(--t-xs); margin-bottom: .5rem; }
+  .toc summary::-webkit-details-marker { display: none; }
+}
+.toc > details > ol { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .9rem; }
+.toc ol ol { list-style: none; margin: .3rem 0 0; padding: 0 0 0 .75rem; border-left: 1px solid var(--rule); display: grid; gap: .2rem; }
+.toc a { color: var(--ink-soft); text-decoration: none; display: block; line-height: 1.35; padding: .1rem 0; }
+.toc a:hover { color: var(--accent); text-decoration: underline; }
+.toc__sec { font-weight: 650; color: var(--ink) !important; }
+
+/* ----------------------------------------------------------------- content */
+main { min-width: 0; }
+.sec { padding-top: 2rem; }
+.sec > h2 {
+  margin: 0;
+  font-family: var(--face-display);
+  font-size: var(--t-lg);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.sec__intro { margin: .35rem 0 0; color: var(--ink-soft); max-width: 44rem; }
+
+.fig { padding: 1.75rem 0 .5rem; border-bottom: 1px solid var(--rule); }
+.fig:last-child { border-bottom: 0; }
+.fig h3 { margin: 0; font-size: var(--t-md); line-height: 1.3; }
+.fig__what { margin: .3rem 0 .9rem; color: var(--ink-soft); max-width: 44rem; }
+.fig__scroll {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 1rem;
+  overscroll-behavior-x: contain;
+}
+.fig__scroll svg { display: block; margin: 0 auto; height: auto; }
+.fig__scroll pre.mermaid { margin: 0; font-size: var(--t-xs); white-space: pre; color: var(--ink-soft); background: transparent; }
+.fc-wait .fig__scroll pre.mermaid:not(.is-failed) { visibility: hidden; max-height: 10rem; overflow: hidden; }
+.fig__notes { display: grid; gap: .35rem 2rem; margin-top: .9rem; }
+@media (min-width: 48rem) { .fig__notes { grid-template-columns: minmax(0, 1fr) 16rem; align-items: start; } }
+.fig__notes h4 { margin: 0; font-size: var(--t-sm); font-weight: 650; grid-column: 1 / -1; }
+.fig__notes ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .3rem; max-width: 44rem; }
+.fig__les { margin: 0; font-size: var(--t-sm); color: var(--ink-faint); }
+@media (min-width: 48rem) { .fig__notes h4 { grid-column: 1; } .fig__les { grid-column: 2; grid-row: 1 / span 2; border-left: 1px solid var(--rule); padding-left: 1rem; } }
+
+.foot { max-width: 80rem; margin: 2.5rem auto 0; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--ink-faint); font-size: var(--t-sm); }
+.foot p { margin: 0 0 .4rem; max-width: 52rem; }
+
+@media print {
+  .toc, .skip, .top__back { display: none; }
+  .layout { display: block; }
+  .fig { break-inside: avoid; }
+  .fig__scroll { overflow: visible; border: 0; padding: 0; }
+}
+</style>
+
+<a class="skip" href="#first">Skip to the flowcharts</a>
+<header class="top">
+  <a class="top__back" href="../#/">SC500 Academy</a>
+  <h1>SC-500 flowcharts</h1>
+  <p class="top__lede">20 flowcharts of how the exam's controls work together: real requests step by step, decision trees for picking a control, and the order each control evaluates in. Every decision is taught in the Academy and checked against Microsoft Learn. To see every control at once, open the <a href="../map/">control map</a>.</p>
+  <section class="key" aria-labelledby="key-h">
+    <h2 id="key-h">How to read them</h2>
+    <ul>
+      <li><svg width="34" height="18" viewBox="0 0 34 18" aria-hidden="true"><rect x="1" y="1" width="32" height="16" rx="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/></svg>Where it starts: who asks</li>
+      <li><svg width="34" height="18" viewBox="0 0 34 18" aria-hidden="true"><rect x="1" y="1" width="32" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>A step</li>
+      <li><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 1 21 11 11 21 1 11Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>A decision: follow yes or no</li>
+      <li><svg width="34" height="18" viewBox="0 0 34 18" aria-hidden="true"><rect x="1.5" y="1.5" width="31" height="15" rx="2" fill="var(--stop-tint)" stroke="var(--stop)" stroke-width="3"/></svg>Red: the request stops here</li>
+      <li><svg width="34" height="18" viewBox="0 0 34 18" aria-hidden="true"><rect x="1.5" y="1.5" width="31" height="15" rx="2" fill="var(--ok-tint)" stroke="var(--ok)" stroke-width="3"/></svg>Green: it succeeds</li>
+      <li><svg width="34" height="18" viewBox="0 0 34 18" aria-hidden="true"><rect x="1.5" y="1.5" width="31" height="15" rx="2" fill="var(--warn-tint)" stroke="var(--warn)" stroke-width="3"/></svg>Amber: it works, with a catch</li>
+      <li><svg width="40" height="10" viewBox="0 0 40 10" aria-hidden="true"><line x1="1" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/><path d="M32 1 39 5 32 9Z" fill="currentColor"/></svg>Dotted: signals sent on, or rules set</li>
+      <li><svg width="58" height="12" viewBox="0 0 58 12" aria-hidden="true"><rect x="1" y="1" width="11" height="10" rx="2" fill="var(--d-01-tint)" stroke="var(--d-01)" stroke-width="2"/><rect x="16" y="1" width="11" height="10" rx="2" fill="var(--d-02-tint)" stroke="var(--d-02)" stroke-width="2"/><rect x="31" y="1" width="11" height="10" rx="2" fill="var(--d-03-tint)" stroke="var(--d-03)" stroke-width="2"/><rect x="46" y="1" width="11" height="10" rx="2" fill="var(--d-04-tint)" stroke="var(--d-04)" stroke-width="2"/></svg>Outline colour: exam domain 1, 2, 3, 4</li>
+    </ul>
+  </section>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Flowcharts">
+    <details open>
+      <summary>Contents</summary>
+      <ol><li><a class="toc__sec" href="#big-picture">The big picture</a><ol><li><a href="#layers">How the layers fit together</a></li><li><a href="#signals">Where security signals go</a></li></ol></li><li><a class="toc__sec" href="#request-flows">Request flows</a><ol><li><a href="#flow-admin">An admin changes something in Azure</a></li><li><a href="#flow-secrets">An app reads a secret and a database</a></li><li><a href="#flow-web">A request from the internet reaches your API</a></li><li><a href="#flow-egress">Traffic leaves a VM for the internet</a></li><li><a href="#flow-rdp">An admin connects to a VM</a></li><li><a href="#flow-agent">An AI agent uses a tool</a></li><li><a href="#flow-copilot">Microsoft 365 Copilot meets an overshared site</a></li><li><a href="#flow-aws">A server outside Azure gets protected</a></li><li><a href="#flow-incident">An alert becomes a closed incident</a></li></ol></li><li><a class="toc__sec" href="#which-control">Which control?</a><ol><li><a href="#choose-identity">An identity for a workload</a></li><li><a href="#choose-private">A private path</a></li><li><a href="#choose-network">A network control</a></li><li><a href="#choose-ai">An AI control</a></li></ol></li><li><a class="toc__sec" href="#who-wins">Who wins?</a><ol><li><a href="#order-ca">Conditional Access</a></li><li><a href="#order-packet">Network rules on a VM</a></li><li><a href="#order-policy">Azure Policy effects</a></li><li><a href="#order-firewall">Azure Firewall rule processing</a></li><li><a href="#order-data">A data request to Key Vault or Storage</a></li></ol></li></ol>
+    </details>
+  </nav>
+  <main id="first" tabindex="-1">
+<section class="sec" id="big-picture" aria-labelledby="big-picture-h"><h2 id="big-picture-h">The big picture</h2><p class="sec__intro">How the layers fit before you look at any single control.</p>
+<article class="fig" id="layers" aria-labelledby="layers-h"><h3 id="layers-h">How the layers fit together</h3><p class="fig__what">A request passes identity and authorization, then takes a controlled path to a hardened workload and its data. Governance sets the rules those resources must meet, and every layer reports to the people who watch and respond.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: How the layers fit together. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: How the SC-500 control layers fit together
+  accDescr: A requester proves identity and is authorized; the allowed request takes a controlled network path to a hardened workload and protected data. Governance sets the rules the path, workload and data must meet. Sign-in logs, alerts and logs go to the watch, correlate and respond row.
+  R([&quot;Who asks&lt;br/&gt;people, apps, agents&quot;]):::actor --&gt; I[&quot;Prove identity&lt;br/&gt;Entra ID, MFA,&lt;br/&gt;Conditional Access, PIM&quot;]:::d01
+  I --&gt; Z[&quot;Authorize&lt;br/&gt;Azure RBAC, data roles,&lt;br/&gt;Key Vault permissions&quot;]:::d01
+  Z --&gt;|allowed| N[&quot;Controlled path&lt;br/&gt;WAF, API Management,&lt;br/&gt;Firewall, NSGs,&lt;br/&gt;private endpoints&quot;]:::d02
+  N --&gt; W[&quot;Hardened workload&lt;br/&gt;VMs, containers,&lt;br/&gt;App Service, Functions,&lt;br/&gt;AI with guardrails&quot;]:::d03
+  W --&gt; D[&quot;Protected data&lt;br/&gt;Key Vault, Storage, SQL&quot;]:::d02
+  G[&quot;Govern&lt;br/&gt;Azure Policy, locks, IaC,&lt;br/&gt;Defender for Cloud&lt;br/&gt;standards&quot;]:::d01 -.-&gt;|sets the rules| N
+  G -.-&gt; W
+  G -.-&gt; D
+  subgraph WATCH[&quot;Who notices, and who acts?&quot;]
+    direction LR
+    S[&quot;Watch&lt;br/&gt;Defender plans,&lt;br/&gt;Defender for Cloud,&lt;br/&gt;Purview DSPM, Audit&quot;]:::d04 --&gt; X[&quot;Correlate&lt;br/&gt;Defender XDR&lt;br/&gt;and Sentinel&quot;]:::d04 --&gt; A[&quot;Respond&lt;br/&gt;automation rules,&lt;br/&gt;playbooks,&lt;br/&gt;Security Copilot&quot;]:::d04
+  end
+  I -.-&gt;|sign-in logs| WATCH
+  D -.-&gt;|alerts and logs| WATCH
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Prevention is the path from the top; detection and response are the bottom row. Scenarios usually say which they want: prevent, block, must not, or detect, alert, investigate.</li><li>Governance sits outside the request path, except Azure Policy, which evaluates create, update and delete requests.</li><li>Response usually ends back in governance: a tighter role, a new policy, a closed network path.</li></ul><p class="fig__les">Taught in <a href="../#/module/0A-17">0A-17 How Microsoft Cloud Security Fits Together</a>, <a href="../#/module/0A-12">0A-12 Preventive, Detective, Corrective, and Governance Controls</a></p></div></article>
+<article class="fig" id="signals" aria-labelledby="signals-h"><h3 id="signals-h">Where security signals go</h3><p class="fig__what">Defender products send alerts to Defender XDR; logs reach the Sentinel workspace through connectors, diagnostic settings or the Azure Monitor Agent. Both meet as incidents in the Defender portal.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: Where security signals go. Scroll sideways on small screens."><pre class="mermaid">
+flowchart LR
+  accTitle: Where security signals go
+  accDescr: Defender product alerts go to Defender XDR. Entra ID logs, the Azure activity log, diagnostic logs, Windows events and appliance logs reach the Sentinel workspace by different routes and land in different tables. Microsoft 365 activity goes to Purview Audit, searched in the Defender portal. Sentinel analytics rules raise incidents in Defender XDR, next to the Defender alerts.
+  MDE[&quot;Defender for Endpoint,&lt;br/&gt;Identity, Office 365&quot;]:::d04 --&gt;|alerts| XDR
+  DFC[&quot;Defender for Cloud&lt;br/&gt;plans: Servers, Storage,&lt;br/&gt;Databases, Key Vault,&lt;br/&gt;Containers, AI&quot;]:::d04 --&gt;|alerts| XDR
+  ENT[&quot;Entra ID sign-in and&lt;br/&gt;audit logs, through&lt;br/&gt;a data connector&quot;]:::d01 --&gt; LAW
+  AZ[&quot;Azure activity log,&lt;br/&gt;through a free&lt;br/&gt;connector&quot;]:::d01 --&gt; LAW
+  DIAG[&quot;Firewall, WAF and&lt;br/&gt;SQL logs, through&lt;br/&gt;diagnostic settings&quot;]:::d02 --&gt; LAW
+  WIN[&quot;Windows Security events&lt;br/&gt;via AMA and a DCR:&lt;br/&gt;table SecurityEvent&quot;]:::d03 --&gt; LAW
+  WEF[&quot;Windows Event&lt;br/&gt;Forwarding collector,&lt;br/&gt;via AMA and a DCR:&lt;br/&gt;table WindowsEvent&quot;]:::d03 --&gt; LAW
+  SYS[&quot;Syslog and CEF from&lt;br/&gt;appliances, via a Linux&lt;br/&gt;forwarder with AMA:&lt;br/&gt;Syslog or&lt;br/&gt;CommonSecurityLog&quot;]:::d02 --&gt; LAW
+  M365[&quot;Microsoft 365&lt;br/&gt;activity, Copilot too&quot;]:::d03 --&gt; AUD[&quot;Purview Audit&quot;]:::d04
+  AUD --&gt;|&quot;searched in the&lt;br/&gt;Defender portal&quot;| XDR
+  LAW[&quot;Sentinel workspace&lt;br/&gt;analytics and&lt;br/&gt;data lake tiers&quot;]:::d04 --&gt;|analytics rules| XDR[&quot;Defender XDR&lt;br/&gt;unified incidents&quot;]:::d04
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Defender XDR alerts and incidents reach Sentinel at no charge; the per-product alert connectors are disconnected when the XDR connector is on.</li><li>Forwarded Windows events land in WindowsEvent, not SecurityEvent, so rules written for SecurityEvent must be adapted.</li><li>A table on the data lake tier alone can&#x27;t feed analytics rules.</li></ul><p class="fig__les">Taught in <a href="../#/module/04-02">04-02 Sentinel Workspace, Roles, and Content Hub</a>, <a href="../#/module/04-03">04-03 Sentinel Data Connectors and Event Collection</a>, <a href="../#/module/04-04">04-04 Sentinel Automation, Retention, and Purview Audit</a></p></div></article>
+</section>
+<section class="sec" id="request-flows" aria-labelledby="request-flows-h"><h2 id="request-flows-h">Request flows</h2><p class="sec__intro">Nine real requests, step by step. Follow the arrows from the dashed start; at each diamond, take the branch that matches.</p>
+<article class="fig" id="flow-admin" aria-labelledby="flow-admin-h"><h3 id="flow-admin-h">An admin changes something in Azure</h3><p class="fig__what">Identity first, then authorization, then the checks Azure Resource Manager runs on the request itself.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: An admin changes something in Azure. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: An admin changes something in Azure
+  accDescr: The admin signs in to Entra ID. Conditional Access can block or require MFA. An eligible role is activated in PIM. Azure RBAC authorizes the action. A create or update meets Azure Policy and a delete meets resource locks. The change is written to the activity log and reaches Sentinel.
+  A([&quot;Admin opens&lt;br/&gt;the Azure portal&quot;]):::actor --&gt; B[&quot;Entra ID checks&lt;br/&gt;the first factor&quot;]:::d01
+  B --&gt; C{&quot;Conditional Access:&lt;br/&gt;any policy&lt;br/&gt;says Block?&quot;}:::d01
+  C --&gt;|Yes| X1[&quot;Sign-in blocked&quot;]:::stop
+  C --&gt;|No| C2{&quot;Every policy&#x27;s&lt;br/&gt;grant controls met?&quot;}:::d01
+  C2 --&gt;|&quot;No, e.g.&lt;br/&gt;MFA needed&quot;| C3[&quot;Prompt for MFA,&lt;br/&gt;or deny&quot;]:::warn
+  C3 --&gt; C2
+  C2 --&gt;|Yes| D{&quot;Role already&lt;br/&gt;active?&quot;}:::d01
+  D --&gt;|&quot;No, only&lt;br/&gt;eligible&quot;| D2[&quot;Activate it in PIM:&lt;br/&gt;MFA, justification,&lt;br/&gt;approval, time limit&quot;]:::d01
+  D2 --&gt; E
+  D --&gt;|Yes| E{&quot;Azure RBAC:&lt;br/&gt;action allowed&lt;br/&gt;at this scope?&quot;}:::d01
+  E --&gt;|No| X2[&quot;AuthorizationFailed&quot;]:::stop
+  E --&gt;|Yes| K{&quot;Kind of&lt;br/&gt;request?&quot;}:::d01
+  K --&gt;|&quot;Create or&lt;br/&gt;update&quot;| F{&quot;Azure Policy:&lt;br/&gt;a Deny rule&lt;br/&gt;matches?&quot;}:::d01
+  F --&gt;|Yes| X3[&quot;RequestDisallowedByPolicy&quot;]:::stop
+  F --&gt;|No| H[&quot;Change applied&quot;]:::ok
+  K --&gt;|Delete| G{&quot;CanNotDelete or&lt;br/&gt;ReadOnly lock&lt;br/&gt;in scope?&quot;}:::d01
+  G --&gt;|Yes| X4[&quot;ScopeLocked,&lt;br/&gt;even for Owner&quot;]:::stop
+  G --&gt;|No| H
+  H -.-&gt; L[&quot;Activity log&quot;]:::d04
+  L -.-&gt;|&quot;Azure Activity&lt;br/&gt;connector&quot;| S[&quot;Microsoft Sentinel&quot;]:::d04
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Conditional Access has no priority order: a block in any policy wins, and every other policy&#x27;s requirements must all be met.</li><li>PIM limits when a role is active, not what it can do. RBAC still decides the action.</li><li>A ReadOnly lock blocks updates too. Locks win over every role, Owner included.</li></ul><p class="fig__les">Taught in <a href="../#/module/01-01">01-01 Secure Access with Microsoft Entra ID</a>, <a href="../#/module/01-03">01-03 Governance and Regulatory Compliance</a></p></div></article>
+<article class="fig" id="flow-secrets" aria-labelledby="flow-secrets-h"><h3 id="flow-secrets-h">An app reads a secret and a database</h3><p class="fig__what">No password anywhere: the app&#x27;s managed identity, a private path, and data-plane authorization at each service.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: An app reads a secret and a database. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: An app reads a secret and a database
+  accDescr: The app&#x27;s managed identity gets a token from Entra ID. The request must arrive through the private endpoint because public network access is disabled. Key Vault authorizes with Azure RBAC. Azure SQL accepts the identity only if it is a contained database user. Defender plans watch both and alert to Defender XDR.
+  A([&quot;App Service app needs&lt;br/&gt;a secret and some rows&quot;]):::actor --&gt; B[&quot;Managed identity:&lt;br/&gt;Azure issues and&lt;br/&gt;rotates its credential&quot;]:::d01
+  B --&gt; C[&quot;Entra ID issues&lt;br/&gt;a token for Key Vault&quot;]:::d01
+  C --&gt; D{&quot;Arrives through&lt;br/&gt;the private&lt;br/&gt;endpoint?&quot;}:::d02
+  D --&gt;|&quot;No: public network&lt;br/&gt;access is disabled&quot;| X1[&quot;Refused: 403&quot;]:::stop
+  D --&gt;|Yes| F{&quot;Azure RBAC:&lt;br/&gt;Key Vault&lt;br/&gt;Secrets User?&quot;}:::d01
+  F --&gt;|No| X2[&quot;403: caller is&lt;br/&gt;not authorized&quot;]:::stop
+  F --&gt;|Yes| G[&quot;Secret returned&quot;]:::ok
+  G --&gt; H{&quot;Azure SQL: is it&lt;br/&gt;a contained user?&quot;}:::d02
+  H --&gt;|No| X3[&quot;Login failed&quot;]:::stop
+  H --&gt;|Yes| I[&quot;Rows returned&quot;]:::ok
+  G -.-&gt; J[&quot;Defender for Key Vault&lt;br/&gt;and for Databases&quot;]:::d04
+  I -.-&gt; J
+  J -.-&gt;|alerts| K[&quot;Defender XDR&lt;br/&gt;incident&quot;]:::d04
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Name resolution decides the path: the privatelink DNS zone makes the normal name resolve to the private IP.</li><li>Owner and Contributor are management roles. Reading a secret needs a data-plane role such as Key Vault Secrets User.</li><li>With Entra-only authentication, SQL logins stop working, so Conditional Access applies to every person who connects.</li></ul><p class="fig__les">Taught in <a href="../#/module/01-02">01-02 Secrets and Keys with Azure Key Vault</a>, <a href="../#/module/02-02">02-02 Database Security</a>, <a href="../#/module/02-04">02-04 Private Access and Network Perimeter</a></p></div></article>
+<article class="fig" id="flow-web" aria-labelledby="flow-web-h"><h3 id="flow-web-h">A request from the internet reaches your API</h3><p class="fig__what">Each layer answers a different question, and each has its own way of saying no.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: A request from the internet reaches your API. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: A request from the internet reaches your API
+  accDescr: The WAF on Front Door or Application Gateway evaluates custom rules, then managed rules with anomaly scoring. API Management validates the token and applies a rate limit. App Service access restrictions check the source, and App Service authentication checks the user token. Logs go to Sentinel.
+  A([&quot;Client on&lt;br/&gt;the internet&quot;]):::actor --&gt; W0[&quot;Front Door or&lt;br/&gt;Application Gateway&lt;br/&gt;with a WAF policy&quot;]:::d03
+  W0 --&gt; B{&quot;WAF custom rules:&lt;br/&gt;a match?&quot;}:::d03
+  B --&gt;|Block| X1[&quot;403 from the WAF&quot;]:::stop
+  B --&gt;|Allow| D
+  B --&gt;|No match| C{&quot;Managed rules:&lt;br/&gt;anomaly score&lt;br/&gt;5 or more?&quot;}:::d03
+  C --&gt;|&quot;Yes, in&lt;br/&gt;Prevention mode&quot;| X1
+  C --&gt;|&quot;No, or in&lt;br/&gt;Detection mode&quot;| D{&quot;API Management:&lt;br/&gt;valid JWT?&quot;}:::d03
+  D --&gt;|No| X2[&quot;401 Unauthorized&quot;]:::stop
+  D --&gt;|Yes| E{&quot;Rate limit&lt;br/&gt;exceeded?&quot;}:::d03
+  E --&gt;|Yes| X3[&quot;429 Too Many&lt;br/&gt;Requests&quot;]:::stop
+  E --&gt;|No| F{&quot;App Service access&lt;br/&gt;restrictions allow&lt;br/&gt;the source?&quot;}:::d03
+  F --&gt;|No| X4[&quot;403 Forbidden&quot;]:::stop
+  F --&gt;|Yes| G{&quot;App Service auth:&lt;br/&gt;valid user token?&quot;}:::d01
+  G --&gt;|No| X5[&quot;401, or redirect&lt;br/&gt;to sign-in&quot;]:::stop
+  G --&gt;|Yes| H[&quot;Your code runs&quot;]:::ok
+  W0 -.-&gt;|WAF logs| L[&quot;Log Analytics&lt;br/&gt;and Sentinel&quot;]:::d04
+  D -.-&gt;|gateway logs| L
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Detection mode logs and blocks nothing. A single critical managed rule match scores 5.</li><li>Lock the back end to the gateway; API Management only protects traffic that goes through it.</li><li>The SCM (deployment) site has its own access restrictions unless set to use the main site&#x27;s rules.</li></ul><p class="fig__les">Taught in <a href="../#/module/03-06">03-06 Serverless, Web, and API Security</a></p></div></article>
+<article class="fig" id="flow-egress" aria-labelledby="flow-egress-h"><h3 id="flow-egress-h">Traffic leaves a VM for the internet</h3><p class="fig__what">Which rules decide, in which order, and how routing can skip the firewall entirely.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: Traffic leaves a VM for the internet. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: Traffic leaves a VM for the internet
+  accDescr: Virtual Network Manager security admin rules are evaluated first. Outbound, the NIC NSG is evaluated before the subnet NSG. Routing then decides. A service endpoint route goes straight to the Azure service. A default user-defined route sends traffic to Azure Firewall, which applies threat intelligence, network rules and application rules.
+  A([&quot;VM opens an&lt;br/&gt;outbound connection&quot;]):::actor --&gt; B{&quot;Virtual Network&lt;br/&gt;Manager security&lt;br/&gt;admin rule?&quot;}:::d02
+  B --&gt;|Deny| X1[&quot;Dropped&quot;]:::stop
+  B --&gt;|Always allow| R
+  B --&gt;|&quot;Allow, or&lt;br/&gt;no match&quot;| C{&quot;NIC NSG allows?&lt;br/&gt;outbound: NIC first&quot;}:::d02
+  C --&gt;|No| X1
+  C --&gt;|Yes| D{&quot;Subnet NSG&lt;br/&gt;allows it?&quot;}:::d02
+  D --&gt;|No| X1
+  D --&gt;|Yes| R{&quot;Which route&lt;br/&gt;wins?&quot;}:::d02
+  R --&gt;|&quot;Service endpoint&lt;br/&gt;route, to an&lt;br/&gt;Azure service&quot;| S[&quot;Straight to the service:&lt;br/&gt;the firewall never&lt;br/&gt;sees it&quot;]:::warn
+  R --&gt;|&quot;0.0.0.0/0 route,&lt;br/&gt;next hop: firewall&quot;| F{&quot;Azure Firewall:&lt;br/&gt;threat intelligence&lt;br/&gt;match?&quot;}:::d02
+  F --&gt;|&quot;Yes, mode:&lt;br/&gt;Alert and deny&quot;| X2[&quot;Denied and logged&quot;]:::stop
+  F --&gt;|No| G{&quot;Network&lt;br/&gt;rule?&quot;}:::d02
+  G --&gt;|Allow| OK[&quot;Out to the internet&lt;br/&gt;from the firewall&#x27;s&lt;br/&gt;public IP&quot;]:::ok
+  G --&gt;|Deny| X3[&quot;Denied&quot;]:::stop
+  G --&gt;|No match| H{&quot;Application rule&lt;br/&gt;for the FQDN?&quot;}:::d02
+  H --&gt;|Allow| OK
+  H --&gt;|Deny| X3
+  H --&gt;|No match| X4[&quot;Denied by default&quot;]:::stop
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Always allow skips the NSGs; Deny stops the traffic; Allow hands the decision to the NSGs.</li><li>No route table overrides a service endpoint route. To inspect that traffic, move the service endpoint to the firewall subnet.</li><li>Prove it with Network Watcher: next hop for routing, IP flow verify for the deciding NSG rule.</li></ul><p class="fig__les">Taught in <a href="../#/module/02-03">02-03 Network Segmentation and Connectivity</a>, <a href="../#/module/02-04">02-04 Private Access and Network Perimeter</a></p></div></article>
+<article class="fig" id="flow-rdp" aria-labelledby="flow-rdp-h"><h3 id="flow-rdp-h">An admin connects to a VM</h3><p class="fig__what">Two ways in without leaving a management port open to the internet.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: An admin connects to a VM. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: An admin connects to a VM
+  accDescr: The admin signs in under Conditional Access, then either connects through Azure Bastion, which needs the VM&#x27;s NSG to allow the Bastion subnet, or requests just-in-time access, which opens an NSG rule for the admin&#x27;s IP for a limited time. Defender for Servers watches the session.
+  A([&quot;Admin needs&lt;br/&gt;RDP to a VM&quot;]):::actor --&gt; B[&quot;Signs in: Entra ID,&lt;br/&gt;Conditional Access&quot;]:::d01
+  B --&gt; C{&quot;How to&lt;br/&gt;connect?&quot;}:::d03
+  C --&gt;|Azure Bastion| D[&quot;Bastion: RDP in&lt;br/&gt;the browser; the VM&lt;br/&gt;needs no public IP&quot;]:::d03
+  D --&gt; E{&quot;VM&#x27;s NSG allows&lt;br/&gt;RDP from the&lt;br/&gt;Bastion subnet?&quot;}:::d02
+  E --&gt;|No| X1[&quot;Connection fails&quot;]:::stop
+  E --&gt;|Yes| V[&quot;Session on the VM&quot;]:::ok
+  C --&gt;|&quot;Direct, with JIT&lt;br/&gt;(Defender for&lt;br/&gt;Servers Plan 2)&quot;| F[&quot;Request JIT access:&lt;br/&gt;your IP, the port,&lt;br/&gt;a time limit&quot;]:::d03
+  F --&gt; G{&quot;RBAC lets this&lt;br/&gt;admin request&lt;br/&gt;access?&quot;}:::d01
+  G --&gt;|No| X2[&quot;Request refused&quot;]:::stop
+  G --&gt;|Yes| H[&quot;JIT adds an NSG&lt;br/&gt;allow rule for your IP,&lt;br/&gt;restores it at expiry&quot;]:::d02
+  H --&gt; V
+  V -.-&gt; M[&quot;Defender for Servers&lt;br/&gt;and Defender for&lt;br/&gt;Endpoint watch&quot;]:::d04
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Bastion removes the public IP; JIT keeps a port but opens it only on request.</li><li>When the JIT window closes, new connections are blocked; connections already open stay open.</li><li>Trusted launch, secure boot and vTPM protect the VM itself, whichever way the admin arrives.</li></ul><p class="fig__les">Taught in <a href="../#/module/03-04">03-04 Server and Virtual Machine Security</a></p></div></article>
+<article class="fig" id="flow-agent" aria-labelledby="flow-agent-h"><h3 id="flow-agent-h">An AI agent uses a tool</h3><p class="fig__what">Guardrails screen content, the gateway meters the model, and the agent&#x27;s own identity gets the token for the tool.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: An AI agent uses a tool. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: An AI agent uses a tool
+  accDescr: The agent&#x27;s guardrail screens the user input. The agent calls the model through the AI gateway, which applies a token limit. When the model plans a tool call, the agent&#x27;s own identity requests a token, which Conditional Access for agents can block. The guardrail screens the tool response for indirect attacks and the final output. Defender for AI Services alerts, Defender XDR shows the blast radius, and Purview DSPM sees sensitive data.
+  A([&quot;User asks&lt;br/&gt;the agent&quot;]):::actor --&gt; B{&quot;Guardrail, user&lt;br/&gt;input: jailbreak?&quot;}:::d03
+  B --&gt;|&quot;Yes: block&quot;| X1[&quot;Blocked&quot;]:::stop
+  B --&gt;|No| C{&quot;Model call via the&lt;br/&gt;AI gateway: token&lt;br/&gt;limit exceeded?&quot;}:::d03
+  C --&gt;|Yes| X2[&quot;429 from&lt;br/&gt;API Management&quot;]:::stop
+  C --&gt;|No| D[&quot;Model plans&lt;br/&gt;a tool call&quot;]:::d03
+  D --&gt; E0[&quot;The agent&#x27;s own&lt;br/&gt;identity asks Entra&lt;br/&gt;for a tool token&quot;]:::d01
+  E0 --&gt; E{&quot;Conditional Access&lt;br/&gt;for agents&lt;br/&gt;blocks it?&quot;}:::d01
+  E --&gt;|Yes| X3[&quot;No token:&lt;br/&gt;tool not called&quot;]:::stop
+  E --&gt;|No| F[&quot;Tool runs, e.g.&lt;br/&gt;a search index&quot;]:::d03
+  F --&gt; G{&quot;Guardrail, tool&lt;br/&gt;response (preview):&lt;br/&gt;indirect attack?&quot;}:::d03
+  G --&gt;|&quot;Yes: block&quot;| X4[&quot;Blocked&quot;]:::stop
+  G --&gt;|No| H{&quot;Guardrail, output:&lt;br/&gt;harmful content?&quot;}:::d03
+  H --&gt;|&quot;Yes: block&quot;| X5[&quot;Blocked&quot;]:::stop
+  H --&gt;|No| I[&quot;Answer returned&quot;]:::ok
+  B -.-&gt;|attempt detected| J[&quot;Defender for&lt;br/&gt;AI Services alert,&lt;br/&gt;with prompt evidence&quot;]:::d04
+  J -.-&gt; K[&quot;Defender XDR:&lt;br/&gt;incident and the&lt;br/&gt;agent&#x27;s blast radius&quot;]:::d04
+  I -.-&gt; L[&quot;Purview DSPM:&lt;br/&gt;sensitive data in&lt;br/&gt;interactions&quot;]:::d03
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>An agent with its own guardrail ignores the model&#x27;s guardrail entirely. Tool call and tool response controls are preview, for tools that support them.</li><li>Defender for AI Services alerts; it doesn&#x27;t block. Blocking is the guardrail, the gateway, or Defender real-time protection.</li><li>The gateway authenticates to the model with its managed identity, so no team holds a model key.</li></ul><p class="fig__les">Taught in <a href="../#/module/03-02">03-02 AI Agent Identity and Governance</a>, <a href="../#/module/03-03">03-03 AI Platform and Workload Protection</a></p></div></article>
+<article class="fig" id="flow-copilot" aria-labelledby="flow-copilot-h"><h3 id="flow-copilot-h">Microsoft 365 Copilot meets an overshared site</h3><p class="fig__what">Copilot can only surface what the user can open, so oversharing turns into answers. These controls find it and hold it back.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: Microsoft 365 Copilot meets an overshared site. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: Microsoft 365 Copilot meets an overshared site
+  accDescr: Copilot searches with the user&#x27;s own permissions. A site under Restricted Content Discovery is not surfaced by Copilot or organization-wide search. A DLP policy for Copilot can exclude labelled content. Otherwise overshared content can appear in the answer. DSPM shows sensitive data in the interaction and Purview Audit records it. Data access governance reports find broadly shared sites.
+  A([&quot;Employee asks&lt;br/&gt;Microsoft 365 Copilot&quot;]):::actor --&gt; B[&quot;Copilot searches&lt;br/&gt;with the employee&#x27;s&lt;br/&gt;own permissions&quot;]:::d03
+  B --&gt; C{&quot;Site under&lt;br/&gt;Restricted Content&lt;br/&gt;Discovery?&quot;}:::d03
+  C --&gt;|Yes| C1[&quot;Not surfaced by&lt;br/&gt;Copilot or org-wide&lt;br/&gt;search&quot;]:::ok
+  C --&gt;|No| D{&quot;DLP for Copilot&lt;br/&gt;excludes this&lt;br/&gt;labelled content?&quot;}:::d03
+  D --&gt;|Yes| D1[&quot;Not used&lt;br/&gt;in the answer&quot;]:::ok
+  D --&gt;|No| E[&quot;Answer can include&lt;br/&gt;the overshared&lt;br/&gt;content&quot;]:::warn
+  E -.-&gt; F[&quot;Purview DSPM:&lt;br/&gt;sensitive data in&lt;br/&gt;the interaction&quot;]:::d03
+  B -.-&gt; G[&quot;Purview Audit records&lt;br/&gt;the interaction&quot;]:::d04
+  H[&quot;Data access governance&lt;br/&gt;reports find broadly&lt;br/&gt;shared sites&quot;]:::d03 -.-&gt;|&quot;owners fix access;&lt;br/&gt;RCD in the meantime&quot;| C
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Restricted Content Discovery changes no permissions: people can still open the site, and can still find content they own or recently worked with.</li><li>Restricted Access Control is the opposite tool: it limits who can open the site at all.</li><li>New enablement of Restricted SharePoint Search has been blocked since 31 July 2026.</li></ul><p class="fig__les">Taught in <a href="../#/module/03-01">03-01 AI Data Exposure and Purview DSPM</a></p></div></article>
+<article class="fig" id="flow-aws" aria-labelledby="flow-aws-h"><h3 id="flow-aws-h">A server outside Azure gets protected</h3><p class="fig__what">What the AWS connector gives you on its own, and what Azure Arc adds.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: A server outside Azure gets protected. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: A server outside Azure gets protected
+  accDescr: The AWS connector brings EC2 instances into Defender for Cloud posture assessment. With Defender for Servers on the connector and Arc auto-provisioning, each instance becomes an Arc-enabled server that can receive Defender for Endpoint and vulnerability assessment extensions and Azure Policy. Without Arc, agentless scanning can still assess the machines.
+  A([&quot;EC2 instances in&lt;br/&gt;an AWS account&quot;]):::actor --&gt; B[&quot;AWS connector in&lt;br/&gt;Defender for Cloud&quot;]:::d04
+  B --&gt; C[&quot;Discovered and&lt;br/&gt;assessed against&lt;br/&gt;the benchmark&quot;]:::d04
+  C --&gt; D{&quot;Defender for Servers&lt;br/&gt;on the connector?&quot;}:::d04
+  D --&gt;|No| E[&quot;Posture&lt;br/&gt;findings only&quot;]:::warn
+  D --&gt;|Yes| F{&quot;Arc auto-provisioning&lt;br/&gt;on? (SSM Agent)&quot;}:::d03
+  F --&gt;|No| G[&quot;Agentless scanning&lt;br/&gt;(Plan 2 or Defender&lt;br/&gt;CSPM); no Defender&lt;br/&gt;for Endpoint&quot;]:::warn
+  F --&gt;|Yes| H[&quot;Arc-enabled server&lt;br/&gt;with an Azure&lt;br/&gt;resource ID&quot;]:::d03
+  H --&gt; I[&quot;Extensions:&lt;br/&gt;Defender for Endpoint,&lt;br/&gt;vulnerability assessment&quot;]:::d04
+  H --&gt; J[&quot;Azure Policy and&lt;br/&gt;Machine Configuration&quot;]:::d01
+  I --&gt; K[&quot;Alerts in&lt;br/&gt;Defender XDR&quot;]:::d04
+  G --&gt; L[&quot;Attack path analysis&lt;br/&gt;in Defender CSPM&quot;]:::d04
+  I --&gt; L
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Arc is the bridge: it gives an outside machine the Azure resource ID that extensions and policies need.</li><li>Arc auto-provisioning on AWS installs through the SSM Agent and needs Owner on the subscription.</li><li>Agentless scanning needs Defender for Servers Plan 2 or Defender CSPM.</li></ul><p class="fig__les">Taught in <a href="../#/module/03-04">03-04 Server and Virtual Machine Security</a>, <a href="../#/module/04-01">04-01 Security Posture with Defender for Cloud</a></p></div></article>
+<article class="fig" id="flow-incident" aria-labelledby="flow-incident-h"><h3 id="flow-incident-h">An alert becomes a closed incident</h3><p class="fig__what">Correlation, automation and investigation in the Defender portal.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: An alert becomes a closed incident. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: An alert becomes a closed incident
+  accDescr: Alerts from Defender products and Sentinel analytics rules are correlated by Defender XDR into an incident. Automation rules with matching conditions assign and tag it, and can run a playbook if Sentinel holds Automation Contributor on the playbook&#x27;s resource group. The playbook acts with its own permissions. The analyst investigates with Security Copilot and Purview Audit, then closes the incident.
+  A[&quot;Alerts: Defender for&lt;br/&gt;Endpoint, Identity,&lt;br/&gt;Office 365, cloud plans&quot;]:::d04 --&gt; B[&quot;Defender XDR&lt;br/&gt;correlates alerts&lt;br/&gt;into one incident&quot;]:::d04
+  S[&quot;Sentinel analytics&lt;br/&gt;rules over&lt;br/&gt;connected logs&quot;]:::d04 --&gt; B
+  B --&gt; C{&quot;Automation rule&lt;br/&gt;conditions match?&quot;}:::d04
+  C --&gt;|No| E
+  C --&gt;|Yes| D[&quot;Assign, tag,&lt;br/&gt;change status&quot;]:::d04
+  D --&gt; P{&quot;Run a playbook:&lt;br/&gt;Sentinel has&lt;br/&gt;Automation Contributor?&quot;}:::d04
+  P --&gt;|No| X1[&quot;Playbook can&#x27;t&lt;br/&gt;be triggered&quot;]:::stop
+  P --&gt;|Yes| L[&quot;Logic App acts with&lt;br/&gt;its own permissions,&lt;br/&gt;e.g. opens a ticket&quot;]:::d03
+  L --&gt; E([&quot;Analyst&lt;br/&gt;investigates&quot;]):::actor
+  E --&gt; CP[&quot;Security Copilot&lt;br/&gt;summarises, within&lt;br/&gt;the analyst&#x27;s access&quot;]:::d04
+  E --&gt; AU[&quot;Purview Audit:&lt;br/&gt;e.g. MailItemsAccessed&quot;]:::d04
+  CP --&gt; Z([&quot;Incident closed&quot;]):::ok
+  AU --&gt; Z
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Automation rules run in order when an incident is created or updated; playbooks do the work outside Sentinel.</li><li>Two permissions: Sentinel needs Automation Contributor on the playbook&#x27;s resource group to start it; the playbook needs its own permissions to act.</li><li>Security Copilot sees only what the analyst (or the agent&#x27;s identity) can already access.</li></ul><p class="fig__les">Taught in <a href="../#/module/04-04">04-04 Sentinel Automation, Retention, and Purview Audit</a>, <a href="../#/module/04-05">04-05 Microsoft Security Copilot</a></p></div></article>
+</section>
+<section class="sec" id="which-control" aria-labelledby="which-control-h"><h2 id="which-control-h">Which control?</h2><p class="sec__intro">Decision trees for the choices SC-500 scenarios turn on. Start on the left or at the top, and follow the words in the requirement.</p>
+<article class="fig" id="choose-identity" aria-labelledby="choose-identity-h"><h3 id="choose-identity-h">An identity for a workload</h3><p class="fig__what">Pick the identity that leaves no secret to store.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: An identity for a workload. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: Choosing an identity for a workload
+  accDescr: If the workload runs on an Azure resource that supports managed identities, use a managed identity, user-assigned if several resources share it, otherwise system-assigned. If it runs elsewhere but its platform issues tokens Entra can trust, use workload identity federation. Otherwise use an app registration with a certificate. In every case grant the narrowest role.
+  A([&quot;A workload must call&lt;br/&gt;an Azure service&quot;]):::actor --&gt; B{&quot;Runs on an Azure&lt;br/&gt;resource that supports&lt;br/&gt;managed identities?&quot;}:::d01
+  B --&gt;|Yes| C{&quot;Several resources&lt;br/&gt;share one identity?&quot;}:::d01
+  C --&gt;|Yes| C1[&quot;User-assigned&lt;br/&gt;managed identity&quot;]:::ok
+  C --&gt;|No| C2[&quot;System-assigned&lt;br/&gt;managed identity,&lt;br/&gt;tied to the resource&quot;]:::ok
+  B --&gt;|No| D{&quot;Its platform issues&lt;br/&gt;tokens Entra&lt;br/&gt;can trust?&quot;}:::d01
+  D --&gt;|&quot;Yes: GitHub Actions,&lt;br/&gt;Kubernetes,&lt;br/&gt;another cloud&quot;| D1[&quot;Workload identity&lt;br/&gt;federation:&lt;br/&gt;no secret at all&quot;]:::ok
+  D --&gt;|No| E[&quot;App registration&lt;br/&gt;with a certificate;&lt;br/&gt;a secret is the&lt;br/&gt;last resort&quot;]:::warn
+  C1 --&gt; R[&quot;Then: narrowest role,&lt;br/&gt;narrowest scope&quot;]:::d01
+  C2 --&gt; R
+  D1 --&gt; R
+  E --&gt; R
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>A managed identity removes the credential, not the permission problem.</li><li>Federated credentials go on an app registration or a user-assigned managed identity.</li><li>Keeping a secret in Key Vault moves it; it doesn&#x27;t remove it.</li></ul><p class="fig__les">Taught in <a href="../#/module/01-01">01-01 Secure Access with Microsoft Entra ID</a></p></div></article>
+<article class="fig" id="choose-private" aria-labelledby="choose-private-h"><h3 id="choose-private-h">A private path</h3><p class="fig__what">Five different &quot;private&quot; requirements, five different controls.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: A private path. Scroll sideways on small screens."><pre class="mermaid">
+flowchart LR
+  accTitle: Choosing a private connectivity control
+  accDescr: Your apps reaching a PaaS service that must be off the internet: a private endpoint with public access disabled. If limiting by source subnet is enough: a service endpoint with a virtual network rule. A partner with overlapping addresses reaching your service: Private Link service. Remote users reaching one app: Entra Private Access. Admins reaching VMs: Bastion. A branch or device joining the network: VPN gateway.
+  A([&quot;What must reach&lt;br/&gt;what, privately?&quot;]):::actor
+  A --&gt;|&quot;Your apps reach Storage,&lt;br/&gt;SQL or Key Vault, and it&lt;br/&gt;must be off the internet&quot;| B1[&quot;Private endpoint,&lt;br/&gt;public access disabled,&lt;br/&gt;private DNS zone&quot;]:::ok
+  A --&gt;|&quot;Your apps reach it;&lt;br/&gt;limiting by source&lt;br/&gt;subnet is enough&quot;| B2[&quot;Service endpoint and&lt;br/&gt;virtual network rule:&lt;br/&gt;still the public&lt;br/&gt;endpoint&quot;]:::warn
+  A --&gt;|&quot;A partner reaches your&lt;br/&gt;service; address&lt;br/&gt;spaces overlap&quot;| C1[&quot;Private Link service&lt;br/&gt;behind a Standard&lt;br/&gt;Load Balancer&quot;]:::ok
+  A --&gt;|&quot;Remote users reach&lt;br/&gt;one internal app&quot;| D1[&quot;Entra Private Access,&lt;br/&gt;Conditional Access&lt;br/&gt;per app&quot;]:::ok
+  A --&gt;|&quot;Admins reach VMs&lt;br/&gt;with no public IP&quot;| E1[&quot;Azure Bastion&quot;]:::ok
+  A --&gt;|&quot;A branch or a device&lt;br/&gt;joins the network&quot;| F1[&quot;VPN gateway;&lt;br/&gt;Entra ID auth&lt;br/&gt;needs OpenVPN&quot;]:::ok
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>A private endpoint doesn&#x27;t close the public endpoint; disabling public network access does.</li><li>Storage firewall rules govern only the public endpoint, so a private endpoint and IP rules for partners can coexist.</li></ul><p class="fig__les">Taught in <a href="../#/module/02-04">02-04 Private Access and Network Perimeter</a>, <a href="../#/module/02-03">02-03 Network Segmentation and Connectivity</a>, <a href="../#/module/03-04">03-04 Server and Virtual Machine Security</a></p></div></article>
+<article class="fig" id="choose-network" aria-labelledby="choose-network-h"><h3 id="choose-network-h">A network control</h3><p class="fig__what">Match the layer in the requirement to the control that works at that layer.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: A network control. Scroll sideways on small screens."><pre class="mermaid">
+flowchart LR
+  accTitle: Choosing a network control
+  accDescr: Allow or deny by address, port and protocol: NSGs. A rule application teams can&#x27;t override: Virtual Network Manager security admin rules. Central egress, FQDNs, threat intelligence, spoke to spoke: Azure Firewall with user-defined routes. Web attacks: WAF. API callers and call rates: API Management. Proving which rule decides: Network Watcher.
+  A([&quot;What does the&lt;br/&gt;requirement ask for?&quot;]):::actor
+  A --&gt;|&quot;Address, port,&lt;br/&gt;protocol on a&lt;br/&gt;subnet or NIC&quot;| N1[&quot;NSG, with ASGs&lt;br/&gt;to group VMs&quot;]:::ok
+  A --&gt;|&quot;A rule app teams&lt;br/&gt;can&#x27;t override&quot;| N2[&quot;Virtual Network&lt;br/&gt;Manager security&lt;br/&gt;admin rule&quot;]:::ok
+  A --&gt;|&quot;Central egress, FQDNs,&lt;br/&gt;threat intelligence,&lt;br/&gt;spoke to spoke&quot;| N3[&quot;Azure Firewall,&lt;br/&gt;with user-defined&lt;br/&gt;routes to it&quot;]:::ok
+  A --&gt;|&quot;SQL injection,&lt;br/&gt;cross-site scripting,&lt;br/&gt;bots&quot;| N4[&quot;WAF on Front Door&lt;br/&gt;or Application&lt;br/&gt;Gateway&quot;]:::ok
+  A --&gt;|&quot;Who may call an&lt;br/&gt;API, and how often&quot;| N5[&quot;API Management:&lt;br/&gt;validate-jwt,&lt;br/&gt;rate limits&quot;]:::ok
+  A --&gt;|&quot;Prove which&lt;br/&gt;rule decides&quot;| N6[&quot;Network Watcher:&lt;br/&gt;IP flow verify,&lt;br/&gt;next hop&quot;]:::ok
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>NSGs can&#x27;t filter by FQDN or use threat intelligence; Azure Firewall can.</li><li>A WAF inspects inbound web requests; it doesn&#x27;t filter outbound traffic.</li></ul><p class="fig__les">Taught in <a href="../#/module/02-03">02-03 Network Segmentation and Connectivity</a>, <a href="../#/module/02-04">02-04 Private Access and Network Perimeter</a>, <a href="../#/module/03-06">03-06 Serverless, Web, and API Security</a></p></div></article>
+<article class="fig" id="choose-ai" aria-labelledby="choose-ai-h"><h3 id="choose-ai-h">An AI control</h3><p class="fig__what">Most AI questions name the job: limit, block, stop, alert, see, hide or allow.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: An AI control. Scroll sideways on small screens."><pre class="mermaid">
+flowchart LR
+  accTitle: Choosing an AI security control
+  accDescr: Limit tokens per app with no keys: AI gateway. Block jailbreaks or hidden instructions: Foundry guardrails. Stop a Copilot Studio agent&#x27;s risky tool call: Defender real-time protection. Alert the SOC to attacks on a model: Defender for AI Services. See sensitive data in prompts: Purview DSPM. Copilot surfacing an overshared site: Restricted Content Discovery. Only approved agents get tokens: Conditional Access for agents.
+  A([&quot;What does the AI&lt;br/&gt;requirement say?&quot;]):::actor
+  A --&gt;|&quot;Limit tokens per app,&lt;br/&gt;no model keys&quot;| A1[&quot;AI gateway in&lt;br/&gt;API Management:&lt;br/&gt;llm-token-limit,&lt;br/&gt;managed identity&quot;]:::ok
+  A --&gt;|&quot;Block jailbreaks or&lt;br/&gt;instructions hidden&lt;br/&gt;in tool results&quot;| A2[&quot;Foundry guardrails:&lt;br/&gt;jailbreak and indirect&lt;br/&gt;attack controls&quot;]:::ok
+  A --&gt;|&quot;Stop a Copilot Studio&lt;br/&gt;agent&#x27;s risky&lt;br/&gt;tool call&quot;| A3[&quot;Defender real-time&lt;br/&gt;protection (preview)&quot;]:::ok
+  A --&gt;|&quot;Alert the SOC to&lt;br/&gt;attacks on a model&quot;| A4[&quot;Defender for&lt;br/&gt;AI Services: alerts,&lt;br/&gt;does not block&quot;]:::ok
+  A --&gt;|&quot;See sensitive data&lt;br/&gt;in prompts and&lt;br/&gt;answers&quot;| A5[&quot;Purview DSPM&quot;]:::ok
+  A --&gt;|&quot;Copilot surfaces an&lt;br/&gt;overshared site&quot;| A6[&quot;Restricted Content&lt;br/&gt;Discovery&quot;]:::ok
+  A --&gt;|&quot;Only approved agents&lt;br/&gt;may get tokens&quot;| A7[&quot;Conditional Access&lt;br/&gt;for agents: block all&lt;br/&gt;except approved&quot;]:::ok
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Alert and block are different controls: Defender for AI Services alerts; guardrails, the gateway and real-time protection block.</li><li>Real-time protection checks only Copilot Studio agents that use generative orchestration.</li></ul><p class="fig__les">Taught in <a href="../#/module/03-01">03-01 AI Data Exposure and Purview DSPM</a>, <a href="../#/module/03-02">03-02 AI Agent Identity and Governance</a>, <a href="../#/module/03-03">03-03 AI Platform and Workload Protection</a></p></div></article>
+</section>
+<section class="sec" id="who-wins" aria-labelledby="who-wins-h"><h2 id="who-wins-h">Who wins?</h2><p class="sec__intro">The order each control evaluates in. Most &quot;why did this happen?&quot; questions are answered here.</p>
+<article class="fig" id="order-ca" aria-labelledby="order-ca-h"><h3 id="order-ca-h">Conditional Access</h3><p class="fig__what">Every policy in scope applies at once; there is no priority order.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: Conditional Access. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: How Conditional Access policies combine
+  accDescr: After the first factor, signals are collected and every policy in scope is found, with exclusions beating inclusions. If any policy blocks, the sign-in is blocked. Otherwise every policy&#x27;s grant controls must be met, prompting for MFA if needed, before a token is issued with session controls. Report-only policies are logged, never enforced.
+  A([&quot;Sign-in: first&lt;br/&gt;factor done&quot;]):::actor --&gt; B[&quot;Collect signals:&lt;br/&gt;user, app, device,&lt;br/&gt;location, risk&quot;]:::d01
+  B --&gt; C[&quot;Find every policy&lt;br/&gt;in scope; exclusions&lt;br/&gt;beat inclusions&quot;]:::d01
+  C --&gt; D{&quot;Any policy&lt;br/&gt;says Block?&quot;}:::d01
+  D --&gt;|Yes| X[&quot;Blocked&quot;]:::stop
+  D --&gt;|No| E{&quot;Every policy&#x27;s&lt;br/&gt;grant controls met?&quot;}:::d01
+  E --&gt;|No| F[&quot;Prompt, e.g. for&lt;br/&gt;MFA, or deny&quot;]:::warn
+  F --&gt; E
+  E --&gt;|Yes| G[&quot;Token issued,&lt;br/&gt;session controls apply&quot;]:::ok
+  C -.-&gt;|&quot;report-only&lt;br/&gt;policies&quot;| R[&quot;Logged,&lt;br/&gt;never enforced&quot;]:::actor
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Conditional Access only sees Microsoft Entra sign-ins. SQL logins, account keys and SAS tokens never reach it.</li><li>All users doesn&#x27;t include agent identities or agent user accounts; they need policies that target them.</li></ul><p class="fig__les">Taught in <a href="../#/module/01-01">01-01 Secure Access with Microsoft Entra ID</a>, <a href="../#/module/03-02">03-02 AI Agent Identity and Governance</a></p></div></article>
+<article class="fig" id="order-packet" aria-labelledby="order-packet-h"><h3 id="order-packet-h">Network rules on a VM</h3><p class="fig__what">Security admin rules come first in both directions; the NSG order flips between inbound and outbound.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: Network rules on a VM. Scroll sideways on small screens."><pre class="mermaid">
+flowchart LR
+  accTitle: The order of network rules for a VM
+  accDescr: Inbound, security admin rules are evaluated first, then the subnet NSG, then the NIC NSG, then the VM. Outbound, security admin rules first, then the NIC NSG, then the subnet NSG, then routing. A Deny or Always allow security admin rule ends the evaluation; both NSGs must allow the traffic.
+  subgraph IN[&quot;Inbound to a VM&quot;]
+    direction TB
+    I0([&quot;Packet arrives&quot;]):::actor --&gt; I1[&quot;Security admin rules&lt;br/&gt;Deny or Always allow&lt;br/&gt;ends here&quot;]:::d02 --&gt; I2[&quot;Subnet NSG&quot;]:::d02 --&gt; I3[&quot;NIC NSG&quot;]:::d02 --&gt; I4([&quot;VM&quot;]):::ok
+  end
+  subgraph OUT[&quot;Outbound from a VM&quot;]
+    direction TB
+    O0([&quot;VM sends&quot;]):::actor --&gt; O1[&quot;Security admin rules&lt;br/&gt;Deny or Always allow&lt;br/&gt;ends here&quot;]:::d02 --&gt; O2[&quot;NIC NSG&quot;]:::d02 --&gt; O3[&quot;Subnet NSG&quot;]:::d02 --&gt; O4([&quot;Route table picks&lt;br/&gt;the next hop&quot;]):::ok
+  end
+  IN ~~~ OUT
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Within an NSG the lowest priority number that matches wins; the default rules (65000 and up) come last.</li><li>Both NSGs must allow the traffic. Prove it with IP flow verify, which names the deciding rule.</li></ul><p class="fig__les">Taught in <a href="../#/module/02-03">02-03 Network Segmentation and Connectivity</a></p></div></article>
+<article class="fig" id="order-policy" aria-labelledby="order-policy-h"><h3 id="order-policy-h">Azure Policy effects</h3><p class="fig__what">What happens to a request, and what happens only after it succeeds.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: Azure Policy effects. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: The order of Azure Policy effects
+  accDescr: For a create or update request, rules with the Disabled effect are skipped, Append and Modify change the request, Deny can refuse it, and Audit and Manual record compliance. The resource provider then applies the change, after which AuditIfNotExists and DeployIfNotExists run. Delete requests meet DenyAction.
+  A([&quot;Create or&lt;br/&gt;update request&quot;]):::actor --&gt; B[&quot;Rules with the&lt;br/&gt;Disabled effect&lt;br/&gt;are skipped&quot;]:::d01
+  B --&gt; C[&quot;Append and Modify&lt;br/&gt;change the request&quot;]:::d01
+  C --&gt; D{&quot;A Deny rule&lt;br/&gt;matches?&quot;}:::d01
+  D --&gt;|Yes| X[&quot;RequestDisallowedByPolicy&quot;]:::stop
+  D --&gt;|No| E[&quot;Audit and Manual&lt;br/&gt;record compliance&quot;]:::d01
+  E --&gt; F[&quot;Resource provider&lt;br/&gt;applies the change&quot;]:::ok
+  F --&gt; G[&quot;After success:&lt;br/&gt;AuditIfNotExists and&lt;br/&gt;DeployIfNotExists run&quot;]:::d01
+  Del([&quot;Delete&lt;br/&gt;request&quot;]):::actor --&gt; DA{&quot;A DenyAction&lt;br/&gt;rule matches?&quot;}:::d01
+  DA --&gt;|Yes| X2[&quot;Delete refused&quot;]:::stop
+  DA --&gt;|No| F
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Deny stops new creates and updates; resources that already exist are only reported non-compliant. Fix them with Modify or DeployIfNotExists and a remediation task.</li><li>An assignment in DoNotEnforce mode still evaluates and reports, but enforces nothing.</li><li>RBAC asks who; Policy asks what. Owner plus a Deny policy still can&#x27;t create the forbidden resource.</li></ul><p class="fig__les">Taught in <a href="../#/module/01-03">01-03 Governance and Regulatory Compliance</a></p></div></article>
+<article class="fig" id="order-firewall" aria-labelledby="order-firewall-h"><h3 id="order-firewall-h">Azure Firewall rule processing</h3><p class="fig__what">Rule type beats priority: every network rule is checked before any application rule.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: Azure Firewall rule processing. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: Azure Firewall rule processing order
+  accDescr: Threat intelligence filtering runs first when it is on. Then DNAT rules, then network rules, then application rules, then the infrastructure rule collection, and anything unmatched is denied. A match ends processing.
+  A([&quot;Packet reaches&lt;br/&gt;the firewall&quot;]):::actor --&gt; T{&quot;Threat intelligence&lt;br/&gt;on, and a match?&quot;}:::d02
+  T --&gt;|&quot;Alert and deny&quot;| X1[&quot;Denied and logged&quot;]:::stop
+  T --&gt;|&quot;Alert only,&lt;br/&gt;or no match&quot;| N{&quot;DNAT rule? inbound&lt;br/&gt;to the public IP&quot;}:::d02
+  N --&gt;|Match| N1[&quot;Translated&lt;br/&gt;and allowed&quot;]:::ok
+  N --&gt;|No match| R{&quot;Network rule&lt;br/&gt;matches?&quot;}:::d02
+  R --&gt;|Allow| OK[&quot;Allowed&quot;]:::ok
+  R --&gt;|Deny| X2[&quot;Denied&quot;]:::stop
+  R --&gt;|No match| P{&quot;Application rule?&lt;br/&gt;HTTP, HTTPS, MSSQL&quot;}:::d02
+  P --&gt;|Allow| OK
+  P --&gt;|Deny| X2
+  P --&gt;|No match| I{&quot;Infrastructure&lt;br/&gt;rule collection?&quot;}:::d02
+  I --&gt;|&quot;Platform FQDN&quot;| OK
+  I --&gt;|No| X3[&quot;Denied by default&quot;]:::stop
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Within each rule type: rule collection groups by priority, then rule collections by priority; parent policy groups come before child policy groups.</li><li>A network rule match ends processing, so a broad network allow can make application rules unreachable.</li></ul><p class="fig__les">Taught in <a href="../#/module/02-04">02-04 Private Access and Network Perimeter</a></p></div></article>
+<article class="fig" id="order-data" aria-labelledby="order-data-h"><h3 id="order-data-h">A data request to Key Vault or Storage</h3><p class="fig__what">Two gates, in this order. The network gate never grants anything on its own.</p><div class="fig__scroll" tabindex="0" role="region" aria-label="Flowchart: A data request to Key Vault or Storage. Scroll sideways on small screens."><pre class="mermaid">
+flowchart TD
+  accTitle: Two gates for a data request to Key Vault or Storage
+  accDescr: The network gate checks the private endpoint, or the firewall rules and trusted exceptions on the public endpoint. The authorization gate then checks a data role or access policy for an Entra token, or the key or SAS for Shared Key access to Storage. Both must pass.
+  A([&quot;Get a secret,&lt;br/&gt;or read a blob&quot;]):::actor --&gt; N{&quot;Network gate:&lt;br/&gt;private endpoint, or&lt;br/&gt;a public-endpoint&lt;br/&gt;rule or exception?&quot;}:::d02
+  N --&gt;|No| X1[&quot;403 from the&lt;br/&gt;network rules&quot;]:::stop
+  N --&gt;|Yes| H{&quot;How does it&lt;br/&gt;authenticate?&quot;}:::d01
+  H --&gt;|&quot;Microsoft Entra&lt;br/&gt;token&quot;| R{&quot;Data role, or access&lt;br/&gt;policy, allows&lt;br/&gt;the action?&quot;}:::d01
+  R --&gt;|No| X2[&quot;403: not&lt;br/&gt;authorized&quot;]:::stop
+  R --&gt;|Yes| OK[&quot;Data returned&quot;]:::ok
+  H --&gt;|&quot;Storage only:&lt;br/&gt;account key or SAS&quot;| K{&quot;Shared Key allowed,&lt;br/&gt;signature valid,&lt;br/&gt;SAS still valid?&quot;}:::d01
+  K --&gt;|No| X3[&quot;403&quot;]:::stop
+  K --&gt;|Yes| OK
+classDef d01 stroke:#2b88d8,stroke-width:2px
+classDef d02 stroke:#0e9c8a,stroke-width:2px
+classDef d03 stroke:#8661c5,stroke-width:2px
+classDef d04 stroke:#e05a1b,stroke-width:2px
+classDef actor stroke:#8a8886,stroke-width:1.5px,stroke-dasharray:4 3
+classDef stop stroke:#d13438,stroke-width:3px
+classDef ok stroke:#2e9e2e,stroke-width:3px
+classDef warn stroke:#c19c00,stroke-width:3px
+</pre></div><div class="fig__notes"><h4>Remember</h4><ul><li>Network rules subtract; they never grant. An allowed subnet still needs a role, a key or a SAS.</li><li>Disabling Shared Key stops account keys, account SAS and service SAS; Entra ID and user delegation SAS keep working.</li><li>Under the access policy model, anyone who can write the vault&#x27;s policies can grant themselves access; under Azure RBAC that needs role assignment rights.</li></ul><p class="fig__les">Taught in <a href="../#/module/01-02">01-02 Secrets and Keys with Azure Key Vault</a>, <a href="../#/module/02-01">02-01 Storage Account Security</a></p></div></article>
+</section>
+  </main>
+</div>
+
+<footer class="foot">
+  <p>Domains: 1 identity, access and governance; 2 storage, databases and networking; 3 compute and AI security; 4 posture and monitoring.</p>
+  <p>These are teaching models. They show the order decisions are made in, not every setting a control has. Checked against Microsoft Learn in October 2026; preview features can change.</p>
+</footer>
+
+<script>
+/* Keep wide flowcharts readable on narrow screens: never shrink a chart below
+   70% of its natural size; scroll sideways instead. */
+(function () {
+  function fit() {
+    var svgs = document.querySelectorAll('.fig__scroll svg');
+    for (var i = 0; i < svgs.length; i++) {
+      var svg = svgs[i], box = svg.closest('.fig__scroll');
+      var vb = svg.viewBox && svg.viewBox.baseVal;
+      if (!box || !vb || !vb.width) continue;
+      var cs = getComputedStyle(box);
+      var room = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      var w = vb.width;
+      svg.style.maxWidth = 'none';
+      svg.style.width = Math.round(w <= room ? w : Math.max(room, w * 0.7)) + 'px';
+    }
+  }
+  window.SC500FitCharts = fit;
+  /* On a phone the contents list would push the first chart far down: start it closed. */
+  var toc = document.querySelector('.toc details');
+  if (toc && window.matchMedia && matchMedia('(max-width: 63.99rem)').matches) toc.open = false;
+  var t;
+  window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(fit, 120); });
+  if ('MutationObserver' in window) {
+    var mo = new MutationObserver(function () { clearTimeout(t); t = setTimeout(fit, 60); });
+    var boxes = document.querySelectorAll('.fig__scroll');
+    for (var i = 0; i < boxes.length; i++) mo.observe(boxes[i], { childList: true, subtree: true });
+  }
+  fit();
+})();
+</script>
+
+<script src="../assets/js/vendor/mermaid.min.js"></script>
+<script>
+/* Academy version: render the flowcharts with the vendored Mermaid, in the
+   Academy's theme, with fills drawn from the page's own colour tokens. */
+(function () {
+  var root = document.documentElement;
+  function done() { root.classList.remove('fc-wait'); }
+  if (!window.mermaid) { done(); return; }
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function v(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function defs() {
+    var out = [];
+    ['01', '02', '03', '04'].forEach(function (id) {
+      out.push('classDef d' + id + ' stroke:' + v('--d-' + id) + ',stroke-width:2px,fill:' + v('--d-' + id + '-tint'));
+    });
+    out.push('classDef actor stroke:' + v('--d-00') + ',stroke-width:1.5px,stroke-dasharray:4 3,fill:' + v('--surface'));
+    out.push('classDef stop stroke:' + v('--stop') + ',stroke-width:3px,fill:' + v('--stop-tint'));
+    out.push('classDef ok stroke:' + v('--ok') + ',stroke-width:3px,fill:' + v('--ok-tint'));
+    out.push('classDef warn stroke:' + v('--warn') + ',stroke-width:3px,fill:' + v('--warn-tint'));
+    return out.join('\n');
+  }
+  var dark = isDark();
+  try {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: dark ? 'dark' : 'neutral',
+      /* Mermaid's dark edge-label background is just under AA with its label
+         text; use the page's raised surface instead (as the Academy does). */
+      themeVariables: {
+        edgeLabelBackground: dark ? '#252423' : v('--surface'),
+        clusterBkg: v('--bg'),
+        clusterBorder: v('--rule-strong')
+      },
+      fontFamily: v('--face-ui'),
+      flowchart: { useMaxWidth: true }
+    });
+  } catch (e) { done(); return; }
+  var pres = Array.prototype.slice.call(document.querySelectorAll('pre.mermaid'));
+  var extra = defs();
+  var chain = Promise.resolve();
+  pres.forEach(function (pre, n) {
+    chain = chain.then(function () {
+      var src = pre.textContent.replace(/^\s*classDef .*$/gm, '').replace(/\s+$/, '') + '\n' + extra + '\n';
+      return mermaid.render('fc-' + n, src).then(function (out) {
+        var host = document.createElement('div');
+        host.className = 'fig__svg';
+        host.innerHTML = out.svg;
+        pre.replaceWith(host);
+      }).catch(function () { pre.classList.add('is-failed'); });
+    });
+  });
+  chain.then(function () { done(); if (window.SC500FitCharts) window.SC500FitCharts(); });
+})();
+</script>
+
+</html>

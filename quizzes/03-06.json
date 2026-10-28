@@ -20,7 +20,9 @@
         null,
         "Access restrictions apply whether or not HTTPS-only is on. The gap is that the SCM site has separate rules.",
         "A managed identity is how the app authenticates to other services. It does not let an outsider reach the console."
-      ]
+      ],
+      "scenario_clue": "\"deployment console\" - that is the SCM/Kudu site, which has its own rules.",
+      "misconception": "That restricting an App Service app restricts every endpoint it has."
     },
     {
       "id": "03-06-q2",
@@ -39,26 +41,30 @@
         null,
         "The WAF logged the injection, so it inspected the request. The problem is that Detection mode blocks nothing.",
         "The WAF logged the attack, so the request was evaluated. An exclusion covering the whole rule set would not explain a logged match."
-      ]
+      ],
+      "scenario_clue": "\"logged\" but the app \"was successfully exploited\" - the WAF saw it and did not block it.",
+      "misconception": "That a WAF which detects an attack also stops it."
     },
     {
       "id": "03-06-q3",
       "sub_skill": "Implement and configure Azure Web Application Firewall",
       "prompt": "Your WAF blocks legitimate requests carrying an authentication token in a header. Which tuning option, and what should you know about rule set upgrades?",
       "options": [
-        "Disable the rule; upgrades preserve disabled rules",
-        "Add an exclusion for that request attribute; changing rule set version resets every enabled and disabled rule customisation to the new version's defaults",
-        "Add a custom rule allowing all requests with that header; exclusions do not survive upgrades",
+        "Disable the rule; upgrades preserve disabled rules automatically",
+        "Add an exclusion for that request attribute; if you later change the rule set version in the portal, rule overrides and rule-level exclusions are reset, so carry them across by script or template",
+        "Add a custom rule allowing all requests with that header; custom rules run after managed rules",
         "Switch to Detection mode until the vendor fixes the rule"
       ],
       "answer": 1,
-      "explanation": "An exclusion omits one request attribute from evaluation and leaves the rule protecting everything else; disabling stops it protecting anything. And a rule set version change resets enabled/disabled customisations, so upgrading is a re-tuning exercise rather than a version bump.",
+      "explanation": "An exclusion removes one request attribute from evaluation, so the rule keeps protecting everything else. Tuning is tied to a rule set version: the portal resets rule-state overrides, action overrides and rule-level exclusions when you assign a new version, while PowerShell, the CLI, REST or a template can carry them across.",
       "why_not": [
-        "Disabling the rule stops it protecting anything. And a rule set version change resets enabled and disabled customisations.",
+        "Disabling the rule stops it protecting all traffic, and a version change made in the portal resets rule-state overrides to the new version's defaults.",
         null,
-        "A custom rule allowing every request with that header exempts those requests from inspection altogether. An exclusion omits only the one attribute.",
-        "Detection mode blocks nothing for any request, which trades one broken header for no protection at all."
-      ]
+        "Custom rules run before managed rules, and an allow rule on that header would let any request carrying it skip inspection entirely.",
+        "Detection mode removes all blocking - for every rule and every request - to fix a false positive on one header."
+      ],
+      "scenario_clue": "\"legitimate requests carrying an authentication token in a header\" - one attribute needs excluding, not a whole rule.",
+      "misconception": "That disabling a rule is a safe way to fix one false positive."
     },
     {
       "id": "03-06-q4",
@@ -66,18 +72,20 @@
       "prompt": "A Function uses the function authorization level, and the key is embedded in a partner's integration URL. What is wrong with this?",
       "options": [
         "Nothing, provided the URL is sent over HTTPS",
-        "The key is a bearer credential with no identity, no expiry, and no per-caller revocation — the SAS token problem in a new place; use platform authentication or API Management instead",
+        "The key is a bearer credential with no identity and no expiry, and it travels in URLs and logs - the SAS token problem in a new place; use platform authentication or API Management instead",
         "Function keys expire after 90 days and will break the integration",
         "Function keys cannot be used by external partners"
       ],
       "answer": 1,
-      "explanation": "You cannot say which caller made a request, cannot revoke one partner without breaking the others, and the key lives in a URL, in logs and in browser history. Where the caller can hold an Entra identity, use Easy Auth or a gateway in front.",
+      "explanation": "A function key identifies nobody: whoever holds it can call the function, it does not expire on its own, and in a URL it ends up in logs, tickets and browser history. Where the caller can hold a Microsoft Entra identity, put App Service authentication or API Management with validate-jwt in front.",
       "why_not": [
-        "HTTPS protects the key in transit, but it is still a bearer credential with no identity, no expiry and no per-caller revocation, sitting in a URL, in logs and in browser history.",
+        "HTTPS protects the key in transit, not once it sits in a partner's configuration, logs or history.",
         null,
-        "The problem is the opposite: nothing expires the key, so it lives on until someone rotates it.",
-        "Partners can use function keys. That is the problem, not a constraint."
-      ]
+        "Function keys do not expire on their own - that is part of the problem.",
+        "External callers can use function keys. The issue is that the key carries no identity."
+      ],
+      "scenario_clue": "\"key is embedded in a partner's integration URL\" - a bearer secret in a URL.",
+      "misconception": "That HTTPS makes a shared key an acceptable credential."
     },
     {
       "id": "03-06-q5",
@@ -96,7 +104,9 @@
         null,
         "Anyone holding the URL can run the workflow, not just read its history.",
         "The trigger does not check Azure roles. The signature in the URL is what authorizes the call."
-      ]
+      ],
+      "scenario_clue": "\"callback URL was circulated\" - the URL contains a SAS, so it is the credential.",
+      "misconception": "That a workflow URL is just an address."
     },
     {
       "id": "03-06-q6",
@@ -104,7 +114,7 @@
       "prompt": "You apply validate-jwt, rate limiting and IP filtering in API Management. What makes those policies real rather than advisory?",
       "options": [
         "Enabling the Premium tier of API Management",
-        "Restricting the backend so it accepts traffic only from API Management, via access restrictions or a private endpoint",
+        "Making API Management the only path to the backend - a private endpoint or network restriction, or a backend that accepts only the gateway's managed identity",
         "Applying the policies at the product scope rather than the API scope",
         "Requiring a subscription key in addition to the token"
       ],
@@ -115,7 +125,9 @@
         null,
         "Policy scope decides which APIs a policy applies to. It does not stop callers going around the gateway.",
         "A subscription key is another gateway control, equally optional if the backend can be reached directly."
-      ]
+      ],
+      "scenario_clue": "\"real rather than advisory\" - the gateway must be the only path to the backend.",
+      "misconception": "That gateway policies protect a backend that can still be called directly."
     }
   ]
 }

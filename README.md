@@ -8,33 +8,43 @@
 
 ---
 
-**A free, certification-first study companion for Microsoft Exam SC-500:
-Implementing End-to-End Security Controls for Cloud and AI Workloads** (Microsoft
-Certified: Cloud and AI Security Engineer Associate).
+**A free study companion for Microsoft Exam SC-500: Implementing End-to-End Security
+Controls for Cloud and AI Workloads** (Microsoft Certified: Cloud and AI Security
+Engineer Associate).
 
-Its one purpose is to help you pass SC-500. Everything in it maps to the official
-skills outline:
+**Beginner-first in how it explains cloud and AI security. Certification-first in
+what it teaches.** Its one purpose is to help you pass SC-500, by understanding the
+security requirement behind each control rather than memorising product names.
+Everything maps to the official skills outline:
 
-- a lesson for every exam objective;
-- a hands-on lab with its cost stated up front and a mandatory cleanup;
-- a knowledge check that explains every answer;
-- the comparisons the exam is built on;
-- a dashboard that shows what you have studied, practised and checked, and what to
-  do next.
+- **seventeen short foundation primers** for anyone new to cloud, identity, networks
+  or AI - not exam content, just what the lessons assume;
+- **a lesson for every exam objective** that starts from the security problem, then
+  plain English, a mental model, Microsoft's terminology, how it works, what it does
+  and does not solve, and how SC-500 tests it;
+- **a hands-on lab** with its cost stated up front, a desired security outcome you
+  prove in Validation, and a mandatory cleanup;
+- **knowledge checks** that explain every answer: why, why not each alternative, the
+  scenario clue, and the misconception being tested;
+- **nineteen structured comparisons** of the controls the exam is built to confuse;
+- **a dashboard** that shows what you have studied, practised, checked, applied and
+  retained, and what to do next.
 
 It is built from Microsoft Learn and is meant to be used **with** it, not instead of
 it.
 
-**Who it is for.** Security engineers preparing for SC-500 who already work with
-Azure: compute, networking, storage and Microsoft Entra ID. It is not an introduction
-to Azure. Lessons that depend on foundational knowledge say so. If you prepared for
-AZ-500, appendix A5 shows what changed.
+**Who it is for.** Anyone preparing for SC-500 - including people with limited
+exposure to Azure, Microsoft 365, Entra ID, networking or AI. If those are new, start
+with **Module 0A**; every lesson also links the primers it relies on, just in time.
+If you already work with Azure, go straight to Module 0B and Domain 1. If you prepared
+for AZ-500, appendix A5 shows what changed.
 
 ## Contents
 
 - [Using it with Microsoft Learn](#using-it-with-microsoft-learn)
 - [Table of contents](#table-of-contents)
-  - [Start here: Module 0](#start-here-module-0--lab-safety)
+  - [Module 0A: Before we secure the cloud](#module-0a--before-we-secure-the-cloud)
+  - [Module 0B: Safe lab foundations](#module-0b--safe-lab-foundations)
   - [Domain 1: Identity, Access & Governance](#domain-1--identity-access--governance-2025-of-the-exam)
   - [Domain 2: Storage, Databases & Networking](#domain-2--storage-databases--networking-2530-of-the-exam)
   - [Domain 3: Compute Security](#domain-3--compute-security-2025-of-the-exam)
@@ -73,16 +83,19 @@ from.
 **A routine for each lesson:**
 
 1. Open the lesson and read **What you need to know**: the official sub-objectives, in
-   Microsoft's wording.
-2. Work through the **Microsoft Learn modules** listed for the lesson.
-3. Read the lesson. It explains the mechanism, the distinctions that matter, and what
-   the exam looks for (**SC-500 Exam Lens**).
-4. Do the **lab** in your test tenant, including its cleanup.
-5. Take the **knowledge check**. Every answer is explained, including why the wrong
-   options are wrong.
-6. Open two or three of the lesson's **Sources** pages and learn your way around them.
+   Microsoft's wording, and any foundation primers it relies on.
+2. Read **The security problem** and **In plain English** before anything else. If a
+   term is unfamiliar, it is in **Words you need to know**.
+3. Work through the **Microsoft Learn modules** listed for the lesson.
+4. Read the rest of the lesson: the mechanism, why security cares, the comparisons
+   that matter, and what the exam looks for (**SC-500 Exam Lens**).
+5. Do the **lab** in your test tenant. Prove the desired security outcome in
+   Validation, then clean up.
+6. Take the **knowledge check**, then **Teach it back**: explain the control in your
+   own words.
+7. Open two or three of the lesson's **Sources** pages and learn your way around them.
 
-**Why step 6 pays off.** Microsoft permits access to Microsoft Learn during most
+**Why step 7 pays off.** Microsoft permits access to Microsoft Learn during most
 role-based exams. Finding one fact takes thirty seconds when you know which page to
 open, and five minutes when you are browsing. Appendix A4 lists the pages worth
 knowing.
@@ -97,7 +110,35 @@ collects them all.
 
 Every link opens the live Academy.
 
-### Start here: Module 0 · Lab safety
+### Module 0A · Before we secure the cloud
+
+Not exam content. Seventeen short primers on what the lessons assume: the cloud,
+tenants and subscriptions, identity, networks, data, logs, control types, shared
+responsibility, generative AI and AI agents. Each names the official objectives it
+supports. Read them in order if you are new; dip in from a lesson's prerequisites if
+you are not.
+
+| # | Primer | Supports objectives |
+| --- | --- | --- |
+| 0A-01 | [What the Cloud Is](https://ironbranded.github.io/SC500-Academy/#/module/0A-01) | 1.2, 1.3, 3.2, 3.3, 4.1 |
+| 0A-02 | [Azure and Microsoft 365](https://ironbranded.github.io/SC500-Academy/#/module/0A-02) | 1.1, 3.1, 4.2, 4.3 |
+| 0A-03 | [Tenants, Subscriptions, and Resources](https://ironbranded.github.io/SC500-Academy/#/module/0A-03) | 1.3, 4.1, 4.2 |
+| 0A-04 | [Users, Accounts, and Identities](https://ironbranded.github.io/SC500-Academy/#/module/0A-04) | 1.1, 1.3, 3.1 |
+| 0A-05 | [Authentication and Authorization](https://ironbranded.github.io/SC500-Academy/#/module/0A-05) | 1.1, 1.2, 1.3, 2.1, 2.2 |
+| 0A-06 | [Applications and Workloads](https://ironbranded.github.io/SC500-Academy/#/module/0A-06) | 1.1, 3.2, 3.3 |
+| 0A-07 | [Networks: Addresses, Subnets, Routing, DNS, and Firewalls](https://ironbranded.github.io/SC500-Academy/#/module/0A-07) | 2.3, 1.2, 2.1 |
+| 0A-08 | [Public and Private Connectivity](https://ironbranded.github.io/SC500-Academy/#/module/0A-08) | 2.3, 1.2, 2.1, 2.2 |
+| 0A-09 | [Storage and Databases](https://ironbranded.github.io/SC500-Academy/#/module/0A-09) | 2.1, 2.2 |
+| 0A-10 | [APIs](https://ironbranded.github.io/SC500-Academy/#/module/0A-10) | 3.3, 3.1 |
+| 0A-11 | [Logs and Telemetry](https://ironbranded.github.io/SC500-Academy/#/module/0A-11) | 4.2, 2.2, 4.1 |
+| 0A-12 | [Preventive, Detective, Corrective, and Governance Controls](https://ironbranded.github.io/SC500-Academy/#/module/0A-12) | 1.3, 4.1 |
+| 0A-13 | [Shared Responsibility](https://ironbranded.github.io/SC500-Academy/#/module/0A-13) | 4.1, 3.1, 3.2, 3.3 |
+| 0A-14 | [Generative AI](https://ironbranded.github.io/SC500-Academy/#/module/0A-14) | 3.1 |
+| 0A-15 | [AI Models, Prompts, and Outputs](https://ironbranded.github.io/SC500-Academy/#/module/0A-15) | 3.1 |
+| 0A-16 | [AI Agents and Connected Tools](https://ironbranded.github.io/SC500-Academy/#/module/0A-16) | 3.1, 4.3 |
+| 0A-17 | [How Microsoft Cloud Security Fits Together](https://ironbranded.github.io/SC500-Academy/#/module/0A-17) | 1.1, 1.3, 2.3, 4.1, 4.2 |
+
+### Module 0B · Safe lab foundations
 
 Not exam content, and not optional. It sets a budget with spending alerts, replaces
 standing administrator access with just-in-time access through PIM, and gives you the
@@ -165,7 +206,7 @@ cleanup checklist every later lab uses. Do it before creating anything billable.
 | A3 | [Glossary](https://ironbranded.github.io/SC500-Academy/#/appendix/a3) | As a review pass. It is organised by the distinctions the exam tests |
 | A4 | [Exam logistics and scoring](https://ironbranded.github.io/SC500-Academy/#/appendix/a4) | Once early, and again the week before |
 | A5 | [AZ-500 to SC-500 delta](https://ironbranded.github.io/SC500-Academy/#/appendix/a5) | Early, if you know AZ-500. It lists what is gone, not just renamed |
-| A6 | [Choosing between overlapping controls](https://ironbranded.github.io/SC500-Academy/#/appendix/a6) | After Domain 2, and again in the final week. Fifteen "which control does the question want?" comparisons, each with its trap |
+| A6 | [Choosing between overlapping controls](https://ironbranded.github.io/SC500-Academy/#/appendix/a6) | After Domain 2, and again in the final week. Long-form "which control does the question want?" tables, each with its trap. The shorter structured versions are in **Compare controls** |
 | A7 | [Related topics with no skills bullet](https://ironbranded.github.io/SC500-Academy/#/appendix/a7) | Late, at recognition depth. Services Microsoft links from the study guide without a bullet of their own |
 | A8 | [Timed portal drills](https://ironbranded.github.io/SC500-Academy/#/appendix/a8) | A week after the labs, against the clock, documentation closed |
 | A9 | [Case study 1: Northwind Logistics](https://ironbranded.github.io/SC500-Academy/#/appendix/a9) | Near the end. Scenarios that cut across lessons |
@@ -176,12 +217,18 @@ cleanup checklist every later lab uses. Do it before creating anything billable.
 
 | Tool | What it is for |
 | --- | --- |
-| [Dashboard](https://ironbranded.github.io/SC500-Academy/#/) | What to study next, and how much of each domain you have **studied**, **practised** and **knowledge-checked**, per official objective |
+| [Dashboard](https://ironbranded.github.io/SC500-Academy/#/) | What to study next, and how much of each domain you have **studied**, **practised** and **knowledge-checked**, per official objective - plus questions **applied** in mixed sets and **retained** a week later |
+| [Compare controls](https://ironbranded.github.io/SC500-Academy/#/compare) | Nineteen comparisons of the controls SC-500 is built to confuse. Every option answers the same nine questions, with scenario clues and the trap |
 | [Domain reviews](https://ironbranded.github.io/SC500-Academy/#/domain/01) | End-of-domain summary, key comparisons, a mixed question set, and what needs another look |
 | [Exam prep](https://ironbranded.github.io/SC500-Academy/#/prep) | Questions by domain or objective, the ones you got wrong, the ones you have not tried, and lessons you marked *Review later* |
 | [Mock exam](https://ironbranded.github.io/SC500-Academy/#/exam) | Timed and weighted across all four domains |
 | [Flashcards](https://ironbranded.github.io/SC500-Academy/#/cards) | The distinctions the exam turns on, on a spaced-repetition schedule |
-| [Objective coverage](https://ironbranded.github.io/SC500-Academy/#/coverage) | Every official sub-objective, and the lesson, lab and questions that cover it |
+| [Control map](https://ironbranded.github.io/SC500-Academy/map/) | Every SC-500 control on one map, from who is asking to who responds. Nine walkthroughs show the controls working together on a real request (an admin change, an app reading a secret, an AI agent using a tool, an alert becoming an incident); Explore shows what each control solves, what it doesn't, what it connects to, and its official objectives |
+| [Flowcharts](https://ironbranded.github.io/SC500-Academy/flowcharts/) | Twenty flowcharts of the controls working together: nine requests step by step with yes/no decisions (an admin change, an app reading a secret, a request through WAF and API Management, VM egress through Azure Firewall, an AI agent calling a tool), four *which control?* decision trees, and five *who wins?* evaluation orders (Conditional Access, NSGs, Azure Policy, Azure Firewall, Key Vault and Storage data access). Each lists what to remember and the lessons that teach it, and 17 of them also appear inside those lessons |
+| [Case studies](https://ironbranded.github.io/SC500-Academy/#/cases) | Four organisations, each with an environment, numbered requirements and several exam-style questions about one design (single answer, choose two, drop-down lists). **Review my design** shows where your answers conflict with each other |
+| [Break-fix drills](https://ironbranded.github.io/SC500-Academy/#/drills) | Eight broken configurations on paper: read the ticket and the evidence, pick the line that proves the cause, then choose the cause, the fix and how to prove it worked |
+| [Study posters](https://ironbranded.github.io/SC500-Academy/#/posters) | Five two-sided tabloid posters (17 × 11 in), each with its own header colour: which control, who wins, the AI security stack, posture and monitoring, and the portal paths and PowerShell to build, revoke, disable and clean up. PDFs in `posters/pdf/` |
+| [Objective coverage](https://ironbranded.github.io/SC500-Academy/#/coverage) | Every official sub-objective, and the lesson, comparisons, lab, questions and foundation primers that cover it |
 | [Cost planner](https://ironbranded.github.io/SC500-Academy/#/cost) | Every lab, ordered by what it costs to run |
 | [Verification watchlist](https://ironbranded.github.io/SC500-Academy/#/preview) | Lessons covering preview features, or due for a fresh check against the documentation |
 
@@ -196,9 +243,9 @@ a single percentage would hide exactly the gaps you need to see.
 
 | Pass | What you do |
 | --- | --- |
-| **0** | Module 0, all of it. Skim A2 and A4. Read A5 early if you know AZ-500 |
+| **0** | Module 0A if cloud, identity, networking or AI are new to you. Then Module 0B, all of it. Skim A2 and A4. Read A5 early if you know AZ-500 |
 | **1** | Domains 1 to 4 in order, following the lesson routine above. Do the cheapest labs first within each domain |
-| **2** | Each **domain review**, the lessons in **Review pass** mode, then A6 and A3 |
+| **2** | Each **domain review**, the lessons in **Review pass** mode, then **Compare controls**, A6 and A3 |
 | **3** | **Exam prep**: wrong answers first, then unanswered questions. Then the case studies, the **mock exam**, and the A8 drills |
 | **4** | The week before: A5 and A6 again, Microsoft's exam sandbox, and a final check that the skills outline has not changed |
 
@@ -210,8 +257,12 @@ a single percentage would hide exactly the gaps you need to see.
   the hour whether you use them or not: Security Copilot, Azure Firewall, Bastion,
   Defender for Servers, AKS, API Management and Application Gateway. The cost planner
   shows them all.
+- **Every lab is built around an outcome, not a list of clicks.** It explains why the
+  lab matters, shows the architecture, and states the **desired security outcome**
+  first. Validation proves each statement; *What just happened?* and *Limitations*
+  explain the mechanism and what the control does not solve.
 - **Every lab ends in a mandatory cleanup.** A lab only counts as practised on your
-  dashboard once its cleanup checklist is ticked.
+  dashboard once its cleanup checklist and its completion confirmations are ticked.
 - **Most tasks are shown two ways**, in the Azure portal and in PowerShell. Do the
   portal first, because that is what the exam shows you. Then do PowerShell, because
   that is what you will reuse.
@@ -243,7 +294,9 @@ documentation. Before you book your exam:
 - **A lab left something running or exposed?** Report it through
   [SECURITY.md](SECURITY.md).
 - **Want to contribute?** See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). What
-  changed and when is in [CHANGELOG.md](CHANGELOG.md).
+  changed and when is in [CHANGELOG.md](CHANGELOG.md). How the curriculum was checked
+  against the official outline is in
+  [docs/OBJECTIVE-VALIDATION.md](docs/OBJECTIVE-VALIDATION.md).
 
 Please never share exam dumps or questions recalled from the live exam. Every question
 here is written from the documentation.

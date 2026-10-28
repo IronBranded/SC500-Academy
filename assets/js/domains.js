@@ -26,6 +26,7 @@
 
   /* 16x16 viewBox, stroked with currentColor. */
   var ICONS = {
+    '0A': 'M2 3.2c2-.7 4-.5 6 .9 2-1.4 4-1.6 6-.9v9.6c-2-.7-4-.5-6 .9-2-1.4-4-1.6-6-.9zM8 4.1v9.6',  // open book - foundations
     '00': 'M8 1.5 14 5v6l-6 3.5L2 11V5z',                                   // hexagon - lab safety
     '01': 'M8 2.2a2.8 2.8 0 1 1 0 5.6a2.8 2.8 0 0 1 0-5.6zM2.6 14c.5-2.9 2.7-4.4 5.4-4.4s4.9 1.5 5.4 4.4', // person
     '02': 'M2 4.5 8 2l6 2.5L8 7zM2 8l6 2.5L14 8M2 11.5 8 14l6-2.5',           // stacked layers
@@ -34,6 +35,7 @@
   };
 
   var DOMAINS = {
+    '0A': { short: 'Foundations',                     abbr: 'FND', exam: false },
     '00': { short: 'Lab Safety',                      abbr: 'LAB', exam: false },
     '01': { short: 'Identity, Access & Governance',   abbr: 'IAG', exam: true },
     '02': { short: 'Storage, Databases & Networking', abbr: 'SDN', exam: true },
@@ -42,12 +44,17 @@
   };
 
   function info(id) {
-    var key = String(id || '').padStart ? String(id).padStart(2, '0') : String(id);
+    var raw = String(id || '').toUpperCase();
+    var key = DOMAINS[raw] ? raw : (raw.padStart ? raw.padStart(2, '0') : raw);
     return DOMAINS[key] || { short: 'Appendix', abbr: 'REF', exam: false };
+  }
+  function keyOf(id) {
+    var raw = String(id || '').toUpperCase();
+    return DOMAINS[raw] ? raw : '00';
   }
 
   function icon(id, size) {
-    var key = DOMAINS[id] ? id : '00';
+    var key = keyOf(id);
     var s = document.createElementNS(SVG, 'svg');
     s.setAttribute('viewBox', '0 0 16 16');
     s.setAttribute('width', String(size || 16));
@@ -69,7 +76,7 @@
   /* Paint an element with a domain: sets data-domain and the --d custom
      properties every learn.css component reads. */
   function paint(el, id) {
-    var key = DOMAINS[id] ? id : '00';
+    var key = keyOf(id);
     el.dataset.domain = key;
     el.style.setProperty('--d', 'var(--d-' + key + ')');
     el.style.setProperty('--d-ink', 'var(--d-' + key + '-ink)');

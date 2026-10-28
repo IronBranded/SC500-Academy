@@ -2,7 +2,7 @@
 objective: "(Project prerequisite - doubles as practice for 01-01)"
 sub_objectives:
   - "Implement and configure Privileged Identity Management (PIM)"
-domain: "Lab Safety and Environment Setup"
+domain: "Safe Lab Foundations"
 domain_weight: "n/a"
 status: GA
 prerequisites: ["00-00", "00-01"]
@@ -47,6 +47,14 @@ which hides permission errors. Working from least privilege means when a lab
 fails with a 403, you learn something real about which role actually governs
 that operation. That knowledge is directly exam-relevant; the questions care
 about which role does what.
+
+## In plain English
+
+Instead of being an administrator all the time, you become eligible to be one, and you
+switch the role on only when a task needs it, for a limited time, with a reason. If
+your account is ever stolen while the role is off, the attacker gets an ordinary
+account. This lesson sets that up for your lab - and gives you dozens of repetitions of
+a control the exam tests.
 
 ## How it works under the hood
 
@@ -201,6 +209,14 @@ See [00-02 lab](../../labs/00-lab-safety/00-02-lab.md).
    access gone everywhere immediately? Why or why not?
 5. Why is granting yourself eligible Owner at subscription scope a worse lab
    design than eligible Contributor plus eligible User Access Administrator?
+
+## Key takeaways
+
+- Standing privilege is the risk; eligible, time-limited activation is the control.
+- Configure PIM for your own working account before the first lab.
+- The activation policy - duration, MFA, justification, approval - is the actual control.
+- Entra roles and Azure resource roles are managed in separate PIM surfaces.
+- A 403 in a lab is a lesson about which role governs that operation.
 
 ## Sources
 

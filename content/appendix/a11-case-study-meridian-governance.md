@@ -11,7 +11,7 @@ product_docs:
   - "https://learn.microsoft.com/azure/defender-for-cloud/secrets-scanning"
   - "https://learn.microsoft.com/azure/backup/multi-user-authorization"
   - "https://learn.microsoft.com/purview/audit-premium"
-last_verified: "2026-09-20"
+last_verified: "2026-10-20"
 portal: ""
 powershell_module: ""
 az_cli_command: ""
@@ -59,7 +59,7 @@ thirty days on day nine of the intrusion. It was caught during an unrelated revi
 
 **What the estate said, and did not say:**
 
-- Defender for Cloud showed a secure score of **84%**. Foundational CSPM only; no paid CSPM
+- Defender for Cloud showed a classic secure score of **84%**. Foundational CSPM only; no paid CSPM
   plan. An internet-exposed VM with a critical CVE and a Contributor-holding managed identity
   had existed for four months.
 - An **Azure Policy assignment with a Deny effect** requiring HTTPS-only on storage had been in
@@ -178,7 +178,7 @@ Secure score was 84% while an attack path had been open for four months. Reconci
 say what Meridian would have needed to see it.
 
 - A. Secure score lags by up to 90 days; the figure was stale
-- B. Secure score is computed from Microsoft cloud security benchmark controls - it measures what
+- B. The classic secure score is computed from Microsoft cloud security benchmark controls - it measures what
   is assessed, not what is dangerous - and attack path analysis requires the Defender CSPM plan,
   which they did not have
 - C. The attack path was suppressed by a governance rule
@@ -220,24 +220,28 @@ until you need it.</p>
 
 ## Question 7
 
-Audit search returns nothing for one user's mailbox and works normally for everyone else. What
-does that pattern tell you, and how does it differ from returning nothing for everyone?
+Audit search returns no mailbox events (MailItemsAccessed and others) for one user's mailbox and
+works normally for everyone else. What does that pattern tell you, and how does it differ from
+returning nothing for everyone?
 
 - A. Nothing for one user means the mailbox was deleted; nothing for everyone means a service
   outage
-- B. Nothing for one user points at per-user licensing - high-value events such as
-  MailItemsAccessed are generated only for users with Audit (Premium); nothing for everyone
-  points at unified audit log ingestion being disabled tenant-wide
+- B. Nothing for one user points at per-mailbox configuration - mailbox auditing disabled or
+  bypassed for that mailbox, its audit actions customised, or the user lacking a licence that
+  includes mailbox auditing; nothing for everyone points at unified audit log ingestion being
+  disabled tenant-wide
 - C. Both indicate the retention period has expired
 - D. Nothing for one user means their records were purged by a retention policy; nothing for
   everyone means the search scope was wrong
 
 <details class="depth">
 <summary>Answer</summary>
-<p><strong>B.</strong> The shape of the emptiness is the diagnostic. Audit (Premium) is licensed
-per user, so the answer to "which messages did the attacker read" depends on a licensing
-decision made months before anyone knew there would be an incident - and the events cannot be
-generated retroactively.</p>
+<p><strong>B.</strong> The shape of the emptiness is the diagnostic. Mailbox auditing is decided
+per mailbox and per user licence (MailItemsAccessed is part of Audit (Standard) mailbox auditing
+for E3/E5 users, and mailboxes whose audit actions were customised miss newer events), so the
+answer to "which messages did the attacker read" depends on configuration made months before
+anyone knew there would be an incident - and the events cannot be generated retroactively.
+Audit (Premium) insights such as SearchQueryInitiated add a second per-user licensing layer.</p>
 <p>The tenant-wide case carries its own second thought: disabling unified audit log ingestion is
 a single supported administrative command, and an intruder with the right role has as much
 reason to run it as an administrator does.</p>
@@ -250,16 +254,18 @@ A portfolio manager in finance was able to open Security Copilot within a day of
 Explain, and say what restricting access does and does not change.
 
 - A. Their Entra role inherits Copilot owner; removing the role fixes it
-- B. Copilot contributor is granted to every user in the tenant by default, so onboarding opened
-  the platform to the directory; restricting it governs who may use the platform and changes
-  nothing about what a user can see once inside
+- B. Copilot contributor is assigned to the **Everyone** group in this tenant (the original
+  default, still present in many older tenants), so onboarding opened the platform to the
+  directory; restricting it governs who may use the platform and changes nothing about what a
+  user can see once inside
 - C. Security Copilot is licensed per tenant, so all users are entitled to the portal
 - D. The workspace was created without member assignments, which defaults to open
 
 <details class="depth">
 <summary>Answer</summary>
-<p><strong>B.</strong> The default is the fact to carry, and the second clause is what stops
-people over-reading the fix. What a signed-in user can actually retrieve is governed by their
+<p><strong>B.</strong> The Everyone assignment is the fact to check - new instances default to the
+Recommended Microsoft Security roles group instead, and once Everyone is removed it cannot be
+re-added - and the second clause is what stops people over-reading the fix. What a signed-in user can actually retrieve is governed by their
 existing service roles, because a Copilot role grants no access to underlying security data.</p>
 <p>So the portfolio manager could open the portal and could not have read Sentinel or Purview
 data through it. That is reassuring and it is not a reason to leave the default in place - the

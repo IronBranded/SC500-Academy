@@ -20,7 +20,9 @@
         null,
         "CanNotDelete blocks deletion only. Adding an access policy is a write, so the administrator can still grant themselves access.",
         "The vault firewall filters only the data plane. Adding an access policy is a control-plane operation through Azure Resource Manager, which the firewall does not see."
-      ]
+      ],
+      "scenario_clue": "\"Contributor ... must not be able to grant themselves access\" - under access policies, write access to the vault lets you add a policy; under Azure RBAC, granting needs role-assignment rights.",
+      "misconception": "Locks or firewalls stop a management-plane user from granting themselves data access"
     },
     {
       "id": "01-02-q2",
@@ -32,14 +34,19 @@
         "Listing the names of secrets in the vault",
         "Adding a new access policy to the vault"
       ],
-      "answer": [0, 3],
+      "answer": [
+        0,
+        3
+      ],
       "explanation": "The vault firewall filters the data plane at <vault>.vault.azure.net only. Control-plane operations go to Azure Resource Manager and are governed by Azure RBAC, so reading properties, changing the SKU, and adding access policies all still work. Reading or listing secrets is data plane and is blocked.",
       "why_not": [
         null,
         "Retrieving a secret value is a data-plane operation on <vault>.vault.azure.net, which the firewall blocks.",
         "Listing secret names is also data plane, so the firewall blocks it too.",
         null
-      ]
+      ],
+      "scenario_clue": "\"network rules\" and \"from your laptop\" - the vault firewall guards the data plane; management-plane operations go through Azure Resource Manager.",
+      "misconception": "The vault firewall blocks every operation on the vault"
     },
     {
       "id": "01-02-q3",
@@ -58,7 +65,9 @@
         null,
         "Soft delete is always on and cannot be turned off, at creation or later.",
         "The permission model has no bearing on deletion. A soft-deleted vault reserves its name whichever model it used."
-      ]
+      ],
+      "scenario_clue": "\"same vault name\" after deletion - a soft-deleted vault keeps its name reserved, and only purge protection makes purging impossible until retention ends.",
+      "misconception": "The SKU or permission model decides how long a deleted vault name stays reserved"
     },
     {
       "id": "01-02-q4",
@@ -77,7 +86,9 @@
         null,
         "Secret scanning does not watch access at all. It discovers credentials sitting outside the vault.",
         "Defender for Key Vault does not look for exposed credentials. It alerts on unusual access to the vault."
-      ]
+      ],
+      "scenario_clue": "\"Which question does each answer\" - one watches how the vault is accessed; the other looks for credentials sitting outside any vault.",
+      "misconception": "Defender for Key Vault scans code and disks for leaked secrets"
     },
     {
       "id": "01-02-q5",
@@ -96,7 +107,9 @@
         "Secrets User at vault scope can read every secret in the vault, not just this one.",
         null,
         "Secrets Officer can also manage and delete the secret, which is more than reading it."
-      ]
+      ],
+      "scenario_clue": "\"one specific secret and nothing else\" - the least-privilege answer is the narrowest role at the narrowest scope.",
+      "misconception": "Key Vault Reader can read secret values"
     },
     {
       "id": "01-02-q6",
@@ -118,7 +131,8 @@
       ],
       "difficulty": "applied",
       "concept": "SKU, purge protection and permission model at deployment",
-      "misconception": "Soft delete alone protects a vault from a malicious administrator"
+      "misconception": "Soft delete alone protects a vault from a malicious administrator",
+      "scenario_clue": "\"hardware security modules\" = Premium; \"no one ... may permanently delete\" = purge protection; \"on an individual key ... alongside other Azure role assignments\" = Azure RBAC."
     },
     {
       "id": "01-02-q7",
@@ -140,7 +154,8 @@
       ],
       "difficulty": "scenario",
       "concept": "Secret versioning and rotation",
-      "misconception": "Rotating a secret means replacing the secret object"
+      "misconception": "Rotating a secret means replacing the secret object",
+      "scenario_clue": "\"URI with no version identifier\" picks up the newest version; \"must stay restorable\" means disable the old version, never purge it."
     },
     {
       "id": "01-02-q8",
@@ -152,7 +167,10 @@
         "Defender for Servers Plan 2",
         "Defender for Key Vault, which is already enabled"
       ],
-      "answer": [0, 2],
+      "answer": [
+        0,
+        2
+      ],
       "explanation": "Machine secrets scanning is part of agentless machine scanning, which reads a disk snapshot through cloud APIs and needs no agent and no inbound connectivity. It is available with either the Defender CSPM plan or Defender for Servers Plan 2, for Azure VMs and for AWS and GCP instances connected to Defender for Cloud.",
       "why_not": [
         null,
@@ -162,7 +180,8 @@
       ],
       "difficulty": "applied",
       "concept": "Agentless machine secrets scanning",
-      "misconception": "Protecting the vault also finds secrets that never reached it"
+      "misconception": "Protecting the vault also finds secrets that never reached it",
+      "scenario_clue": "\"plaintext on the disks\", \"AWS EC2\", \"without installing anything\" - that is agentless secret scanning, which Defender CSPM and Defender for Servers Plan 2 both include."
     }
   ]
 }

@@ -20,7 +20,9 @@
         null,
         "Azure Policy has no report-only mode. Report-only is a Conditional Access policy state.",
         "Waiting changes nothing. Deny never acts on resources that already exist, so they stay non-compliant however often compliance is evaluated."
-      ]
+      ],
+      "scenario_clue": "\"no deployments have failed\" but compliance is still 40% - Deny only stops new create or update requests; existing resources need Modify or DeployIfNotExists with remediation.",
+      "misconception": "A Deny policy fixes resources that already exist"
     },
     {
       "id": "01-03-q2",
@@ -39,7 +41,9 @@
         null,
         "Locks do not remove or change role assignments.",
         "Locks have nothing to do with authentication or token lifetime."
-      ]
+      ],
+      "scenario_clue": "\"ReadOnly lock\" and an app that only reads blobs - listing account keys is a POST on the management plane, and ReadOnly blocks it.",
+      "misconception": "A ReadOnly lock only affects writes, so reading applications are never affected"
     },
     {
       "id": "01-03-q3",
@@ -58,7 +62,9 @@
         null,
         "No licence brings it back. The product was retired, and support ended on 1 November 2025.",
         "It was not renamed. It was retired, and its entitlement capabilities live on in Defender CSPM."
-      ]
+      ],
+      "scenario_clue": "\"Microsoft Entra Permissions Management blade\" - that product is retired, so the notes point at a tool that no longer exists.",
+      "misconception": "A retired product has simply moved to a new blade"
     },
     {
       "id": "01-03-q4",
@@ -77,7 +83,9 @@
         null,
         "MUA does function with the Resource Guard in the same subscription. It simply guards only against accident when one person controls both sides.",
         "MUA adds a second approval to critical operations on the vault. It is not a control against data being encrypted."
-      ]
+      ],
+      "scenario_clue": "\"Resource Guard in the same subscription and owned by the same administrator\" - MUA only helps when a different person controls the guard.",
+      "misconception": "Turning on multi-user authorization protects against a compromised administrator in every configuration"
     },
     {
       "id": "01-03-q5",
@@ -89,7 +97,10 @@
         "The exclusion should have been Microsoft.KeyVault/vaults/secrets/read under NotActions, which is what controls reading a secret's value",
         "Priya also holds Key Vault Reader on the vault, which includes reading secret values"
       ],
-      "answer": [0, 1],
+      "answer": [
+        0,
+        1
+      ],
       "explanation": "Effective access is the union of every role assignment at the scope and above. NotDataActions removes a data action from its own role only - Microsoft's documentation states it is not a deny rule - so a second assignment that includes getSecret/action still grants it. Separately, Azure RBAC data actions govern only vaults on the Azure RBAC permission model; on an access policy vault, the policy decides, so check enableRbacAuthorization before debugging anything else. Only a deny assignment, which you cannot create directly, overrides a grant.",
       "why_not": [
         null,
@@ -99,7 +110,8 @@
       ],
       "difficulty": "scenario",
       "concept": "NotDataActions is not a deny; the vault's permission model decides",
-      "misconception": "An exclusion in one role definition blocks the permission everywhere"
+      "misconception": "An exclusion in one role definition blocks the permission everywhere",
+      "scenario_clue": "\"NotDataActions\" in one role - it only subtracts within that role, so another role assignment or the access policy model can still grant the value."
     },
     {
       "id": "01-03-q6",
@@ -121,7 +133,8 @@
       ],
       "difficulty": "foundation",
       "concept": "Regulatory compliance dashboard",
-      "misconception": "Secure score or the provider's audit reports show your own framework compliance"
+      "misconception": "Secure score or the provider's audit reports show your own framework compliance",
+      "scenario_clue": "\"which PCI DSS controls your Azure subscription currently fails, and which of your resources\" - your own assessed state against a named framework is the regulatory compliance dashboard."
     },
     {
       "id": "01-03-q7",
@@ -143,7 +156,8 @@
       ],
       "difficulty": "scenario",
       "concept": "Recommendation exemptions",
-      "misconception": "Removing a resource from scope is the same as accepting its risk"
+      "misconception": "Removing a resource from scope is the same as accepting its risk",
+      "scenario_clue": "\"must stay visible ... with the reason recorded\" and \"end on its own\" - an exemption with a justification and expiry, not removing the resource from scope."
     },
     {
       "id": "01-03-q8",
@@ -165,7 +179,8 @@
       ],
       "difficulty": "applied",
       "concept": "Additive, inherited role assignments",
-      "misconception": "A more specific role assignment overrides an inherited one"
+      "misconception": "A more specific role assignment overrides an inherited one",
+      "scenario_clue": "\"Owner at a management group\" plus \"Reader at Sub1\" - Azure RBAC assignments add up and are inherited; a narrower Reader assignment removes nothing."
     },
     {
       "id": "01-03-q9",
@@ -177,7 +192,10 @@
         "Connect the Azure DevOps organisation to Defender for Cloud DevOps security, run the Microsoft Security DevOps extension in the pipeline, and enable pull request annotations",
         "Enable Defender for Storage on the subscription"
       ],
-      "answer": [0, 2],
+      "answer": [
+        0,
+        2
+      ],
       "explanation": "A Bicep deployment is a series of Azure Resource Manager requests, so a Deny policy blocks a non-compliant template exactly as it blocks a portal click - the platform enforces it, whoever deploys. Catching the problem before merge is DevOps security: Microsoft Security DevOps runs IaC analysers in the pipeline, and with pull request annotations enabled the findings appear on the pull request.",
       "why_not": [
         null,
@@ -187,7 +205,8 @@
       ],
       "difficulty": "scenario",
       "concept": "Policy guardrails plus pre-deployment IaC scanning",
-      "misconception": "An Audit policy prevents non-compliant deployments"
+      "misconception": "An Audit policy prevents non-compliant deployments",
+      "scenario_clue": "\"must never be created, whichever tool deploys it\" points to Deny at the platform; \"comments on the pull request\" points to DevOps security in the pipeline."
     }
   ]
 }

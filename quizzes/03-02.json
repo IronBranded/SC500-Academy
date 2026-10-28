@@ -6,21 +6,22 @@
     {
       "id": "03-02-q1",
       "sub_skill": "Implement conditional access for Microsoft Entra Agent ID",
-      "prompt": "Your tenant requires MFA for All users. You deploy your first autonomous agent and it fails to acquire a token. What is the cause and the fix?",
+      "prompt": "Your tenant's only Conditional Access policy requires MFA for All users. You deploy an autonomous agent that acquires tokens with its own agent identity. Which statement is correct?",
       "options": [
-        "The agent's blueprint lacks a client secret; issue one",
-        "Agents cannot satisfy interactive controls such as MFA — exclude agent identities from the broad policy and write dedicated agent policies using identity filters, risk and named locations",
-        "Conditional Access does not apply to agents at all; the failure is unrelated",
-        "The agent needs a Global Secure Access licence before it can acquire tokens"
+        "The agent is blocked because it cannot complete the MFA challenge; exclude agents from the policy",
+        "The policy does not apply: agent identities are not users, so the agent gets tokens with no Conditional Access until you create policies that target agent identities",
+        "The policy applies, and the agent satisfies MFA with its blueprint's credential",
+        "Conditional Access cannot be applied to agents in any form"
       ],
       "answer": 1,
-      "explanation": "There is no human to complete an MFA challenge. Microsoft's guidance is to audit broad policies for agent impact, exclude agents, and build dedicated policies from controls agents can actually satisfy. Conditional Access does apply to agent identities requesting tokens for a resource.",
+      "explanation": "An autonomous agent's token subject is its agent identity. Policies assigned to All users do not include agent identities - and Microsoft notes they do not include agents' user accounts either. Agents cannot answer MFA anyway. The fix is agent policies: block all agent identities except approved ones (selected individually, by blueprint or by custom security attribute), and block high-risk agents.",
       "why_not": [
-        "A client secret does not help. The failure is the MFA requirement, which no credential lets an agent satisfy.",
+        "All users policies do not target agent identities, so the MFA policy never evaluates the agent's token request - nothing blocks it, and nothing protects it.",
         null,
-        "Conditional Access does apply to agent identities requesting tokens for a resource - that is exactly why the broad MFA policy caught the agent.",
-        "No licence lets an agent complete an MFA challenge. There is no human to complete it."
-      ]
+        "A blueprint's credential proves the agent's identity; it is not a second factor - and the user policy does not target agents in the first place.",
+        "Conditional Access for agents exists: policies can target agent identities, blueprints, or agents' user accounts, with the right licensing."
+      ],
+      "scenario_clue": "An autonomous agent using its own agent identity - the token subject is not a user, so a policy scoped to All users never reaches it."
     },
     {
       "id": "03-02-q2",
@@ -39,26 +40,29 @@
         "Not in every case. An on-behalf-of agent serving a highly privileged user can reach more than an autonomous agent with narrow assignments.",
         null,
         "Blast radius here is about subverting the agent's instructions, not stealing a credential. It exists as soon as the agent can act."
-      ]
+      ],
+      "scenario_clue": "\"on-behalf-of a signed-in user\" versus \"autonomous\" - delegated access follows the user, so the blast radius changes with who is signed in.",
+      "misconception": "Identical tools mean identical blast radius"
     },
     {
       "id": "03-02-q3",
       "sub_skill": "Enable and configure real-time protection for Microsoft Copilot Studio agents",
-      "prompt": "You enable advanced real-time protection in the Microsoft Defender portal. Agents remain unprotected. What is missing, and what would have told you?",
+      "prompt": "You turn on Copilot Studio real-time protection in the Microsoft Defender portal. Agents in your existing environment are protected, but agents in a newly created Power Platform environment are not. What is missing, and what tells you protection is live?",
       "options": [
-        "A Copilot Studio licence; the agent would show as Unlicensed",
-        "The corresponding Power Platform administrator step; a protected agent shows as Connected in the Security for AI settings",
-        "An Entra Agent ID blueprint; the agent would not appear in the inventory",
-        "A Defender for Cloud Apps connector; the agent would show as Discovered"
+        "A Copilot Studio licence for the new environment; the agent would show as Unlicensed",
+        "The Power Platform administrator's threat detection setup for that environment - it is configured per environment; the Copilot Studio step in Defender shows Connected once onboarding is complete",
+        "An Entra Agent ID blueprint for each agent; the agent would not appear in the registry",
+        "A Defender for Cloud Apps file policy; the agent would show as Discovered"
       ],
       "answer": 1,
-      "explanation": "Advanced real-time protection is a two-sided configuration. The Defender portal step and the Power Platform step are both required, and the indicator that protection is live is the agent showing as Connected in the Security for AI settings.",
+      "explanation": "Real-time protection is two-sided: the Defender portal step and the Power Platform admin center step (Security > Threat detection > Additional threat detection). The Power Platform side is configured per environment, with no tenant-wide switch, so a new environment needs it too. Connected status on the Copilot Studio step confirms onboarding.",
       "why_not": [
-        "Licensing is not the missing piece. Advanced real-time protection needs both the Defender portal step and the Power Platform step.",
+        "Licensing is not the missing piece. The new environment has not been connected to the threat detection provider.",
         null,
-        "An agent's identity blueprint is not what enables runtime protection. The missing half is the Power Platform administrator step.",
-        "A Defender for Cloud Apps connector is not what is missing. The configuration needs the Power Platform step, and the agent showing as Connected in the Security for AI settings confirms it."
-      ]
+        "Agent identities and blueprints are not what enables runtime protection for Copilot Studio agents.",
+        "A Defender for Cloud Apps policy is not what is missing; the per-environment Power Platform step is."
+      ],
+      "scenario_clue": "Protection works in one environment but not a new one - the hint that the setting is per environment."
     },
     {
       "id": "03-02-q4",
@@ -77,7 +81,9 @@
         null,
         "Runtime protection inspects what an agent does while it runs. It does not expire access or transfer ownership.",
         "A Security Copilot workspace has nothing to do with an agent's ownership or access expiry."
-      ]
+      ],
+      "scenario_clue": "\"departed employee\" and \"nobody accountable\" - that is a lifecycle failure: access that never expires and a sponsor who was never replaced.",
+      "misconception": "Runtime protection or Conditional Access fixes ownership problems"
     },
     {
       "id": "03-02-q5",
@@ -96,7 +102,9 @@
         null,
         "The Defender portal is where runtime protection is configured, not where the tenant-wide inventory with block and disable lives.",
         "Power Platform environments are only part of the picture. The tenant-wide inventory is in the Microsoft 365 admin center."
-      ]
+      ],
+      "scenario_clue": "\"tenant-wide inventory\" of agents \"any licensed user\" can build, and \"block\" - that is agent management in the Microsoft 365 admin center.",
+      "misconception": "Power Platform environments are the only place to govern Copilot Studio agents"
     }
   ]
 }

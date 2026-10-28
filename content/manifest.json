@@ -1,12 +1,143 @@
 {
-  "generated": "2026-09-15",
+  "generated": "2026-10-07",
   "skills_source": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500",
   "domains": [
     {
+      "id": "0A",
+      "name": "Before We Secure the Cloud",
+      "label": "Module 0A",
+      "weight": "n/a",
+      "folder": "00a-foundations",
+      "description": "Required foundations, written for someone new to cloud and AI. Not exam objectives; each primer names the SC-500 objectives it supports.",
+      "modules": [
+        {
+          "id": "0A-01",
+          "title": "What the Cloud Is",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-01-cloud-computing.md",
+          "lab": null
+        },
+        {
+          "id": "0A-02",
+          "title": "Azure and Microsoft 365",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-02-azure-and-microsoft-365.md",
+          "lab": null
+        },
+        {
+          "id": "0A-03",
+          "title": "Tenants, Subscriptions, and Resources",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-03-tenants-subscriptions-resources.md",
+          "lab": null
+        },
+        {
+          "id": "0A-04",
+          "title": "Users, Accounts, and Identities",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-04-users-accounts-identities.md",
+          "lab": null
+        },
+        {
+          "id": "0A-05",
+          "title": "Authentication and Authorization",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-05-authentication-and-authorization.md",
+          "lab": null
+        },
+        {
+          "id": "0A-06",
+          "title": "Applications and Workloads",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-06-applications-and-workloads.md",
+          "lab": null
+        },
+        {
+          "id": "0A-07",
+          "title": "Networks: Addresses, Subnets, Routing, DNS, and Firewalls",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-07-networks.md",
+          "lab": null
+        },
+        {
+          "id": "0A-08",
+          "title": "Public and Private Connectivity",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-08-public-and-private-connectivity.md",
+          "lab": null
+        },
+        {
+          "id": "0A-09",
+          "title": "Storage and Databases",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-09-storage-and-databases.md",
+          "lab": null
+        },
+        {
+          "id": "0A-10",
+          "title": "APIs",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-10-apis.md",
+          "lab": null
+        },
+        {
+          "id": "0A-11",
+          "title": "Logs and Telemetry",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-11-logs-and-telemetry.md",
+          "lab": null
+        },
+        {
+          "id": "0A-12",
+          "title": "Preventive, Detective, Corrective, and Governance Controls",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-12-control-types.md",
+          "lab": null
+        },
+        {
+          "id": "0A-13",
+          "title": "Shared Responsibility",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-13-shared-responsibility.md",
+          "lab": null
+        },
+        {
+          "id": "0A-14",
+          "title": "Generative AI",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-14-generative-ai.md",
+          "lab": null
+        },
+        {
+          "id": "0A-15",
+          "title": "AI Models, Prompts, and Outputs",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-15-models-prompts-outputs.md",
+          "lab": null
+        },
+        {
+          "id": "0A-16",
+          "title": "AI Agents and Connected Tools",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-16-ai-agents-and-tools.md",
+          "lab": null
+        },
+        {
+          "id": "0A-17",
+          "title": "How Microsoft Cloud Security Fits Together",
+          "objective": "(Required foundation - not an SC-500 exam objective)",
+          "content": "content/00a-foundations/0A-17-how-it-fits-together.md",
+          "lab": null
+        }
+      ]
+    },
+    {
       "id": "00",
-      "name": "Lab Safety and Environment Setup",
+      "name": "Safe Lab Foundations",
+      "label": "Module 0B",
       "weight": "n/a",
       "folder": "00-lab-safety",
+      "description": "Budget guardrails, just-in-time access and the teardown checklist. Not exam content, and not optional: do it before anything billable.",
       "modules": [
         {
           "id": "00-00",

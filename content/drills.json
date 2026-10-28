@@ -1,0 +1,1177 @@
+{
+  "version": 1,
+  "checked": "2026-10-20",
+  "note": "Paper break-fix drills written for SC500 Academy. Evidence is simplified for teaching; it is not a verbatim product screen.",
+  "drills": [
+    {
+      "id": "d01",
+      "title": "Storage traffic skips the firewall",
+      "domains": [
+        "02"
+      ],
+      "objective": "2.3.8",
+      "sub_skill": "Implement and configure Azure Firewall",
+      "minutes": 8,
+      "ticket": {
+        "text": "Audit says every flow from the finance spoke must go through the hub firewall and be logged. The route table sends 0.0.0.0/0 to the firewall, but the firewall logs show no traffic from vm-fin-01 to stfinance, even though the VM uploads files there every hour.",
+        "from": "Network team"
+      },
+      "environment": [
+        "vm-fin-01 (10.3.1.4) is in snet-fin in spoke vnet-fin, peered to the hub.",
+        "Azure Firewall in the hub has private IP 10.0.1.4.",
+        "stfinance is in the same region. Its firewall allows only selected virtual networks."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "Effective routes on vm-fin-01's network interface",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Source",
+            "State",
+            "Address prefixes",
+            "Next hop type",
+            "Next hop IP"
+          ],
+          "rows": [
+            [
+              "Default",
+              "Active",
+              "10.3.0.0/16",
+              "Virtual network",
+              ""
+            ],
+            [
+              "Default",
+              "Active",
+              "10.0.0.0/16",
+              "VNet peering",
+              ""
+            ],
+            [
+              "User",
+              "Active",
+              "0.0.0.0/0",
+              "Virtual appliance",
+              "10.0.1.4"
+            ],
+            [
+              "Default",
+              "Invalid",
+              "0.0.0.0/0",
+              "Internet",
+              ""
+            ],
+            [
+              "Default",
+              "Active",
+              "Storage.NorthEurope (service tag prefixes)",
+              "VirtualNetworkServiceEndpoint",
+              ""
+            ]
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "stfinance, Networking: virtual network rules",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Virtual network",
+            "Subnet",
+            "Endpoint status"
+          ],
+          "rows": [
+            [
+              "vnet-fin",
+              "snet-fin",
+              "Enabled"
+            ]
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that explains why the firewall never sees this traffic.",
+        "accept": [
+          {
+            "a": "a1",
+            "r": 4
+          }
+        ],
+        "explanation": "The service endpoint adds a system route for the storage prefixes. It is more specific than 0.0.0.0/0, and a user-defined route can't override a service endpoint route, so storage traffic leaves directly."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "A service endpoint for Microsoft.Storage on snet-fin sends storage traffic straight to the service, and route tables can't override that route",
+            "The user-defined route is invalid because the firewall is in another virtual network",
+            "Azure Firewall doesn't log traffic to Azure PaaS services",
+            "The peering doesn't allow forwarded traffic"
+          ],
+          "answer": 0,
+          "explanation": "Service endpoint routes are system routes that win over the 0.0.0.0/0 user-defined route for the storage prefixes, and no route table can override them.",
+          "why_not": [
+            null,
+            "The route table shows the user route as Active. Next hop Virtual appliance in a peered network is the normal hub-and-spoke pattern.",
+            "The firewall logs whatever passes through it. This traffic never reaches it.",
+            "Allow forwarded traffic matters for traffic the firewall forwards into a spoke. Here the packets never go to the hub at all."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "Which change routes the traffic through the firewall and keeps stfinance locked to a virtual network?",
+          "options": [
+            "Remove the Microsoft.Storage service endpoint from snet-fin, enable it on AzureFirewallSubnet, change the stfinance virtual network rule to AzureFirewallSubnet, and allow the flow in a firewall rule",
+            "Add a more specific user-defined route for the storage prefixes with next hop Virtual appliance",
+            "Remove the service endpoint and add the firewall's public IP to the stfinance IP rules",
+            "Disable the stfinance firewall"
+          ],
+          "answer": 0,
+          "explanation": "Microsoft's documented pattern: enable the service endpoint on the firewall subnet and disable it on the spoke. The spoke traffic then follows 0.0.0.0/0 to the firewall, which reaches storage through its own service endpoint, so you keep both subnet-based access and central logging.",
+          "why_not": [
+            null,
+            "No route table overrides a service endpoint route, however specific.",
+            "IP network rules have no effect on requests from the same Azure region as the storage account, so the firewall's public IP would never match.",
+            "That opens the account to every network: the opposite of the audit's intent."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Run Network Watcher Next hop from vm-fin-01 to a stfinance address: it should show Virtual appliance, 10.0.1.4. Then find the flow in the firewall logs.",
+            "Check that the storage account still shows the subnet as Enabled",
+            "Upload a file from vm-fin-01 and confirm it succeeds",
+            "Run IP flow verify on vm-fin-01's NSG"
+          ],
+          "answer": 0,
+          "explanation": "Next hop shows where routing sends a packet from that VM to that address. The firewall log entry proves the traffic was inspected.",
+          "why_not": [
+            null,
+            "That proves the rule exists, not which path the traffic takes.",
+            "A successful upload proves reachability only. It worked before the fix too.",
+            "IP flow verify tests NSG rules, not routing."
+          ]
+        }
+      ],
+      "lessons": [
+        "02-03",
+        "02-04"
+      ],
+      "takeaway": "Service endpoint routes beat user-defined routes. To inspect storage traffic, move the service endpoint to the firewall subnet.",
+      "sources": [
+        "https://learn.microsoft.com/azure/firewall/firewall-faq",
+        "https://learn.microsoft.com/azure/virtual-network/virtual-networks-udr-overview",
+        "https://learn.microsoft.com/azure/storage/common/storage-network-security-limitations"
+      ]
+    },
+    {
+      "id": "d02",
+      "title": "RDP refused, though the rule allows it",
+      "domains": [
+        "02"
+      ],
+      "objective": "2.3.1",
+      "sub_skill": "Implement and manage network security groups (NSGs) and application security groups (ASGs)",
+      "minutes": 6,
+      "ticket": {
+        "text": "I added an inbound rule allowing RDP from our office range 203.0.113.0/24 to vm-app-02's network interface NSG. The connection still times out.",
+        "from": "Server administrator"
+      },
+      "environment": [
+        "vm-app-02 is in snet-app. nsg-nic-app02 is on its network interface; nsg-snet-app is on the subnet.",
+        "The office reaches Azure from 203.0.113.0/24."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "Effective security rules, inbound, for vm-app-02",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "NSG",
+            "Priority",
+            "Name",
+            "Source",
+            "Port",
+            "Access"
+          ],
+          "rows": [
+            [
+              "nsg-snet-app",
+              "65000",
+              "AllowVnetInBound",
+              "VirtualNetwork",
+              "Any",
+              "Allow"
+            ],
+            [
+              "nsg-snet-app",
+              "65001",
+              "AllowAzureLoadBalancerInBound",
+              "AzureLoadBalancer",
+              "Any",
+              "Allow"
+            ],
+            [
+              "nsg-snet-app",
+              "65500",
+              "DenyAllInBound",
+              "Any",
+              "Any",
+              "Deny"
+            ],
+            [
+              "nsg-nic-app02",
+              "300",
+              "Allow-RDP-Office",
+              "203.0.113.0/24",
+              "3389",
+              "Allow"
+            ],
+            [
+              "nsg-nic-app02",
+              "65500",
+              "DenyAllInBound",
+              "Any",
+              "Any",
+              "Deny"
+            ]
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "IP flow verify: inbound TCP 203.0.113.25 to 10.2.1.5:3389",
+          "kind": "log",
+          "note": "Simplified",
+          "lines": [
+            "Access: Deny",
+            "Rule: DenyAllInBound",
+            "NSG: nsg-snet-app"
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that proves which rule blocks the connection.",
+        "accept": [
+          {
+            "a": "a2",
+            "r": 2
+          },
+          {
+            "a": "a1",
+            "r": 2
+          }
+        ],
+        "explanation": "For inbound traffic the subnet NSG is evaluated first. nsg-snet-app has no allow rule for the office, so its default DenyAllInBound drops the packet before the NIC rule is ever reached."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "The subnet NSG has no rule allowing the office, so its default DenyAllInBound blocks the traffic before the NIC NSG is evaluated",
+            "Rule priority 300 is too high a number; it must be below 100",
+            "NIC-level NSGs only apply to outbound traffic",
+            "NSGs can't allow traffic from public IP ranges"
+          ],
+          "answer": 0,
+          "explanation": "Inbound, the subnet NSG is evaluated first, then the NIC NSG. Both must allow the traffic, and a deny at either level blocks it.",
+          "why_not": [
+            null,
+            "Priority 300 is lower than 65500, so the NIC rule would win inside its own NSG. The problem is the other NSG.",
+            "NIC NSGs filter both directions.",
+            "NSG rules accept public CIDR ranges as sources."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "What is the narrowest fix?",
+          "options": [
+            "Add an inbound rule to nsg-snet-app allowing TCP 3389 from 203.0.113.0/24 to vm-app-02",
+            "Add an Any-to-Any allow rule at priority 100 to nsg-snet-app",
+            "Delete DenyAllInBound from nsg-snet-app",
+            "Remove nsg-nic-app02"
+          ],
+          "answer": 0,
+          "explanation": "Both NSGs must allow the flow, so the subnet NSG needs a matching rule, scoped to the office range and the one port.",
+          "why_not": [
+            null,
+            "That opens every port to the internet on every VM in the subnet.",
+            "Default rules can't be deleted, only overridden by higher-priority rules.",
+            "Removing the NIC NSG changes nothing: the subnet NSG still denies the traffic."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Run IP flow verify again for the same flow: it should report Allow and name the new rule",
+            "Check that the new rule appears in nsg-snet-app",
+            "Ping the VM from the office",
+            "Read the VM's boot diagnostics"
+          ],
+          "answer": 0,
+          "explanation": "IP flow verify tests the exact flow against the effective rules of both NSGs and names the rule that decides.",
+          "why_not": [
+            null,
+            "A rule can exist and still be outranked. The test shows the result.",
+            "Ping is ICMP. It tests a different flow, and many VMs don't answer it.",
+            "Boot diagnostics show the guest OS booting, not network filtering."
+          ]
+        }
+      ],
+      "lessons": [
+        "02-03"
+      ],
+      "takeaway": "Inbound: subnet NSG first, then NIC NSG. Both must allow.",
+      "beyond": "Opening RDP to the internet, even from one range, is the exposure Azure Bastion and just-in-time VM access exist to remove.",
+      "sources": [
+        "https://learn.microsoft.com/troubleshoot/azure/virtual-network/virtual-network-troubleshoot-ssh-nsg-problem",
+        "https://learn.microsoft.com/azure/network-watcher/ip-flow-verify-overview"
+      ]
+    },
+    {
+      "id": "d03",
+      "title": "The function app lost its secrets",
+      "domains": [
+        "01"
+      ],
+      "objective": "1.2.3",
+      "sub_skill": "Configure access to Key Vault",
+      "minutes": 7,
+      "ticket": {
+        "text": "Since Tuesday morning func-orders fails on start-up with 403 Forbidden from kv-orders. We changed nothing in the app. Its managed identity has had Get and List on secrets for a year.",
+        "from": "App team"
+      },
+      "environment": [
+        "func-orders reads secrets from kv-orders with its system-assigned managed identity.",
+        "The platform team is standardising key vaults on Azure RBAC."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "func-orders application log",
+          "kind": "log",
+          "note": "Trimmed",
+          "lines": [
+            "Azure.RequestFailedException: Caller is not authorized to perform action on resource.",
+            "Action: 'Microsoft.KeyVault/vaults/secrets/getSecret/action'",
+            "Assignment: (not found)",
+            "Status: 403 (Forbidden)"
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "kv-orders activity log, Tuesday",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Time",
+            "Operation",
+            "Caller",
+            "Change"
+          ],
+          "rows": [
+            [
+              "07:42",
+              "Microsoft.KeyVault/vaults/write",
+              "platform-admin@contoso.com",
+              "properties.enableRbacAuthorization: false to true"
+            ]
+          ]
+        },
+        {
+          "id": "a3",
+          "title": "kv-orders, Access control (IAM): role assignments",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Principal",
+            "Role",
+            "Scope"
+          ],
+          "rows": [
+            [
+              "func-orders (managed identity)",
+              "Key Vault Reader",
+              "This resource"
+            ],
+            [
+              "Platform-Admins",
+              "Key Vault Administrator",
+              "This resource"
+            ]
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that explains why access stopped on Tuesday.",
+        "accept": [
+          {
+            "a": "a2",
+            "r": 0
+          }
+        ],
+        "explanation": "The vault switched to the Azure RBAC permission model. From then on the access policies, including the identity's Get and List, are ignored; only role assignments count."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "kv-orders moved to Azure RBAC, so its access policies no longer apply, and Key Vault Reader can't read secret values",
+            "The managed identity's credential expired",
+            "The key vault firewall now blocks the function app",
+            "Someone deleted the secret"
+          ],
+          "answer": 0,
+          "explanation": "Under Azure RBAC, the identity's access comes only from role assignments. Key Vault Reader covers metadata, not getSecret. \"Assignment: (not found)\" is RBAC saying no role allows that action.",
+          "why_not": [
+            null,
+            "Azure rotates managed identity credentials itself, and an authentication failure would be a 401, not a 403 naming the action.",
+            "A firewall block returns a different message: the client address isn't authorized.",
+            "A missing secret returns 404 Not Found, not 403."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "What fixes it with least privilege?",
+          "options": [
+            "Assign Key Vault Secrets User to func-orders' managed identity on kv-orders (or on the secrets it reads)",
+            "Switch kv-orders back to vault access policies",
+            "Assign Key Vault Secrets Officer to the identity",
+            "Assign Contributor on kv-orders to the identity"
+          ],
+          "answer": 0,
+          "explanation": "Key Vault Secrets User reads secret contents and nothing more. Role assignments can take up to about ten minutes to take effect.",
+          "why_not": [
+            null,
+            "That reverses the platform standard and brings back the model where any Contributor can grant themselves access.",
+            "Secrets Officer can also create, change and delete secrets: more than the app needs.",
+            "Contributor is a management-plane role. Under RBAC it doesn't read secret values."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Restart func-orders and confirm in kv-orders' audit logs a SecretGet by the identity with status 200",
+            "Confirm the role assignment appears under Access control (IAM)",
+            "Check that the vault shows Permission model: Azure role-based access control",
+            "Run az keyvault secret show as yourself"
+          ],
+          "answer": 0,
+          "explanation": "The audit log shows the identity itself reading the secret successfully, which is the outcome the ticket needs.",
+          "why_not": [
+            null,
+            "The assignment existing doesn't prove the right identity can read the right secret.",
+            "That only confirms the change that caused the outage.",
+            "Your access proves nothing about the function's identity."
+          ]
+        }
+      ],
+      "lessons": [
+        "01-02"
+      ],
+      "takeaway": "Switching a vault to Azure RBAC drops every access policy. Grant data-plane roles first, then switch.",
+      "sources": [
+        "https://learn.microsoft.com/azure/key-vault/general/rbac-guide",
+        "https://learn.microsoft.com/azure/key-vault/general/rbac-migration",
+        "https://learn.microsoft.com/azure/role-based-access-control/troubleshooting"
+      ]
+    },
+    {
+      "id": "d04",
+      "title": "One user never sees MFA",
+      "domains": [
+        "01"
+      ],
+      "objective": "1.1.2",
+      "sub_skill": "Implement conditional access policies",
+      "minutes": 6,
+      "ticket": {
+        "text": "Policy CA001 requires MFA for all users. Sam Lee in Finance signs in to Microsoft 365 every day and has never been asked for MFA.",
+        "from": "Security analyst"
+      },
+      "environment": [
+        "CA001: users All users, excluding group CA-Exclude-BreakGlass; target resources All resources; grant Require multifactor authentication; state On.",
+        "CA-Exclude-BreakGlass is meant to hold only the two emergency access accounts."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "Sign-in log for Sam Lee, Conditional Access tab",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Policy",
+            "Result"
+          ],
+          "rows": [
+            [
+              "CA001 Require MFA for all users",
+              "Not Applied"
+            ],
+            [
+              "CA002 Block legacy authentication",
+              "Not Applied"
+            ],
+            [
+              "CA003 Require compliant device for admins",
+              "Not Applied"
+            ]
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "Group memberships for Sam Lee",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Group",
+            "Added",
+            "Added by"
+          ],
+          "rows": [
+            [
+              "Finance-Users",
+              "2024-02-11",
+              "HR sync"
+            ],
+            [
+              "CA-Exclude-BreakGlass",
+              "2026-03-02",
+              "helpdesk04@contoso.com"
+            ],
+            [
+              "All-Staff",
+              "2024-02-11",
+              "HR sync"
+            ]
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that explains why CA001 never applies to Sam.",
+        "accept": [
+          {
+            "a": "a2",
+            "r": 1
+          }
+        ],
+        "explanation": "Exclusions win over inclusions. Sam is in the group CA001 excludes, so CA001 never evaluates for Sam; the sign-in log shows Not Applied."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "Sam was added to the exclusion group, and an exclusion overrides All users",
+            "CA001 is in report-only mode",
+            "Security defaults are off",
+            "Sam signs in with a remembered device"
+          ],
+          "answer": 0,
+          "explanation": "Conditional Access evaluates exclusions first: a user in an excluded group is out of scope even when All users is included. Report-only would show a report-only result, not Not Applied.",
+          "why_not": [
+            null,
+            "The environment says the state is On, and a report-only policy shows a report-only result.",
+            "Security defaults can't run alongside Conditional Access policies; turning them on isn't the fix.",
+            "A remembered MFA session would show the policy as applied and satisfied, not Not Applied."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "What do you do?",
+          "options": [
+            "Remove Sam from CA-Exclude-BreakGlass and review who can change that group's membership",
+            "Create a second policy that targets Sam directly",
+            "Remove the exclusion from CA001",
+            "Register Sam for MFA"
+          ],
+          "answer": 0,
+          "explanation": "The exclusion group is a bypass. Only the emergency accounts belong in it, and its membership must be tightly controlled and watched.",
+          "why_not": [
+            null,
+            "Exclusions win in every policy, so Sam would be excluded from that one too if it reuses the group, and the hole stays for the next person added.",
+            "Removing the exclusion would put the emergency access accounts under MFA, which defeats their purpose.",
+            "Registration doesn't help: the policy never asks Sam to use MFA at all."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Run the What If tool for Sam: CA001 should be listed under policies that will apply; Sam's next sign-in should show CA001 as Success",
+            "Ask Sam whether the prompt appeared",
+            "Check that CA001 is still On",
+            "Check Sam's MFA registration status"
+          ],
+          "answer": 0,
+          "explanation": "What If evaluates the policies for that user and conditions without waiting for a sign-in, and the sign-in log confirms the real result.",
+          "why_not": [
+            null,
+            "A user's recollection isn't evidence.",
+            "The state was never the problem.",
+            "Registration status doesn't show whether a policy applies."
+          ]
+        }
+      ],
+      "lessons": [
+        "01-01"
+      ],
+      "takeaway": "In Conditional Access, an exclusion beats an inclusion. Not Applied for a user means look at scope first.",
+      "sources": [
+        "https://learn.microsoft.com/entra/identity/conditional-access/concept-conditional-access-users-groups",
+        "https://learn.microsoft.com/entra/identity/conditional-access/troubleshoot-conditional-access",
+        "https://learn.microsoft.com/entra/identity/conditional-access/what-if-tool"
+      ]
+    },
+    {
+      "id": "d05",
+      "title": "The Deny policy doesn't deny",
+      "domains": [
+        "01"
+      ],
+      "objective": "1.3.1",
+      "sub_skill": "Implement and configure security controls by using Azure Policy, including built-in and custom policy definitions",
+      "minutes": 6,
+      "ticket": {
+        "text": "Three days ago we assigned \"Storage account public access should be disallowed\" with effect Deny to the Production management group. Yesterday someone created stpublicdemo with anonymous blob access enabled, and Azure let them.",
+        "from": "Governance lead"
+      },
+      "environment": [
+        "No exemptions exist at the Production scope."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "Policy assignment (JSON)",
+          "kind": "log",
+          "note": "Simplified",
+          "lines": [
+            "\"displayName\": \"Deny anonymous blob access\",",
+            "\"scope\": \"/providers/Microsoft.Management/managementGroups/Production\",",
+            "\"enforcementMode\": \"DoNotEnforce\",",
+            "\"parameters\": { \"effect\": { \"value\": \"Deny\" } }"
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "Compliance for the assignment",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Resource",
+            "State"
+          ],
+          "rows": [
+            [
+              "stpublicdemo",
+              "Non-compliant"
+            ],
+            [
+              "streports01",
+              "Compliant"
+            ]
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that explains why the request succeeded.",
+        "accept": [
+          {
+            "a": "a1",
+            "r": 2
+          }
+        ],
+        "explanation": "DoNotEnforce turns off the effect during create and update requests while compliance is still evaluated. That is why stpublicdemo exists and is reported as non-compliant."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "The assignment's enforcement mode is DoNotEnforce, so the Deny effect isn't applied to requests",
+            "The assignment is too new to be evaluated",
+            "Deny only applies to resources created after the next compliance scan",
+            "Policies assigned at a management group don't apply to resources in subscriptions"
+          ],
+          "answer": 0,
+          "explanation": "Enforcement mode DoNotEnforce is meant for testing: the policy is evaluated and reported, but its effect isn't enforced and no activity log entry is written for the denial.",
+          "why_not": [
+            null,
+            "The assignment is three days old and is already reporting compliance results.",
+            "Deny is checked during each create or update request, not in a scan.",
+            "Management group assignments are inherited by every subscription below."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "What do you change?",
+          "options": [
+            "Set the assignment's enforcement mode to Default (Enabled)",
+            "Change the effect parameter to Audit",
+            "Assign the policy again at each subscription",
+            "Create a remediation task"
+          ],
+          "answer": 0,
+          "explanation": "With enforcement on, a create or update that breaks the rule fails. The existing stpublicdemo stays non-compliant until someone changes it.",
+          "why_not": [
+            null,
+            "Audit never blocks a request.",
+            "Scope wasn't the problem; a second assignment with the same mode would behave the same way.",
+            "Remediation tasks are for DeployIfNotExists and Modify, not Deny."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Try to create a test storage account with anonymous access enabled in Production: the request should fail with RequestDisallowedByPolicy",
+            "Check that the compliance page still lists stpublicdemo as non-compliant",
+            "Check the assignment's parameters",
+            "Wait for the next compliance scan"
+          ],
+          "answer": 0,
+          "explanation": "A blocked request is the outcome the ticket needs, and the error names the assignment that blocked it.",
+          "why_not": [
+            null,
+            "It was non-compliant before the fix too. Compliance reporting never depended on enforcement.",
+            "The effect parameter was always Deny.",
+            "Scans report compliance; they don't test whether requests are denied."
+          ]
+        }
+      ],
+      "lessons": [
+        "01-03"
+      ],
+      "takeaway": "Reported is not enforced. Check enforcement mode before you trust a Deny.",
+      "sources": [
+        "https://learn.microsoft.com/azure/governance/policy/concepts/assignment-structure",
+        "https://learn.microsoft.com/azure/governance/policy/concepts/effect-deny"
+      ]
+    },
+    {
+      "id": "d06",
+      "title": "The brute-force rule never fires",
+      "domains": [
+        "04"
+      ],
+      "objective": "4.2.6",
+      "sub_skill": "Implement and configure collection of Windows Security events by using data collection rules, including Windows Event Forwarding (WEF)",
+      "minutes": 7,
+      "ticket": {
+        "text": "We onboarded the Windows Event Forwarding collector last month. Our rule for repeated failed sign-ins (event 4625) has never produced an alert, yet a red-team test last week generated hundreds of failures.",
+        "from": "SOC lead"
+      },
+      "environment": [
+        "Member servers forward Security events to collector wec-01, which has the Azure Monitor Agent and a data collection rule sending to law-soc."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "Analytics rule query",
+          "kind": "log",
+          "note": "Simplified",
+          "lines": [
+            "SecurityEvent",
+            "| where EventID == 4625",
+            "| summarize Failures = count() by TargetAccount, Computer",
+            "| where Failures > 20"
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "Data collection rule for wec-01 (JSON)",
+          "kind": "log",
+          "note": "Simplified",
+          "lines": [
+            "\"xPathQueries\": [ \"ForwardedEvents!*\" ],",
+            "\"streams\": [ \"Microsoft-WindowsEvent\" ],",
+            "\"destinations\": [ \"law-soc\" ]"
+          ]
+        },
+        {
+          "id": "a3",
+          "title": "Queries over the last 7 days",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Query",
+            "Result"
+          ],
+          "rows": [
+            [
+              "SecurityEvent | where EventID == 4625 | count",
+              "0"
+            ],
+            [
+              "WindowsEvent | where EventID == 4625 | count",
+              "1,284"
+            ]
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that explains where the events went.",
+        "accept": [
+          {
+            "a": "a2",
+            "r": 1
+          },
+          {
+            "a": "a3",
+            "r": 1
+          }
+        ],
+        "explanation": "Events collected from the ForwardedEvents channel go to the WindowsEvent table, not SecurityEvent. The rule reads a table that never receives them."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "Forwarded events land in WindowsEvent, but the rule queries SecurityEvent",
+            "The Azure Monitor Agent can't read the ForwardedEvents channel",
+            "Event 4625 isn't forwarded by Windows Event Forwarding",
+            "The analytics rule's threshold is too high"
+          ],
+          "answer": 0,
+          "explanation": "Windows Event Forwarding data collected by the Azure Monitor Agent is written to WindowsEvent, whatever its original log. Rules written for SecurityEvent don't see it.",
+          "why_not": [
+            null,
+            "1,284 events in WindowsEvent show the agent reads the channel fine.",
+            "The same query proves 4625 events arrive.",
+            "With zero rows in SecurityEvent, no threshold would ever match."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "What do you change?",
+          "options": [
+            "Rewrite the rule to query WindowsEvent, taking the account from EventData, or use an ASIM authentication parser that reads both tables",
+            "Change the data collection rule stream on wec-01 to Microsoft-Event",
+            "Install the legacy Log Analytics agent on wec-01",
+            "Lower the threshold to 1"
+          ],
+          "answer": 0,
+          "explanation": "The data is already in law-soc; the detection has to read the table it lands in. WindowsEvent keeps event fields in the EventData column, so the query changes shape. The other documented route is to collect from the servers themselves with the Windows Security Events via AMA connector, which writes to SecurityEvent, at the cost of an agent on every server.",
+          "why_not": [
+            null,
+            "Microsoft-Event sends the events to the Event table. The rule still reads SecurityEvent and still finds nothing.",
+            "The Log Analytics agent was retired in August 2024.",
+            "The rule still reads an empty table."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Run the new query over last week's red-team window and confirm it returns the test account; then confirm the rule raises an alert on its next run",
+            "Check that the rule is enabled",
+            "Count rows in WindowsEvent",
+            "Check wec-01's heartbeat"
+          ],
+          "answer": 0,
+          "explanation": "Replaying the known attack window proves the detection logic; the next scheduled run proves the rule itself fires.",
+          "why_not": [
+            null,
+            "It was enabled all along.",
+            "That proves collection, which was never broken.",
+            "A heartbeat proves the agent is alive, not that the detection works."
+          ]
+        }
+      ],
+      "lessons": [
+        "04-03"
+      ],
+      "takeaway": "WEF data lands in WindowsEvent. Detections written for SecurityEvent have to be adapted.",
+      "sources": [
+        "https://learn.microsoft.com/azure/sentinel/connect-services-windows-based",
+        "https://learn.microsoft.com/azure/sentinel/windows-security-event-id-reference",
+        "https://learn.microsoft.com/azure/azure-monitor/reference/tables/windowsevent"
+      ]
+    },
+    {
+      "id": "d07",
+      "title": "The revoked SAS still works",
+      "domains": [
+        "02"
+      ],
+      "objective": "2.1.4",
+      "sub_skill": "Manage access to storage, including access policies",
+      "minutes": 7,
+      "ticket": {
+        "text": "Yesterday we ended the contract with a courier and deleted its stored access policy, courier-upload, on the shipments container. This morning the courier uploaded three more files.",
+        "from": "Storage administrator"
+      },
+      "environment": [
+        "The courier was given its SAS token eight months ago by a developer who has since left."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "The courier's SAS token, decoded",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Field",
+            "Value"
+          ],
+          "rows": [
+            [
+              "sv (version)",
+              "2022-11-02"
+            ],
+            [
+              "sr (resource)",
+              "c (container)"
+            ],
+            [
+              "sp (permissions)",
+              "cw"
+            ],
+            [
+              "se (expiry)",
+              "2027-06-30"
+            ],
+            [
+              "si (signed identifier)",
+              "(not present)"
+            ],
+            [
+              "sig",
+              "signed with key1"
+            ]
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "StorageBlobLogs, this morning",
+          "kind": "log",
+          "note": "Simplified",
+          "lines": [
+            "08:14 PutBlob shipments/2026-10-20-a.csv AuthenticationType=SAS StatusCode=201",
+            "08:15 PutBlob shipments/2026-10-20-b.csv AuthenticationType=SAS StatusCode=201"
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that explains why deleting the policy changed nothing.",
+        "accept": [
+          {
+            "a": "a1",
+            "r": 4
+          }
+        ],
+        "explanation": "The token carries no signed identifier, so it was never bound to courier-upload. It is an ad hoc SAS: its permissions and expiry live in the token itself, and deleting a policy can't touch it."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "The SAS is ad hoc: it doesn't reference the stored access policy, so deleting the policy doesn't revoke it",
+            "Policy deletions take 24 hours to take effect",
+            "Write permission ignores stored access policies",
+            "The courier copied the files before the policy was deleted"
+          ],
+          "answer": 0,
+          "explanation": "Only a service SAS that references a stored access policy (the si field) can be revoked by changing or deleting that policy.",
+          "why_not": [
+            null,
+            "Changes to a stored access policy can take up to 30 seconds to take effect; the uploads came hours later. And this token never referenced a policy.",
+            "Permissions don't affect whether a token is bound to a policy.",
+            "The logs show new uploads this morning."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "How do you revoke it?",
+          "options": [
+            "Move other key1 users to key2, then regenerate key1; issue future SAS bound to stored access policies, or as user delegation SAS",
+            "Recreate the courier-upload policy with no permissions",
+            "Set a SAS expiration policy on the account with the default Log action",
+            "Remove the courier's Azure role assignment"
+          ],
+          "answer": 0,
+          "explanation": "An ad hoc service SAS stays valid until it expires or the key that signed it is regenerated. Moving other consumers to key2 first avoids an outage.",
+          "why_not": [
+            null,
+            "The token doesn't reference the policy, so any policy you create has no effect on it.",
+            "With the Log action, out-of-policy tokens keep working and are only recorded. Even the Block action is account-wide, not a way to revoke one token.",
+            "A SAS doesn't use the holder's Azure roles; the courier has none."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Retry the old token: the request should fail with 403 AuthenticationFailed, and StorageBlobLogs should show the 403",
+            "Confirm key1 shows a new last-rotated time",
+            "Confirm no stored access policy named courier-upload exists",
+            "Ask the courier to stop"
+          ],
+          "answer": 0,
+          "explanation": "A failed request with the old token is the proof; the log shows any later attempts too.",
+          "why_not": [
+            null,
+            "That proves the key changed, not that the token stopped working.",
+            "That was already true while the token still worked.",
+            "Not a control."
+          ]
+        }
+      ],
+      "lessons": [
+        "02-01"
+      ],
+      "takeaway": "A SAS without a signed identifier can only be revoked by regenerating the key that signed it.",
+      "sources": [
+        "https://learn.microsoft.com/rest/api/storageservices/define-stored-access-policy",
+        "https://learn.microsoft.com/rest/api/storageservices/create-service-sas",
+        "https://learn.microsoft.com/azure/storage/common/sas-expiration-policy"
+      ]
+    },
+    {
+      "id": "d08",
+      "title": "The admin kubeconfig still works",
+      "domains": [
+        "03"
+      ],
+      "objective": "3.3.2",
+      "sub_skill": "Implement and configure security controls for Azure Kubernetes Service (AKS)",
+      "minutes": 7,
+      "ticket": {
+        "text": "Last week we disabled local accounts on aks-prod so every access goes through Microsoft Entra ID. Today a former contractor's laptop was found still running kubectl against the cluster as clusterAdmin.",
+        "from": "Platform team"
+      },
+      "environment": [
+        "aks-prod uses Microsoft Entra ID integration with Kubernetes RBAC."
+      ],
+      "artifacts": [
+        {
+          "id": "a1",
+          "title": "az aks show (excerpt)",
+          "kind": "log",
+          "note": "Trimmed",
+          "lines": [
+            "\"disableLocalAccounts\": true,",
+            "\"aadProfile\": { \"managed\": true, ... }"
+          ]
+        },
+        {
+          "id": "a2",
+          "title": "Contractor's laptop",
+          "kind": "log",
+          "note": "Simplified",
+          "lines": [
+            "$ kubectl config current-context",
+            "aks-prod-admin",
+            "$ kubectl get nodes",
+            "NAME                     STATUS   ROLES   AGE",
+            "aks-system-11203-vmss0   Ready    <none>  211d"
+          ]
+        },
+        {
+          "id": "a3",
+          "title": "aks-prod activity log",
+          "kind": "table",
+          "note": "Simplified",
+          "columns": [
+            "Date",
+            "Operation"
+          ],
+          "rows": [
+            [
+              "2026-03-04",
+              "List cluster admin credential (contractor)"
+            ],
+            [
+              "2026-10-12",
+              "Create or update managed cluster: disable local accounts"
+            ]
+          ]
+        }
+      ],
+      "proof": {
+        "prompt": "Select the line that shows why the old credential still works.",
+        "accept": [
+          {
+            "a": "a3",
+            "r": 0
+          }
+        ],
+        "explanation": "The contractor downloaded the admin credential in March. Disabling local accounts stops new admin credentials being issued, but a certificate issued earlier stays valid until the cluster certificates are rotated, and no rotation appears in the log."
+      },
+      "steps": [
+        {
+          "id": "cause",
+          "prompt": "What is the cause?",
+          "options": [
+            "Disabling local accounts doesn't revoke admin certificates issued before; the cluster certificates were never rotated",
+            "The contractor still has the Azure Kubernetes Service Cluster Admin Role",
+            "disableLocalAccounts only takes effect after the next upgrade",
+            "kubectl caches results locally"
+          ],
+          "answer": 0,
+          "explanation": "Microsoft's guidance: after disabling local accounts on an existing cluster where people may have used them, rotate the cluster certificates to revoke certificates they might hold.",
+          "why_not": [
+            null,
+            "A client certificate in a kubeconfig is checked by the API server, not by Azure RBAC; removing roles wouldn't stop it.",
+            "The setting is live: new requests for the admin credential already fail.",
+            "kubectl get nodes is a live call to the API server."
+          ]
+        },
+        {
+          "id": "fix",
+          "prompt": "What do you do?",
+          "options": [
+            "Run az aks rotate-certs in a maintenance window (it recreates nodes and can mean up to 30 minutes of downtime); users then fetch Entra credentials with az aks get-credentials",
+            "Remove the contractor's Azure role assignments",
+            "Enable Azure RBAC for Kubernetes authorization",
+            "Delete the contractor's kubeconfig file"
+          ],
+          "answer": 0,
+          "explanation": "Rotating the cluster CA invalidates every certificate it signed, including the old admin credential. Plan for the disruption.",
+          "why_not": [
+            null,
+            "The certificate doesn't depend on Azure roles.",
+            "Authorization mode doesn't revoke a certificate-based admin credential.",
+            "You can't be sure no copy exists. Revoke the credential, not one copy of it."
+          ]
+        },
+        {
+          "id": "validate",
+          "prompt": "How do you prove the fix?",
+          "options": [
+            "Run kubectl with the old kubeconfig: it should fail with a certificate error; az aks get-credentials --admin should be refused because local accounts are disabled",
+            "Check that disableLocalAccounts is still true",
+            "Check the contractor's Entra sign-in logs",
+            "Count the nodes after rotation"
+          ],
+          "answer": 0,
+          "explanation": "The old credential failing is the outcome; the refused --admin request shows no new one can be issued.",
+          "why_not": [
+            null,
+            "It was true while the old certificate still worked.",
+            "The certificate never signed in through Entra ID, so there is nothing to see.",
+            "Node count shows the rotation finished, not that the credential is dead."
+          ]
+        }
+      ],
+      "lessons": [
+        "03-05"
+      ],
+      "takeaway": "Disable local accounts, then rotate certificates. One without the other leaves old admin credentials alive.",
+      "sources": [
+        "https://learn.microsoft.com/azure/aks/local-accounts",
+        "https://learn.microsoft.com/azure/aks/rotate-certificates"
+      ]
+    }
+  ]
+}

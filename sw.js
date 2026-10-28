@@ -31,7 +31,7 @@
 
 /* Bump on EVERY deploy that changes a JS or CSS file. Content is revalidated
    in the background, but the shell is served cache-first. */
-var CACHE_VERSION = 'sc500-v2';
+var CACHE_VERSION = 'sc500-v8';
 var SHELL = [
   './',
   'index.html',
@@ -42,8 +42,14 @@ var SHELL = [
   'assets/css/components.css',
   'assets/css/practice.css',
   'assets/css/learn.css',
+  'assets/css/beginner.css',
+  'assets/css/scenarios.css',
   'docs/SKILLS-MEASURED-SNAPSHOT.md',
   'content/official-training.json',
+  'content/comparisons.json',
+  'content/cases.json',
+  'content/drills.json',
+  'content/skills-measured.json',
   'assets/js/theme.js',
   'assets/js/vendor/marked.min.js',
   'assets/js/frontmatter.js',
@@ -60,6 +66,12 @@ var SHELL = [
   'assets/js/views.js',
   'assets/js/practice.js',
   'assets/js/watchlist.js',
+  'assets/js/compare.js',
+  'assets/js/posters.js',
+  'assets/js/cases.js',
+  'assets/js/drills.js',
+  'map/index.html',
+  'flowcharts/index.html',
   'assets/js/lesson.js',
   'assets/js/dashboard.js',
   'assets/js/review.js',

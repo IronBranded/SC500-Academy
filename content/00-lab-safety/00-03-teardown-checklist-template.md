@@ -1,7 +1,7 @@
 ---
 objective: "(Project prerequisite - not an SC-500 exam objective)"
 sub_objectives: []
-domain: "Lab Safety and Environment Setup"
+domain: "Safe Lab Foundations"
 domain_weight: "n/a"
 status: GA
 prerequisites: ["00-00"]
@@ -44,6 +44,13 @@ Sort everything you create into four buckets:
 
 The checklist is organised in that order, widest blast radius last, because the
 things that persist are the things that cost money or grant access.
+
+## In plain English
+
+Deleting a lab's resource group removes the resources inside it - and nothing else.
+Settings switched on for the whole subscription, objects created in the directory, and
+items sitting in a recycle bin all survive, and some keep billing or keep granting
+access. This checklist walks through every place a lab leaves something behind.
 
 ## The traps, specifically
 
@@ -188,6 +195,16 @@ create, and both are worth knowing about.
    Why is disabling it a better first step than deleting it?
 5. Which items in the verification sweep would a resource-group-scoped teardown
    never catch?
+
+## Key takeaways
+
+- Sort what a lab creates into four buckets: resources, subscription scope, directory,
+  soft-deleted remains.
+- Deleting the resource group only clears the first bucket.
+- Defender plans, policy and role assignments, and directory objects survive and must be
+  removed deliberately.
+- Verify with a query, not by memory.
+- A lab is not practised until its teardown is complete.
 
 ## Sources
 

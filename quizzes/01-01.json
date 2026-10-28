@@ -21,7 +21,9 @@
         null,
         "An app registration with a client secret reintroduces a credential. Storing it in Key Vault moves the secret; it does not remove it.",
         "A certificate is still a credential, now deployed to every VM - it fails the first requirement."
-      ]
+      ],
+      "scenario_clue": "\"the same identity survives if any individual VM is rebuilt\" - that rules out system-assigned, and \"no credential\" rules out app registrations.",
+      "misconception": "A system-assigned identity is enough whenever several resources share a job"
     },
     {
       "id": "01-01-q2",
@@ -40,7 +42,9 @@
         "Conditional Access has no priority ordering. Every enabled policy that applies is evaluated on every sign-in.",
         null,
         "Policy C's control is Block, which denies the sign-in outright. Session controls only shape access that has been granted."
-      ]
+      ],
+      "scenario_clue": "\"Policy C blocks\" - when any applicable policy blocks, satisfying the other policies' grant controls does not matter.",
+      "misconception": "Conditional Access policies have a priority order, and the first match wins"
     },
     {
       "id": "01-01-q3",
@@ -52,14 +56,20 @@
         "Application B can read every mailbox in the tenant",
         "Application B requires admin consent"
       ],
-      "answer": [0, 2, 3],
+      "answer": [
+        0,
+        2,
+        3
+      ],
       "explanation": "Delegated permissions give the intersection of the grant and the signed-in user's own access. Application permissions have no user to intersect with, so the scope is tenant-wide, and they always require admin consent. The permission name is identical in both cases.",
       "why_not": [
         null,
         "Delegated permissions are capped by the signed-in user's own access - the intersection of the grant and what the user can reach - so A sees only that one mailbox.",
         null,
         null
-      ]
+      ],
+      "scenario_clue": "\"delegated\" versus \"application\" - delegated access is limited by what the signed-in user can reach; application access is tenant-wide and needs admin consent.",
+      "misconception": "The permission name alone decides what an app can read"
     },
     {
       "id": "01-01-q4",
@@ -78,7 +88,9 @@
         null,
         "A compliant device is a device requirement. It says nothing about which authentication methods are acceptable.",
         "Approved client app restricts which client applications can be used, not how the user authenticates."
-      ]
+      ],
+      "scenario_clue": "\"passkey or certificate\" and \"SMS must not be accepted\" - a named set of acceptable methods is an authentication strength, not plain MFA.",
+      "misconception": "\"Require multifactor authentication\" lets you choose which methods count"
     },
     {
       "id": "01-01-q5",
@@ -97,7 +109,9 @@
         null,
         "Deleting the home-tenant registration does not reach into partner tenants, so there is no disable-and-retain step there. Their service principals remain until each tenant removes its own.",
         "A service principal cannot become an app registration. They are different object types, and the registration exists only in the home tenant."
-      ]
+      ],
+      "scenario_clue": "\"partner organisations had consented\" - each tenant that consented holds its own service principal, independent of your application object.",
+      "misconception": "Deleting the app registration removes the app everywhere it was used"
     },
     {
       "id": "01-01-q6",
@@ -119,7 +133,8 @@
       ],
       "difficulty": "applied",
       "concept": "PIM eligibility and role settings",
-      "misconception": "Approval and activation rules are set on each assignment"
+      "misconception": "Approval and activation rules are set on each assignment",
+      "scenario_clue": "\"nobody holds the role until they need it\" means eligible, not active; \"approved\", \"justification\" and \"four hours\" are role settings in PIM."
     }
   ]
 }

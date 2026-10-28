@@ -7,7 +7,7 @@ sub_objectives:
 domain: "Secure storage, databases, and networking"
 domain_weight: "25-30%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02", "01-01", "01-02", "02-01"]
+prerequisites: ["00-00", "00-01", "00-02", "01-01", "01-02", "02-01", "0A-05", "0A-09"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/en-us/azure/azure-sql/database/auditing-setup"
@@ -39,7 +39,7 @@ forensic_relevance: "SQL audit is one of the few logs that records the statement
 - Configure database auditing for Azure SQL Database and Azure SQL Managed Instance
 - Configure Defender for Databases protection across Azure database services
 
-## Why this exists
+## The security problem
 
 Storage in [02-01](./02-01-storage-account-security.md) held files. A database holds
 *structured, queryable* data, and that difference changes the threat model in two
@@ -68,6 +68,61 @@ The rest of the objective layers on top:
 - What the data looks like when it is returned - masking, row-level security, encryption
 - What was actually done - auditing
 - What was suspicious about it - Defender for Databases
+
+## In plain English
+
+A database answers questions. That means an attacker does not need to steal the
+database - they only need to be allowed to ask it things. So database security is about
+**who can connect, how they prove it, where from, what they can see, and whether anyone
+is watching**.
+
+Azure SQL adds one twist: it has its **own** usernames and passwords (SQL
+authentication), which Microsoft Entra ID cannot see. Until you switch those off with
+Entra-only authentication, MFA and Conditional Access do not protect the database. Then
+you restrict the network, decide which encryption and masking features you actually
+need, turn on auditing so every query is recorded, and enable Defender for Databases to
+spot attacks such as SQL injection and brute force.
+
+## Words you need to know
+
+- **Logical server** - the Azure SQL container that holds shared settings for its
+  databases: admins, firewall rules, auditing.
+- **SQL authentication** - logins and passwords stored inside the database engine,
+  outside Entra ID.
+- **Microsoft Entra admin** - the Entra user or group that administers the server.
+- **Microsoft Entra-only authentication** - turns SQL authentication off entirely.
+- **Server / database firewall rules** - IP allow-lists at server scope or for one
+  database.
+- **"Allow Azure services and resources to access this server"** - a `0.0.0.0` rule that
+  admits traffic from any Azure subscription, not just yours.
+- **Transparent data encryption (TDE)** - encrypts data files and backups at rest; on by
+  default for new databases.
+- **Always Encrypted** - client-side encryption of sensitive columns; the server, and its
+  administrators, never see the plaintext.
+- **Dynamic Data Masking** - hides values in query results; not a security boundary.
+- **Row-Level Security** - limits which rows a user can see.
+- **Auditing** - records database events, including the statements run, to storage, Log
+  Analytics or Event Hubs.
+- **Defender for Databases** - a Defender for Cloud plan with separate offerings for
+  Azure SQL, SQL Server on machines, open-source relational databases and Cosmos DB.
+- **Vulnerability assessment (express configuration)** - scans database configuration for
+  weaknesses without needing a storage account.
+
+## Mental model
+
+A teaching model: the path a query takes, and the control at each step.
+
+```mermaid
+flowchart LR
+  accTitle: Teaching model - controls on the path of a database query
+  accDescr: A client connects to an Azure SQL server. The network step is firewall rules or a private endpoint. The authentication step is Microsoft Entra ID only, with SQL logins disabled. The authorization step is the database user and its permissions, with Row-Level Security limiting rows. The data step shows protection of the data itself - TDE at rest, Always Encrypted for columns the server must not see, and masking for display. Auditing records each query and Defender for Databases watches for attacks such as SQL injection.
+  C["Client or app<br/>(managed identity)"]:::d00 --> NET["Network<br/>firewall, private endpoint"]:::d02
+  NET --> AUTHN["Authentication<br/>Entra-only, no SQL logins"]:::d01
+  AUTHN --> AUTHZ["Authorization<br/>DB permissions, Row-Level Security"]:::d01
+  AUTHZ --> DATA["Data<br/>TDE, Always Encrypted, masking"]:::d02
+  AUD["Auditing<br/>every query recorded"]:::d04 -.-> AUTHZ
+  DEF["Defender for Databases<br/>SQL injection, brute force"]:::d04 -.-> AUTHN
+```
 
 ## How it works under the hood
 
@@ -194,11 +249,13 @@ One plan with several sub-plans, and the exam expects you to know the coverage:
 | --- | --- |
 | Azure SQL Databases | Azure SQL Database, Azure SQL Managed Instance, Synapse dedicated SQL pools |
 | SQL servers on machines | SQL Server on Azure VMs and Arc-enabled machines, including on-premises |
-| Open-source relational databases | Azure Database for PostgreSQL, MySQL, MariaDB |
+| Open-source relational databases | Azure Database for PostgreSQL flexible server and Azure Database for MySQL flexible server; on AWS, RDS PostgreSQL, MySQL, MariaDB and Aurora |
 | Azure Cosmos DB | Cosmos DB accounts |
 
-Each sub-plan can be enabled independently, at subscription scope, so "protect all
-database services" is several toggles rather than one.
+Switching the **Databases** plan on at subscription scope activates all four sub-plans;
+**Select types** turns individual ones on or off, and each is priced separately. So a
+subscription can easily end up with Azure SQL protected and Cosmos DB not - check the
+types, not just the plan switch.
 
 The Azure SQL sub-plan delivers two things:
 
@@ -227,6 +284,58 @@ which direction Microsoft expects traffic to flow.
 The quick way to tell which one you are on: open the database → **Security** →
 **Defender for Cloud** → **Configure**. **If it asks for a storage account, you are on
 classic.**
+
+### The whole path, end to end
+
+One app reads a secret and then its database, with no password anywhere: a managed
+identity (01-01), Key Vault (01-02), a private endpoint (02-04) and the database
+controls above. Each gate is a different control, and each says no in its own way.
+
+```mermaid
+flowchart TD
+  %% flowchart: flow-secrets
+  accTitle: An app reads a secret and a database
+  accDescr: The app's managed identity gets a token from Entra ID. The request must arrive through the private endpoint because public network access is disabled. Key Vault authorizes with Azure RBAC. Azure SQL accepts the identity only if it is a contained database user. Defender plans watch both and alert to Defender XDR.
+  A(["App Service app needs<br/>a secret and some rows"]):::actor --> B["Managed identity:<br/>Azure issues and<br/>rotates its credential"]:::d01
+  B --> C["Entra ID issues<br/>a token for Key Vault"]:::d01
+  C --> D{"Arrives through<br/>the private<br/>endpoint?"}:::d02
+  D -->|"No: public network<br/>access is disabled"| X1["Refused: 403"]:::stop
+  D -->|Yes| F{"Azure RBAC:<br/>Key Vault<br/>Secrets User?"}:::d01
+  F -->|No| X2["403: caller is<br/>not authorized"]:::stop
+  F -->|Yes| G["Secret returned"]:::ok
+  G --> H{"Azure SQL: is it<br/>a contained user?"}:::d02
+  H -->|No| X3["Login failed"]:::stop
+  H -->|Yes| I["Rows returned"]:::ok
+  G -.-> J["Defender for Key Vault<br/>and for Databases"]:::d04
+  I -.-> J
+  J -.->|alerts| K["Defender XDR<br/>incident"]:::d04
+```
+
+## Why security cares
+
+**Without the control**
+
+1. The server has an Entra admin, and Conditional Access requires MFA for everyone
+2. SQL authentication is still on, and the original SQL admin password is in an old
+   deployment script
+3. The script leaks; an attacker connects with the SQL login from an unmanaged device
+4. Conditional Access never sees the sign-in, and nobody was auditing queries
+
+**With the control**
+
+1. Microsoft Entra-only authentication is enabled, so the SQL admin login stops working
+2. Every connection carries an Entra token and is subject to Conditional Access and MFA
+3. Public network access is disabled; the app connects through a private endpoint with
+   its managed identity
+4. Server-level auditing sends every query to Log Analytics, and Defender for Azure SQL
+   alerts on brute force and injection patterns
+
+**What it does not solve.** An authorized user can still query data they are allowed to
+see, and TDE does not hide data from them. Protecting sensitive columns from privileged
+insiders needs Always Encrypted.
+
+**Depends on.** Every application having moved to Entra authentication before SQL
+authentication is disabled, and the audit destination being somewhere someone queries.
 
 ## Configuration surface
 
@@ -281,6 +390,21 @@ approved deviations, the report is ignored, and a real finding arrives in the no
 **SQL Managed Instance deployed in a lab.** Hours to provision, hundreds of dollars a
 month, and no exam answer requires you to have run one.
 
+## Hands-on
+
+See [02-02 lab](../../labs/02-storage-databases-networking/02-02-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| Entra-only authentication | SQL logins no longer work | The server's Microsoft Entra ID setting shows Entra-only authentication enabled; a connection with the SQL admin login fails |
+| Conditional Access applies | Database sign-ins are policy-evaluated | An Entra sign-in to the database appears in the Entra sign-in logs with Conditional Access results |
+| Network | The server is not reachable publicly | `publicNetworkAccess` is Disabled (or firewall rules list only specific addresses); "Allow Azure services" is off |
+| Auditing | Queries are recorded where they can be searched | Server-level auditing is on; a test query appears in the `SQLSecurityAuditEvents` table in Log Analytics |
+| Defender for Databases | Threat protection and vulnerability assessment are active | The Azure SQL plan shows On; the database's Defender for Cloud page shows express-configuration vulnerability assessment results |
+| Column protection | Privileged users cannot read protected columns | Querying an Always Encrypted column without the column key returns ciphertext |
+
 ## How this is tested
 
 | Phrase in the question | What it steers you to |
@@ -303,9 +427,18 @@ based classic configuration to express configuration, which is now the recommend
 mode and is enabled automatically with the plan. Any walkthrough that starts by
 creating a storage account for scan results is teaching the legacy path.
 
-## Hands-on
+### What SC-500 expects you to do
 
-See [02-02 lab](../../labs/02-storage-databases-networking/02-02-lab.md).
+- **Identify** whether a requirement concerns authentication, network, data protection,
+  auditing or threat detection.
+- **Distinguish** TDE, Always Encrypted, Dynamic Data Masking and Row-Level Security;
+  server-level from database-level auditing; the Defender for Databases offerings.
+- **Select** Entra-only authentication, the right audit destination, or the right
+  encryption feature for a scenario.
+- **Implement** platform security settings, auditing for Azure SQL Database and Managed
+  Instance, and Defender for Databases.
+- **Evaluate** a server's exposure from SQL logins, the "Allow Azure services" rule and
+  missing auditing.
 
 ## Check yourself
 
@@ -323,10 +456,34 @@ See [02-02 lab](../../labs/02-storage-databases-networking/02-02-lab.md).
 5. Your database uses TDE with a customer-managed key. Someone deletes the key vault.
    Walk through what happens to the database and what determines whether you recover.
 
+## Teach it back
+
+A compliance report says customer national ID numbers are "protected by Dynamic Data
+Masking and TDE". Explain to the report's author what each feature actually protects
+against, and what you would use to protect the column from database administrators.
+
+A strong answer covers: TDE protects files and backups at rest, not authorized queries;
+masking hides values in results but can be bypassed by inference with `WHERE` clauses;
+Always Encrypted keeps keys on the client so the server and its admins never see the
+plaintext.
+
+## Key takeaways
+
+- Domain 1 controls reach Azure SQL only when SQL authentication is off: enable Entra-only
+  authentication.
+- "Allow Azure services" means any Azure tenant. Treat it as a finding.
+- TDE protects media; Always Encrypted protects columns from the server; masking is not a
+  boundary.
+- Audit at server level, to Log Analytics, and query `SQLSecurityAuditEvents`.
+- Defender for Databases is several offerings - enable each one for the services you run.
+
 ## Sources
 
 - Microsoft Learn - SC-500 skills measured: <https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500>
 - Set up auditing for Azure SQL Database: <https://learn.microsoft.com/en-us/azure/azure-sql/database/auditing-setup>
+- Overview of Microsoft Defender for Databases: <https://learn.microsoft.com/azure/defender-for-cloud/defender-for-databases-overview>
+- Defender for open-source relational databases (supported services): <https://learn.microsoft.com/azure/defender-for-cloud/defender-for-databases-introduction>
+- Azure SQL security capabilities: <https://learn.microsoft.com/azure/azure-sql/database/security-overview>
 - Enable SQL vulnerability assessment (express configuration): <https://learn.microsoft.com/en-us/azure/defender-for-cloud/sql-azure-vulnerability-assessment-enable>
 - Express configuration vulnerability findings: <https://learn.microsoft.com/en-us/azure/defender-for-cloud/configure-vulnerability-findings-express>
 - Manage vulnerability findings in Azure SQL databases: <https://learn.microsoft.com/azure/defender-for-cloud/sql-azure-vulnerability-assessment-manage>

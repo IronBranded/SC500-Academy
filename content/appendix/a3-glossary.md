@@ -7,7 +7,7 @@ status: GA
 prerequisites: []
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs: []
-last_verified: "2026-09-17"
+last_verified: "2026-10-20"
 portal: ""
 powershell_module: ""
 az_cli_command: ""
@@ -141,8 +141,8 @@ match **stops processing**, which silently bypasses FQDN filtering. → 02-04
 nothing. "Configured but attacks succeeded" is usually this. → 03-06
 
 **WAF exclusion vs disabling a rule** - An exclusion omits one request attribute from
-evaluation; disabling stops the rule protecting everything. **Changing rule set version resets
-all enabled/disabled customisations.** → 03-06
+evaluation; disabling stops the rule protecting everything. **Changing rule set version in the
+portal resets rule-level customisations;** scripts and templates can carry them across. → 03-06
 
 ## Compute
 
@@ -207,9 +207,11 @@ govern **content**. An indirect injection in a retrieved document is not a harm-
 Copilot and org-wide search and **changes no permissions**. RAC limits a site to named groups and
 **overrides existing permissions and sharing links**. → [03-01](../03-secure-compute/03-01-ai-data-exposure-and-purview-dspm.md)
 
-**Collection policy** - The Purview policy without which **no Copilot prompt or response content
-is recorded**. Off by default. Its Azure equivalent is Defender's **suspicious prompt evidence**
-extension. → 03-01, 03-03
+**Collection policy** - A Purview policy that captures AI interactions that are not captured by
+default: prompts and responses from **Copilot in Fabric, Security Copilot and third-party AI
+apps** (content capture must be selected). Microsoft 365 Copilot interactions are audited and
+stored in the user's mailbox without one. Its Azure counterpart for your own AI apps is
+Defender for AI Services' **user prompt evidence**. → 03-01, 03-03
 
 ## Posture and operations
 
@@ -220,8 +222,8 @@ graph, and it is what turns a list into a priority. Requires **Defender CSPM**. 
 
 **Foundational vs Defender CSPM** - Foundational is free: assessment, recommendations, secure
 score, MCSB. Defender CSPM adds attack paths, cloud security explorer, agentless scanning,
-governance rules, and additional compliance standards. **Foundational becomes opt-in for new
-subscriptions from 27 October 2026.** → 04-01
+governance rules, and additional compliance standards (which any paid plan except Defender for
+Servers Plan 1 or Defender for APIs Plan 1 also unlocks). → 04-01
 
 **Automation rule vs playbook** - The rule is the **routing layer** (trigger, conditions, order,
 suppression). The playbook is the **action layer** - a Logic App. Sentinel needs **Microsoft
@@ -241,13 +243,16 @@ analytics rules. Total includes long-term storage, which is **retained but not q
 **Solution vs active rule (content hub)** - Installing a solution delivers analytics rule
 **templates**. Nothing detects anything until you create an **active rule** from one. → 04-02
 
-**MailItemsAccessed** - An Audit (Premium) mailbox action recording that mail data was accessed,
-**even with no explicit signal messages were read**, with bind or sync access type. It is what
-scopes a mailbox compromise, and it is generated **only for licensed users**. → 04-04
+**MailItemsAccessed** - A mailbox auditing action recording that mail was accessed by any
+protocol or client, with **bind** (individual messages, by InternetMessageId) or **sync** (whole
+folder) access type. It is what scopes a mailbox compromise. Part of **Audit (Standard)** mailbox
+auditing for E3/E5 users; Audit (Premium) adds the sensitivity label of accessed items and
+insights such as SearchQueryInitiated. → 04-04
 
-**Copilot owner vs Copilot contributor** - Platform roles, **not Entra ID roles**. Every user in
-the tenant is a **Copilot contributor by default**. Neither grants access to underlying security
-data - the user still needs the service role for each plugin. →
+**Copilot owner vs Copilot contributor** - Platform roles, **not Entra ID roles**. New instances
+give contributor to the **Recommended Microsoft Security roles** group; older tenants may still have
+**Everyone** assigned. Neither role grants access to underlying security data - the user still
+needs the service role for each plugin. →
 [04-05](../04-security-posture/04-05-security-copilot.md)
 
 **SCU (Security Compute Unit)** - Security Copilot's capacity unit, provisioned as an Azure

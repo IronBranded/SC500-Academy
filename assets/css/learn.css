@@ -997,3 +997,20 @@
 @media (max-width: 640px) {
   .diagram svg { min-width: 30rem; }
 }
+/* Flowcharts carry a one-line key for their outcome outlines. */
+.diagram__key { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-1) var(--s-3); margin: var(--s-3) 0 0; font-size: var(--t-xs); color: var(--ink-soft); text-align: left; }
+.diagram__key-item { display: inline-flex; align-items: center; gap: var(--s-2); }
+.diagram__swatch { display: inline-block; width: 1.4rem; height: .8rem; border-radius: 2px; border: 2px solid; flex: none; }
+.diagram__swatch--stop { border-color: var(--flow-stop); background: var(--flow-stop-tint); }
+.diagram__swatch--ok { border-color: var(--flow-ok); background: var(--flow-ok-tint); }
+.diagram__swatch--warn { border-color: var(--flow-warn); background: var(--flow-warn-tint); }
+.diagram__open { font-weight: 600; }
+
+/* Study posters (#/posters) - each card carries its poster's header colour. */
+.posters__all { margin: var(--s-4) 0 0; }
+.poster-card__swatch { flex: none; width: 0.9rem; height: 0.9rem; border-radius: 2px; }
+.poster-card__scope { color: var(--ink-faint); }
+.content .poster-card__sides { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-3); font-size: var(--t-sm); }
+.content .poster-card__sides dt { font-weight: 650; color: var(--ink-soft); }
+.content .poster-card__sides dd { margin: 0; color: var(--ink); }
+.poster-card__swatch { box-shadow: 0 0 0 1px var(--rule); }

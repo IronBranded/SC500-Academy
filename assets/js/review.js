@@ -108,16 +108,57 @@
         s1.appendChild(det);
       }
 
-      /* Distinctions */
+      /* Distinctions: the structured comparisons that name this domain's
+         objectives or lessons first, then the appendix A6 tables. */
+      var cs = model.comparisons.filter(function (x) {
+        return (x.objectives || []).some(function (b) { return dom.bulletIds.indexOf(b) !== -1; }) ||
+               x.lessons.some(function (l) { return dom.lessonIds.indexOf(l) !== -1; });
+      });
       var ds = model.distinctions.filter(function (x) {
         return x.modules.some(function (m) { return dom.lessonIds.indexOf(m) !== -1; });
       });
-      if (ds.length && global.SC500Lesson) {
+      if ((cs.length && global.SC500Compare) || (ds.length && global.SC500Lesson)) {
         var s2 = section(root, 'Important distinctions', 'dr-dist');
-        s2.appendChild(node('p', 'lede', 'The comparisons from appendix A6 that involve this domain\u2019s lessons. Read the trap; open the table if the trap does not feel obvious.'));
-        var list = node('div', 'distinctions__list');
-        ds.forEach(function (x) { list.appendChild(global.SC500Lesson.distinction(x, model)); });
-        s2.appendChild(list);
+        s2.appendChild(node('p', 'lede', 'The controls this domain is built to confuse. Each comparison asks every option the same questions and ends with the trap; read the trap first and open the table if it does not feel obvious.'));
+        if (cs.length && global.SC500Compare) {
+          var clist = node('div', 'compare-list');
+          cs.forEach(function (x) { clist.appendChild(global.SC500Compare.card(x, model, {})); });
+          s2.appendChild(clist);
+        }
+        if (ds.length && global.SC500Lesson) {
+          if (cs.length) s2.appendChild(node('h3', 'distinctions__sub', 'More from appendix A6'));
+          var list = node('div', 'distinctions__list');
+          ds.forEach(function (x) { list.appendChild(global.SC500Lesson.distinction(x, model)); });
+          s2.appendChild(list);
+        }
+      }
+
+      /* Case studies and drills that test this domain's sub-objectives. */
+      var scen = {};
+      Object.keys(model.scenarios || {}).forEach(function (k) {
+        var x = model.scenarios[k];
+        if (x.domainId !== dom.id) return;
+        var sk = x.kind + ':' + x.id;
+        if (!scen[sk]) scen[sk] = { kind: x.kind, id: x.id, href: x.href, title: x.kind === 'case' ? x.title.replace(/, question \d+$/, '') : x.title, n: 0, keys: [] };
+        scen[sk].n++;
+        scen[sk].keys.push(k);
+      });
+      var scenList = Object.keys(scen).map(function (k) { return scen[k]; });
+      if (scenList.length) {
+        var sS = section(root, 'Practise in context', 'dr-scen');
+        sS.appendChild(node('p', 'lede', 'Case studies put this domain\'s controls into one design with competing requirements; drills give you broken configurations and the evidence to find out why.'));
+        var sl = node('ul', 'recs');
+        scenList.forEach(function (x) {
+          var li = node('li');
+          li.appendChild(node('span', 'recs__lesson', (x.kind === 'case' ? 'Case study: ' : 'Drill: ') + x.title +
+            (x.kind === 'case' ? ' (' + x.n + ' question' + (x.n === 1 ? '' : 's') + ' in this domain)' : '')));
+          var acts = node('span', 'recs__acts');
+          var done = x.keys.filter(function (k) { var a = P().answer(k); return a && a.ok; }).length;
+          acts.appendChild(link(done ? (x.kind === 'drill' ? 'Solved' : done + ' / ' + x.n + ' right') + ': open again' : 'Open', x.href, 'chip'));
+          li.appendChild(acts);
+          sl.appendChild(li);
+        });
+        sS.appendChild(sl);
       }
 
       /* Mixed knowledge check */
@@ -209,7 +250,7 @@
       var head = node('header', 'view-head');
       head.appendChild(node('h1', null, 'Objective coverage'));
       head.appendChild(node('p', 'view-head__sub',
-        'What this guide provides for every official SC-500 sub-objective. This page is about the content, not your progress. It is derived at load time from the skills snapshot, lesson front matter, the quiz files and appendix A6, so it cannot drift from them.'));
+        'What this guide provides for every official SC-500 sub-objective. This page is about the content, not your progress. It is derived at load time from the skills snapshot, lesson and primer front matter, the quiz files, the structured comparisons and appendix A6, so it cannot drift from them.'));
       root.appendChild(head);
 
       if (!model.snapshotOk) {
@@ -217,20 +258,26 @@
         return;
       }
 
-      var counts = { covered: 0, partial: 0, missing: 0 }, labN = 0, distN = 0;
+      var counts = { covered: 0, partial: 0, missing: 0 }, labN = 0, distN = 0, cmpN = 0, fndObj = 0, scenN = 0;
       model.bullets.forEach(function (b) {
         var c = C().coverage(model, b);
         counts[c.status]++;
         if (c.lab === 'available') labN++;
         if (c.distinctions) distN++;
+        if (c.comparisons.length) cmpN++;
+        if (c.scenarios) scenN++;
       });
+      model.objectives.forEach(function (o) { if (o.foundationIds.length) fndObj++; });
 
       var sum = node('div', 'cov-sum');
       [['covered', counts.covered, 'Covered', 'lesson + questions'],
        ['partial', counts.partial, 'Partial', 'lesson, no questions yet'],
        ['missing', counts.missing, 'Missing', 'no lesson lists it'],
        ['info', labN, 'With a lab', 'the rest: lab not applicable'],
-       ['info', distN, 'With an A6 comparison', 'via one of their lessons']
+       ['info', cmpN, 'With a structured comparison', 'named on the bullet itself'],
+       ['info', distN, 'With any comparison', 'structured, or A6 via a lesson'],
+       ['info', scenN, 'In a case study or drill', 'practised in context'],
+       ['info', fndObj + ' / ' + model.objectives.length, 'Objectives with a primer', 'Module 0A foundations that support them']
       ].forEach(function (x) {
         var d = node('div', 'cov-sum__item');
         d.dataset.status = x[0];
@@ -259,7 +306,9 @@
 
       /* Stale or unmapped content - the freshness signal. */
       var orphanQ = Object.keys(model.questions).filter(function (q) { return !model.questions[q].bulletId; });
-      if (model.unmapped.length || orphanQ.length || (model.trainingUnmapped && model.trainingUnmapped.length)) {
+      var cmpBad = model.comparisonUnmapped || [];
+      var scenBad = model.scenarioUnmapped || [];
+      if (model.unmapped.length || orphanQ.length || cmpBad.length || scenBad.length || (model.trainingUnmapped && model.trainingUnmapped.length)) {
         var warn = node('div', 'cov-warn');
         warn.appendChild(node('h2', null, 'Needs maintainer review'));
         if (model.unmapped.length) {
@@ -273,6 +322,12 @@
         }
         if (orphanQ.length) {
           warn.appendChild(node('p', null, orphanQ.length + ' question(s) whose sub_skill matches no official bullet: ' + orphanQ.join(', ')));
+        }
+        if (cmpBad.length) {
+          warn.appendChild(node('p', null, 'Comparisons that name a lesson or objective that does not exist: ' + cmpBad.join('; ')));
+        }
+        if (scenBad.length) {
+          warn.appendChild(node('p', null, 'Case questions or drills whose sub_skill matches no official bullet: ' + scenBad.join('; ')));
         }
         root.appendChild(warn);
       }
@@ -290,7 +345,7 @@
         var t = node('table', 'covtable');
         t.dataset.stack = 'true';
         var thead = node('thead'), hr = node('tr');
-        ['Sub-objective', 'Lessons', 'Comparison', 'Lab', 'Questions', 'Status'].forEach(function (x) {
+        ['Sub-objective', 'Lessons', 'Comparison', 'Lab', 'Questions', 'Scenarios', 'Status'].forEach(function (x) {
           var th = node('th', null, x); th.setAttribute('scope', 'col'); hr.appendChild(th);
         });
         thead.appendChild(hr); t.appendChild(thead);
@@ -299,7 +354,7 @@
           var o = model.objectiveById[oid];
           var gr = node('tr', 'objtable__group');
           var gh = node('th', null, '');
-          gh.setAttribute('colspan', '6');
+          gh.setAttribute('colspan', '7');
           gh.setAttribute('scope', 'rowgroup');
           gh.appendChild(node('span', 'obj-chip', o.id));
           gh.appendChild(document.createTextNode(' ' + o.text));
@@ -309,6 +364,17 @@
             op.appendChild(pa);
             op.appendChild(document.createTextNode(o.officialLabs ? ' \u00b7 ' + o.officialLabs.length + ' official lab' + (o.officialLabs.length === 1 ? '' : 's') : ' \u00b7 no official lab'));
             gh.appendChild(op);
+          }
+          if (o.foundationIds.length) {
+            var fp = node('span', 'cov-official');
+            fp.appendChild(document.createTextNode('Foundations: '));
+            o.foundationIds.forEach(function (fid, i) {
+              if (i) fp.appendChild(document.createTextNode(' '));
+              var fl = model.lessons[fid];
+              var fa = link(fid, '#/module/' + fid); if (fl) fa.title = fl.title;
+              fp.appendChild(fa);
+            });
+            gh.appendChild(fp);
           }
           gr.appendChild(gh);
           tb.appendChild(gr);
@@ -331,9 +397,36 @@
             if (!c.lessons.length) tdL.textContent = '\u2014';
             tr.appendChild(tdL);
 
-            var tdD = node('td', null, c.distinctions ? 'Yes' : '\u2014'); tdD.dataset.label = 'Comparison'; tr.appendChild(tdD);
+            var tdD = node('td'); tdD.dataset.label = 'Comparison';
+            c.comparisons.forEach(function (x, i) {
+              if (i) tdD.appendChild(node('br'));
+              var many = c.comparisons.length > 1;
+              var ca2 = link(many ? 'Compare ' + (i + 1) : 'Compare', '#/compare/' + x.id);
+              ca2.title = x.title;
+              ca2.setAttribute('aria-label', 'Compare: ' + x.title);
+              tdD.appendChild(ca2);
+            });
+            if (!c.comparisons.length) tdD.textContent = c.a6 ? 'A6' : '\u2014';
+            if (!c.comparisons.length && c.a6) tdD.title = 'Covered by an appendix A6 comparison through one of its lessons';
+            tr.appendChild(tdD);
             var tdB = node('td', null, c.lab === 'available' ? 'Available' : 'n/a'); tdB.dataset.label = 'Lab'; tr.appendChild(tdB);
             var tdQ = node('td', null, String(c.questions)); tdQ.dataset.label = 'Questions'; tr.appendChild(tdQ);
+            /* Case studies and drills, one link per case or drill. */
+            var tdC = node('td'); tdC.dataset.label = 'Scenarios';
+            var seenS = {};
+            (b.scenarioIds || []).forEach(function (k) {
+              var x = model.scenarios[k];
+              if (!x || seenS[x.kind + x.id]) return;
+              seenS[x.kind + x.id] = true;
+              if (tdC.childNodes.length) tdC.appendChild(document.createTextNode(' '));
+              var sa = link(x.id, x.href);
+              var nm = x.kind === 'case' ? 'Case study: ' + x.title.replace(/, question \d+$/, '') : 'Drill: ' + x.title;
+              sa.title = nm;
+              sa.setAttribute('aria-label', nm);
+              tdC.appendChild(sa);
+            });
+            if (!tdC.childNodes.length) tdC.textContent = '\u2014';
+            tr.appendChild(tdC);
             var tdS = node('td'); tdS.dataset.label = 'Status';
             var st = node('span', 'cov-status', STATUS_TEXT[c.status]);
             st.dataset.status = c.status;
@@ -594,7 +687,7 @@
     [['Mock exam', '#/exam', 'Timed and weighted like the real outline. Raw score only.'],
      ['Flashcards', '#/cards', 'The distinctions deck, on a spaced-repetition schedule.'],
      ['Retention', '#/review', 'Which knowledge checks are due for a re-test.'],
-     ['Choosing between controls', model.a6Index >= 0 ? '#/appendix/' + model.a6Index : '#/coverage', 'Appendix A6: fifteen comparisons and their traps.']
+     ['Choosing between controls', '#/compare', model.comparisons.length + ' structured comparisons, each with its scenario clues and trap.']
     ].forEach(function (x) {
       var a = link('', x[1], 'tool');
       a.appendChild(node('span', 'tool__name', x[0]));

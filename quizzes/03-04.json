@@ -20,7 +20,9 @@
         null,
         "Encryption at host moves no keys, and enabling it on an existing VM needs deallocation, not a restart.",
         "Encryption at host runs on the host, not inside the guest. BitLocker in the guest is Azure Disk Encryption, a different mechanism."
-      ]
+      ],
+      "scenario_clue": "\"already has server-side encryption\" yet encryption at host is still recommended - something SSE does not cover (temp disks, caches).",
+      "misconception": "That server-side encryption already covers everything on a VM's disks."
     },
     {
       "id": "03-04-q2",
@@ -39,7 +41,9 @@
         "The vTPM measures the boot chain. Attesting those measurements and raising an alert is integrity monitoring's job.",
         null,
         "Machine Configuration audits OS settings once the machine is running. It does not attest the boot chain."
-      ]
+      ],
+      "scenario_clue": "\"told you ... as opposed to preventing\" - the question wants detection, which is attestation.",
+      "misconception": "That Secure Boot both prevents and reports boot tampering."
     },
     {
       "id": "03-04-q3",
@@ -58,7 +62,9 @@
         null,
         "FIM is a Plan 2 feature, and it now runs on Defender for Endpoint rather than the retired Log Analytics agent.",
         "FIM covers Linux machines as well. The issue is that it is not on by default."
-      ]
+      ],
+      "scenario_clue": "\"enable Defender for Servers Plan 2\" and \"three days later\" - nobody switched FIM on.",
+      "misconception": "That enabling Plan 2 turns on every Plan 2 feature."
     },
     {
       "id": "03-04-q4",
@@ -77,7 +83,9 @@
         null,
         "No Bastion SKU blocks direct RDP. Bastion never removes a public IP or an open port that already exists.",
         "Holding Owner bypasses nothing here. The direct path exists because the VM still has a public IP and an open port."
-      ]
+      ],
+      "scenario_clue": "\"can still RDP directly ... from home\" - the old public path was never removed.",
+      "misconception": "That adding a secure access path removes the insecure one."
     },
     {
       "id": "03-04-q5",
@@ -96,26 +104,30 @@
         null,
         "Agentless scanning covers vulnerability assessment too, alongside software inventory, secrets and malware.",
         "They are complementary and designed to run together. Agentless works out of band; the agent works on the machine."
-      ]
+      ],
+      "scenario_clue": "\"trade-off\" - each method gives something the other cannot.",
+      "misconception": "That agentless scanning replaces the endpoint agent."
     },
     {
       "id": "03-04-q6",
       "sub_skill": "Enforce security configuration of Azure-managed servers by using Azure Machine Configuration",
-      "prompt": "An Arc-enabled on-premises server appears in Defender for Cloud but produces no OS configuration assessment results. What would you check first?",
+      "prompt": "An Azure VM is covered by Defender for Servers Plan 2 but produces no OS configuration assessment results against the Microsoft cloud security benchmark baselines. What would you check first?",
       "options": [
-        "Whether the server has a public IP",
-        "Whether the Azure Machine Configuration extension and a managed identity are present on the machine",
-        "Whether the server is in the same region as the workspace",
+        "Whether the VM has a public IP address",
+        "Whether the Azure Machine Configuration extension and a system-assigned managed identity are present on the VM",
+        "Whether the Azure Connected Machine (Arc) agent is installed on the VM",
         "Whether agentless scanning is enabled on the subscription"
       ],
       "answer": 1,
-      "explanation": "OS configuration assessment against the Microsoft cloud security benchmark baselines requires the Azure Machine Configuration extension, which in turn needs a managed identity on the machine. Silence is not a clean result.",
+      "explanation": "OS configuration assessment relies on Azure Machine Configuration. On Azure VMs that needs the machine configuration extension and a system-assigned managed identity; the built-in initiative \"Deploy prerequisites to enable Guest Configuration policies on virtual machines\" adds both. (Arc-enabled servers have the capability built into the Connected Machine agent.)",
       "why_not": [
-        "A public IP has nothing to do with OS configuration assessment on an Arc-enabled server.",
+        "Public exposure has nothing to do with whether the guest configuration assessment can run.",
         null,
-        "Workspace region is not the dependency. The assessment requires the Machine Configuration extension and its managed identity.",
-        "Agentless scanning is a separate capability. OS configuration assessment comes from the Machine Configuration extension."
-      ]
+        "Azure VMs do not use the Arc agent. Arc is for servers outside Azure, and it is the Arc agent that has machine configuration built in.",
+        "Agentless scanning provides vulnerability, inventory and secrets results from disk snapshots. OS configuration assessment comes from Machine Configuration inside the guest."
+      ],
+      "scenario_clue": "\"Azure VM\" and \"OS configuration assessment\" - Machine Configuration needs its extension and a system-assigned identity on Azure VMs.",
+      "misconception": "That a Defender plan alone can read configuration inside the guest OS."
     },
     {
       "id": "03-04-q7",
@@ -137,7 +149,8 @@
       ],
       "difficulty": "applied",
       "concept": "Bastion subnet requirements and SKU features",
-      "misconception": "Bastion SKU choice is only about scale"
+      "misconception": "Bastion SKU choice is only about scale",
+      "scenario_clue": "\"every administrative session must be recorded\" - session recording is Premium only; the subnet must be AzureBastionSubnet, /26 or larger."
     },
     {
       "id": "03-04-q8",
@@ -159,7 +172,8 @@
       ],
       "difficulty": "foundation",
       "concept": "Azure Arc gives a non-Azure machine an Azure resource ID",
-      "misconception": "Monitoring or connectivity makes a server governable by Azure"
+      "misconception": "Monitoring or connectivity makes a server governable by Azure",
+      "scenario_clue": "\"stay on-premises\" and \"same Azure Policy ... and RBAC\" - the server needs an Azure resource identity, which is Arc."
     },
     {
       "id": "03-04-q9",
@@ -181,7 +195,8 @@
       ],
       "difficulty": "scenario",
       "concept": "Multicloud onboarding at scale with the AWS connector",
-      "misconception": "A Defender plan on an Azure subscription covers other clouds automatically"
+      "misconception": "A Defender plan on an Azure subscription covers other clouds automatically",
+      "scenario_clue": "\"launch every day\" and \"without per-machine scripts\" - an AWS connector with Arc auto-provisioning."
     }
   ]
 }

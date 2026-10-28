@@ -9,7 +9,7 @@ sub_objectives:
 domain: "Secure storage, databases, and networking"
 domain_weight: "25-30%"
 status: GA
-prerequisites: ["00-00", "00-01", "00-02", "01-01", "02-01", "02-03"]
+prerequisites: ["00-00", "00-01", "00-02", "01-01", "02-01", "02-03", "0A-07", "0A-08"]
 ms_learn_source: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500"
 product_docs:
   - "https://learn.microsoft.com/azure/firewall/rule-processing"
@@ -25,7 +25,7 @@ kql_tables:
   - "AZFWApplicationRule"
   - "AZFWNetworkRule"
   - "AZFWIdpsSignature"
-licensing: "Microsoft Entra Private Access requires Global Secure Access licensing (Microsoft Entra Suite or standalone) - it is NOT included in Microsoft 365 E5. Azure Firewall is priced per deployment hour plus data processed."
+licensing: "Microsoft Entra Private Access requires a Microsoft Entra Private Access licence (standalone) or Microsoft Entra Suite, on top of Entra ID P1 or P2 - it is NOT included in Microsoft 365 E5. Azure Firewall is priced per deployment hour plus data processed."
 azure_resources: ["Microsoft.Network/azureFirewalls", "Microsoft.Network/firewallPolicies", "Microsoft.Network/privateEndpoints", "Microsoft.Network/privateLinkServices"]
 lab_cost_estimate: "HIGH - Azure Firewall bills hourly from the moment it deploys plus a per-GB data processing charge, regardless of whether traffic flows. Deploy, test, and delete in a single session."
 free_practice_available: false
@@ -46,12 +46,13 @@ forensic_relevance: "Azure Firewall logs are the closest thing Azure has to a pe
 - Evaluate effective security rules by using Azure Network Watcher diagnostics
 
 > **Licensing gap, stated plainly.** Microsoft Entra Private Access is part of Global
-> Secure Access and requires Entra Suite or standalone Global Secure Access licensing.
+> Secure Access. It needs a Microsoft Entra Private Access licence (standalone) or the
+> Microsoft Entra Suite - which Microsoft 365 E7 includes - on top of Entra ID P1 or P2.
 > **Microsoft 365 E5 does not include it.** If your tenant has no trial available, that
 > bullet is study-and-walkthrough only, and the lab marks it as such rather than
 > pretending otherwise.
 
-## Why this exists
+## The security problem
 
 [02-03](./02-03-network-segmentation-and-connectivity.md) decided what may talk to
 what *inside* your networks. Two problems are left over, and they point in opposite
@@ -71,6 +72,61 @@ Whatever is left - the traffic that genuinely must cross a boundary - gets inspe
 That is Azure Firewall. And because every one of these controls is a rule someone
 wrote about something they could not see, Network Watcher exists to tell you what the
 rules actually do rather than what they were meant to do.
+
+## In plain English
+
+Azure platform services - storage, key vaults, databases - start life on the public
+internet. Your users increasingly work from anywhere. This lesson deals with both.
+
+**Private endpoints** give a platform service a private address inside your network,
+so it can be reached privately and its public door can be closed. **Private Link
+service** does the reverse: it lets *you* publish your own application privately to
+partners. **Azure Firewall** inspects the traffic that genuinely has to cross a
+boundary. **Microsoft Entra Private Access** replaces the traditional VPN with
+per-application access governed by Conditional Access. And **Network Watcher** tells
+you what all those rules actually do, rather than what you meant them to do.
+
+## Words you need to know
+
+- **Private endpoint** - a network interface with a private IP in your subnet, connected
+  to one specific resource through Azure Private Link (0A-08).
+- **Private DNS zone** - makes the service's name resolve to the private IP for linked
+  virtual networks.
+- **Public network access** - the resource setting that decides whether its public
+  endpoint accepts traffic at all.
+- **Private Link service** - your own service, behind a Standard Load Balancer, published
+  for others to reach through their private endpoints.
+- **Azure Firewall** - a managed, stateful firewall; **Basic**, **Standard** and
+  **Premium** tiers.
+- **Firewall Policy** - the configuration object holding rule collection groups,
+  collections and rules; policies can inherit from a parent.
+- **DNAT / network / application rules** - inbound address translation, address-and-port
+  rules, and FQDN-based rules for HTTP, HTTPS and MSSQL.
+- **Threat intelligence filtering** - alerts on, or denies, traffic to and from known
+  malicious addresses and domains.
+- **IDPS / TLS inspection** - Premium features: signature-based intrusion detection and
+  prevention, and decrypting HTTPS to inspect it.
+- **Microsoft Entra Private Access** - Zero Trust network access to private apps through
+  Global Secure Access, with **Quick Access** (broad, transitional) and **per-app
+  access**.
+- **Network Watcher** - diagnostics such as **effective security rules**, **IP flow
+  verify**, **next hop** and **connection troubleshoot**.
+
+## Mental model
+
+A teaching model: three directions of travel, three controls - and one tool to check
+them.
+
+```mermaid
+flowchart LR
+  accTitle: Teaching model - private access, inspection and Zero Trust access
+  accDescr: Remote users reach private applications through Microsoft Entra Private Access, where each application is an enterprise app governed by Conditional Access. Workloads in the virtual network reach platform services such as storage and Key Vault through private endpoints, with private DNS resolving names to private addresses and public network access disabled. Traffic that must leave or cross the network is routed through Azure Firewall for inspection. Network Watcher verifies the effective rules and routes.
+  U["Remote user"]:::d00 -->|"Entra Private Access<br/>per-app, Conditional Access"| APP["Private app"]:::d03
+  WL["Workload in VNet"]:::d03 -->|"private endpoint<br/>+ private DNS"| PAAS["Storage, Key Vault, SQL<br/>public access disabled"]:::d02
+  WL -->|"UDR to firewall"| FW["Azure Firewall<br/>TI, rules, IDPS"]:::d02
+  FW --> NET["Internet / other networks"]:::d00
+  NW["Network Watcher<br/>effective rules, next hop"]:::d04 -.-> WL
+```
 
 ## How it works under the hood
 
@@ -183,15 +239,15 @@ flowchart TD
   accTitle: Azure Firewall rule processing order
   accDescr: Threat intelligence filtering runs first and can deny traffic before any rule. The firewall then passes over the whole policy three times, always in this order regardless of rule collection group priority or policy inheritance - DNAT rules, then network rules, then application rules. A network rule match stops processing, so application rules never run for that flow. Application rules apply only to HTTP, HTTPS and MSSQL. If no application rule matches, the infrastructure rule collection is evaluated, which allows platform FQDNs by default. If nothing matches, the packet is denied.
   P["Packet"] --> TI{"Threat intelligence<br/>filtering - runs first"}:::d02
-  TI -- "can deny before<br/>any rule you wrote" --> X1["Denied"]
+  TI -- "can deny before<br/>any rule you wrote" --> X1["Denied"]:::stop
   TI -- "otherwise" --> DN["Pass 1: DNAT rules"]:::d02
   DN -- "then" --> NW{"Pass 2: network rules"}:::d02
   NW -- "match" --> NM["The rule's action applies.<br/>Processing STOPS -<br/>application rules never run"]
   NW -- "no match" --> AP{"Pass 3: application rules<br/>HTTP, HTTPS and MSSQL only"}:::d02
   AP -- "match" --> AM["The rule's action applies"]
   AP -- "no match" --> IR{"Infrastructure rule collection<br/>platform FQDNs"}
-  IR -- "match" --> OK["Allowed by default"]
-  IR -- "no match" --> X2["Denied"]
+  IR -- "match" --> OK["Allowed by default"]:::ok
+  IR -- "no match" --> X2["Denied"]:::stop
 ```
 
 Within every pass: parent policy before child policy, then rule collection groups, then
@@ -218,6 +274,35 @@ signature matches, or in **Alert and deny** mode, blocking them. **TLS inspectio
 inspect, and re-encrypt - and which every client must trust. Azure Firewall also always
 sets the **X-Forwarded-For** header to the original source address, which matters when
 a downstream service logs the caller.
+
+Those rules only apply if a route sends the traffic to the firewall. Follow one outbound
+connection from a VM, from the security admin rules and NSGs in 02-03 to the internet,
+and notice the branch where a service endpoint route skips the firewall entirely.
+
+```mermaid
+flowchart TD
+  %% flowchart: flow-egress
+  accTitle: Traffic leaves a VM for the internet
+  accDescr: Virtual Network Manager security admin rules are evaluated first. Outbound, the NIC NSG is evaluated before the subnet NSG. Routing then decides. A service endpoint route goes straight to the Azure service. A default user-defined route sends traffic to Azure Firewall, which applies threat intelligence, network rules and application rules.
+  A(["VM opens an<br/>outbound connection"]):::actor --> B{"Virtual Network<br/>Manager security<br/>admin rule?"}:::d02
+  B -->|Deny| X1["Dropped"]:::stop
+  B -->|Always allow| R
+  B -->|"Allow, or<br/>no match"| C{"NIC NSG allows?<br/>outbound: NIC first"}:::d02
+  C -->|No| X1
+  C -->|Yes| D{"Subnet NSG<br/>allows it?"}:::d02
+  D -->|No| X1
+  D -->|Yes| R{"Which route<br/>wins?"}:::d02
+  R -->|"Service endpoint<br/>route, to an<br/>Azure service"| S["Straight to the service:<br/>the firewall never<br/>sees it"]:::warn
+  R -->|"0.0.0.0/0 route,<br/>next hop: firewall"| F{"Azure Firewall:<br/>threat intelligence<br/>match?"}:::d02
+  F -->|"Yes, mode:<br/>Alert and deny"| X2["Denied and logged"]:::stop
+  F -->|No| G{"Network<br/>rule?"}:::d02
+  G -->|Allow| OK["Out to the internet<br/>from the firewall's<br/>public IP"]:::ok
+  G -->|Deny| X3["Denied"]:::stop
+  G -->|No match| H{"Application rule<br/>for the FQDN?"}:::d02
+  H -->|Allow| OK
+  H -->|Deny| X3
+  H -->|No match| X4["Denied by default"]:::stop
+```
 
 ### Microsoft Entra Private Access
 
@@ -262,6 +347,36 @@ is the objective's own wording** - and since Virtual Network Manager arrived, it
 only view that shows admin rules and NSG rules together in evaluation order. **Next
 hop** is how you prove a user-defined route is actually sending spoke traffic to the
 firewall rather than straight out.
+
+## Why security cares
+
+**Without the control**
+
+1. A key vault and a storage account keep their public endpoints "because the app needs
+   them"
+2. Remote staff use a VPN that drops them onto a whole subnet
+3. A contractor's laptop is compromised; the attacker rides the VPN onto the network and
+   reaches management ports directly
+4. A leaked SAS token works from anywhere because storage is public
+
+**With the control**
+
+1. Platform services are reached through private endpoints, and public network access is
+   disabled
+2. Remote staff reach only the specific apps assigned to them through Entra Private
+   Access, each with Conditional Access requiring MFA and a compliant device
+3. Outbound traffic from workloads is routed through Azure Firewall, with threat
+   intelligence set to alert and deny
+4. The leaked token is useless outside the private network, and the compromised laptop
+   reaches only what its user was assigned
+
+**What it does not solve.** Private paths and per-app access do not check what an
+authorized user does once connected. The data services still need their own
+authorization and auditing.
+
+**Depends on.** Private DNS linked to every network that needs it, public access actually
+disabled, routes actually sending traffic through the firewall, and the right licensing
+for Private Access.
 
 ## Configuration surface
 
@@ -308,8 +423,8 @@ certificate errors.
 **Forgetting Azure Firewall SNATs.** Backend logs show the firewall's address unless
 you use the X-Forwarded-For header.
 
-**Expecting Entra Private Access in an E5-only tenant.** It needs Global Secure Access
-licensing. Check before planning a project around it.
+**Expecting Entra Private Access in an E5-only tenant.** It needs a Private Access or
+Entra Suite licence. Check before planning a project around it.
 
 **Quick Access treated as the destination.** It is explicitly a transition state -
 broad tunnelled ranges, minimal segmentation.
@@ -319,6 +434,23 @@ a NIC can be governed by a rule that appears in no NSG at all.
 
 **An Azure Firewall left running after a lab.** It bills hourly from deployment, plus
 per gigabyte processed, whether or not anything flows through it.
+
+## Hands-on
+
+See [02-04 lab](../../labs/02-storage-databases-networking/02-04-lab.md).
+
+## Validate the security outcome
+
+| Control | The outcome to prove | Evidence |
+| --- | --- | --- |
+| Private endpoint | Clients in the network use the private path | The service name resolves to the private IP from inside the virtual network |
+| Public access closed | The service is unreachable from the internet | Public network access is Disabled; a request from outside fails |
+| Private Link service | Only approved consumers connect | Consumer connections appear as requests that you approve or reject |
+| Firewall routing | Traffic actually reaches the firewall | **Next hop** for a destination shows the firewall as a virtual appliance next hop |
+| Firewall rules | Filtering works as intended | Firewall logs show allowed and denied flows; a test to a non-allowed FQDN is denied |
+| Threat intelligence | Known-bad destinations are blocked | Threat intelligence mode shows **Alert and deny** (Standard or Premium) |
+| Private Access | Each private app is gated by Conditional Access | The app appears as an enterprise application with assignments and a Conditional Access policy targeting it; sign-ins show the policy result |
+| Effective rules | You know what a NIC really allows | **Effective security rules** combines NSGs and security admin rules; **IP flow verify** names the deciding rule |
 
 ## How this is tested
 
@@ -345,9 +477,36 @@ URL filtering - carry far more weight than in AZ-500-era material. Microsoft Ent
 Private Access has no AZ-500 precedent at all: it is an identity-layer answer to a
 problem AZ-500 only ever solved with a VPN gateway.
 
-## Hands-on
+### Choosing a private path
 
-See [02-04 lab](../../labs/02-storage-databases-networking/02-04-lab.md).
+"Private" means five different things in SC-500 questions. Find the one the requirement
+describes.
+
+```mermaid
+flowchart LR
+  %% flowchart: choose-private
+  accTitle: Choosing a private connectivity control
+  accDescr: Your apps reaching a PaaS service that must be off the internet: a private endpoint with public access disabled. If limiting by source subnet is enough: a service endpoint with a virtual network rule. A partner with overlapping addresses reaching your service: Private Link service. Remote users reaching one app: Entra Private Access. Admins reaching VMs: Bastion. A branch or device joining the network: VPN gateway.
+  A(["What must reach<br/>what, privately?"]):::actor
+  A -->|"Your apps reach Storage,<br/>SQL or Key Vault, and it<br/>must be off the internet"| B1["Private endpoint,<br/>public access disabled,<br/>private DNS zone"]:::ok
+  A -->|"Your apps reach it;<br/>limiting by source<br/>subnet is enough"| B2["Service endpoint and<br/>virtual network rule:<br/>still the public<br/>endpoint"]:::warn
+  A -->|"A partner reaches your<br/>service; address<br/>spaces overlap"| C1["Private Link service<br/>behind a Standard<br/>Load Balancer"]:::ok
+  A -->|"Remote users reach<br/>one internal app"| D1["Entra Private Access,<br/>Conditional Access<br/>per app"]:::ok
+  A -->|"Admins reach VMs<br/>with no public IP"| E1["Azure Bastion"]:::ok
+  A -->|"A branch or a device<br/>joins the network"| F1["VPN gateway;<br/>Entra ID auth<br/>needs OpenVPN"]:::ok
+```
+
+### What SC-500 expects you to do
+
+- **Identify** whether a requirement is about reaching a platform service privately,
+  publishing a service privately, inspecting traffic, or remote user access.
+- **Distinguish** service endpoints from private endpoints, private endpoints from
+  Private Link service, the Azure Firewall tiers, and Quick Access from per-app access.
+- **Select** the Network Watcher tool that answers a diagnostic question.
+- **Implement** private endpoints with DNS, Private Link services, Azure Firewall with
+  policy and threat intelligence, and Entra Private Access.
+- **Evaluate** effective security rules and routes to explain why traffic is allowed or
+  blocked.
 
 ## Check yourself
 
@@ -369,10 +528,34 @@ See [02-04 lab](../../labs/02-storage-databases-networking/02-04-lab.md).
    correct. Name the Network Watcher tool you would use first and what result would
    confirm your hypothesis.
 
+## Teach it back
+
+A colleague says: "We added a private endpoint to the storage account, so it's private
+now." Explain the two other things that must be true before that statement holds.
+
+A strong answer covers: public network access must be disabled (the endpoint does not
+close the public door); private DNS must resolve the name to the private IP for every
+client network that should use it, including on-premises if needed.
+
+## Key takeaways
+
+- A private endpoint adds a private path to one resource; it does not close the public
+  endpoint.
+- DNS decides whether the private path is used.
+- Private Link service publishes your own service privately; connections are approved.
+- Azure Firewall processes threat intelligence first, then DNAT, network, application
+  rules - type order beats priority, and a broad network rule bypasses FQDN filtering.
+- Entra Private Access makes each private app an enterprise app under Conditional Access.
+- Network Watcher shows what the rules really do: effective rules, IP flow verify, next
+  hop.
+
 ## Sources
 
 - Microsoft Learn - SC-500 skills measured: <https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-500>
 - Azure Firewall rule processing logic: <https://learn.microsoft.com/azure/firewall/rule-processing>
+- What is a private endpoint: <https://learn.microsoft.com/azure/private-link/private-endpoint-overview>
+- Global Secure Access licensing overview: <https://learn.microsoft.com/entra/global-secure-access/overview-what-is-global-secure-access>
+- Microsoft Entra licensing: <https://learn.microsoft.com/entra/fundamentals/licensing>
 - Secure your Azure Private Link deployment: <https://learn.microsoft.com/azure/private-link/secure-private-link>
 - Configure Quick Access for Microsoft Entra Private Access: <https://learn.microsoft.com/en-us/entra/global-secure-access/how-to-configure-quick-access>
 - Quickstart: per-app access to private resources: <https://learn.microsoft.com/entra/global-secure-access/quickstart-per-app-access>

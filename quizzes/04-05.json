@@ -6,21 +6,23 @@
     {
       "id": "04-05-q1",
       "sub_skill": "Manage permissions and roles in Security Copilot",
-      "prompt": "Your organisation onboards Security Copilot. A finance user discovers they can open the portal. Why?",
+      "prompt": "Your organisation onboarded Security Copilot two years ago. A finance user with no security role discovers they can open the portal. Role assignment shows the Everyone group as Copilot contributor. What is happening, and what does fixing it change?",
       "options": [
-        "Their Entra role inherits Copilot owner",
-        "Copilot contributor is granted to every user in the Microsoft Entra tenant by default; restricting it is a deliberate act",
-        "Security Copilot is licensed per tenant, so all users are entitled",
-        "The workspace was created without role assignments"
+        "Their Entra role inherits Copilot owner; removing the role fixes it",
+        "Everyone was the original contributor default, so the platform is open to the directory; replacing it with the Recommended Microsoft Security roles group (or named groups) governs who can use the platform, but changes nothing about what a user can see once inside",
+        "Security Copilot is licensed per tenant, so all users are entitled to the portal",
+        "The workspace was created without role assignments, which defaults to open"
       ],
       "answer": 1,
-      "explanation": "Onboarding opens the platform to the directory rather than to the SOC. Note what restricting it does and does not change: it governs who can use the platform, not what they can see once inside.",
+      "explanation": "Older tenants were onboarded with Everyone as Copilot contributor; new instances default to the Recommended Microsoft Security roles group. Restricting contributor access governs who may use the platform. It does not change data access, which always comes from the user's existing service roles. Note that once Everyone is removed, it cannot be assigned again.",
       "why_not": [
-        "A finance user holds no Entra security role that inherits Copilot owner. Their access comes from Copilot contributor, granted to every user by default.",
+        "A finance user with no security role does not hold an Entra role that inherits Copilot owner. Their access comes from the Everyone contributor assignment.",
         null,
-        "Platform access is not a licensing entitlement. It comes from the Copilot contributor role, granted to everyone by default until someone restricts it.",
-        "Role assignments exist from onboarding: Copilot contributor covers every user in the tenant by default."
-      ]
+        "Platform access comes from Copilot role assignment, not from a tenant licence entitlement.",
+        "Role assignments exist from onboarding; here the Everyone group explains the access."
+      ],
+      "scenario_clue": "\"two years ago\" and \"the Everyone group as Copilot contributor\" - the original default, still present in older tenants.",
+      "misconception": "That restricting who can open Security Copilot also controls what data they could see in it."
     },
     {
       "id": "04-05-q2",
@@ -39,7 +41,9 @@
         null,
         "Several plugins can be enabled together. The empty result is a permissions question.",
         "Capacity is not per data source. The missing piece is a role on the Sentinel data."
-      ]
+      ],
+      "scenario_clue": "\"Compliance Administrator\" answers Purview but \"returns nothing for Sentinel\" - the user's own service roles bound the answer.",
+      "misconception": "That a Copilot role grants access to all connected data."
     },
     {
       "id": "04-05-q3",
@@ -58,7 +62,9 @@
         null,
         "Capacity is provisioned as an Azure resource, and the failure is the missing Azure permission.",
         "The portal used is not the issue. Wherever it is provisioned from, capacity needs Azure Contributor or Owner as well."
-      ]
+      ],
+      "scenario_clue": "\"Global Administrator\" but provisioning \"fails\" - the missing half is the Azure role.",
+      "misconception": "That the highest tenant role is enough to create an Azure resource."
     },
     {
       "id": "04-05-q4",
@@ -77,7 +83,9 @@
         null,
         "Geo is a data residency choice made at workspace creation. It does not explain a tripled bill with unchanged usage.",
         "Plugins run when prompts use them, and analyst usage is unchanged. Scheduled agents are what consume capacity with nobody prompting."
-      ]
+      ],
+      "scenario_clue": "\"bill has tripled\" while \"analyst usage is unchanged\" - something non-human is consuming SCUs.",
+      "misconception": "That SCU consumption only comes from people typing prompts."
     },
     {
       "id": "04-05-q5",
@@ -90,13 +98,36 @@
         "Separate SCU allocations against a single workspace"
       ],
       "answer": 1,
-      "explanation": "A workspace is the unit of segmentation, and the geo selection is a data residency decision made at creation rather than a performance setting. Capacity can be moved between workspaces afterwards; the geo cannot.",
+      "explanation": "A workspace is the unit of segmentation: its own capacity, plugin configuration, role assignments and data storage geo, chosen at creation as a data residency decision. SCUs are not shared between workspaces, so each team's budget stays separate.",
       "why_not": [
         "Separate tenants are far heavier than the need. A workspace already segments capacity, plugins, roles and data geo.",
         null,
         "Plugin configuration is one of the things a workspace holds. Plugin scopes alone do not separate capacity or data geo.",
         "A single workspace has one data storage geo, chosen at creation, so it cannot meet different residency requirements."
-      ]
+      ],
+      "scenario_clue": "\"different capacity budgets, different plugin sets ... different regions\" - the workspace.",
+      "misconception": "That one workspace can be partitioned by plugin or group instead."
+    },
+    {
+      "id": "04-05-q6",
+      "sub_skill": "Enable and configure Microsoft agents and Security Store agents",
+      "prompt": "You are setting up a Microsoft-built Security Copilot agent that will run every day. The setup offers to run it as your own account, which holds Security Administrator. What should you do?",
+      "options": [
+        "Use your account - the agent needs Security Administrator to see security data",
+        "Create an agent identity for it, grant only the permissions the agent lists, and review its trigger and output",
+        "Use the Everyone group so any analyst can review the agent's results",
+        "Run it as a service principal with a client secret stored in the agent's settings"
+      ],
+      "answer": 1,
+      "explanation": "Agents act with the identity they run as. Microsoft recommends creating an agent identity, which can be scoped to the permissions the agent actually needs and governed like the agent identities in 03-02. Running it as a privileged person's account gives a scheduled, autonomous process everything that person can do.",
+      "why_not": [
+        "The agent would inherit all of your Security Administrator reach, running on a schedule without you. Grant it only what it needs.",
+        null,
+        "Everyone is not an identity an agent can run as, and broad review access does not limit what the agent can do.",
+        "That is not one of the setup options, and a stored secret is exactly the credential problem agent identities avoid."
+      ],
+      "scenario_clue": "\"run every day\" and \"as your own account, which holds Security Administrator\" - an autonomous process should have its own scoped identity.",
+      "misconception": "That an agent should run as the administrator who set it up."
     }
   ]
 }

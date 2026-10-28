@@ -188,8 +188,62 @@
       var c = cs.getPropertyValue('--d-' + id).trim() || '#888';
       var t = cs.getPropertyValue('--d-' + id + '-tint').trim() || 'transparent';
       return 'classDef d' + id + ' stroke:' + c + ',stroke-width:2px,fill:' + t + ';';
-    }).join('\n');
+    }).concat(flowClassDefs(cs)).join('\n');
   }
+
+  /* Flowchart outcomes, shared with flowcharts/: ":::stop" where a request is
+     refused, ":::ok" where it gets through, ":::warn" where it works with a
+     catch, ":::actor" for whoever starts it. The key under the diagram says
+     which is which in words. */
+  var FLOW_KEY = [
+    ['stop', 'red, the request stops here'],
+    ['ok', 'green, it gets through'],
+    ['warn', 'amber, it works with a catch']
+  ];
+  function flowClassDefs(cs) {
+    function v(n, d) { return cs.getPropertyValue(n).trim() || d; }
+    return FLOW_KEY.map(function (k) {
+      return 'classDef ' + k[0] + ' stroke:' + v('--flow-' + k[0], '#888') + ',stroke-width:3px,fill:' + v('--flow-' + k[0] + '-tint', 'transparent') + ';';
+    }).concat('classDef actor stroke:' + v('--d-00', '#888') + ',stroke-width:1.5px,stroke-dasharray:4 3,fill:' + v('--paper-raise', 'transparent') + ';');
+  }
+
+  function flowKey(src) {
+    var used = FLOW_KEY.filter(function (k) { return new RegExp(':::' + k[0] + '\\b').test(src); });
+    if (!used.length) return null;
+    var p = node('p', 'diagram__key');
+    used.forEach(function (k, i) {
+      var item = node('span', 'diagram__key-item');
+      item.appendChild(node('span', 'diagram__swatch diagram__swatch--' + k[0]));
+      item.appendChild(document.createTextNode((i ? '' : 'Outlines: ') + k[1] + (i < used.length - 1 ? ';' : '.')));
+      p.appendChild(item);
+    });
+    return p;
+  }
+
+  /* A flowchart from flowcharts/ is taller and wider than the lesson's own
+     diagrams. Shrink it to fit when that keeps at least 62% of its natural
+     size; otherwise show it at 70% (about 11px text) and scroll sideways.
+     Either way the key links to the larger copy on the Flowcharts page. */
+  function fitFlow(host) {
+    var svg = host.querySelector('svg');
+    var vb = svg && svg.viewBox && svg.viewBox.baseVal;
+    if (!vb || !vb.width) return;
+    var cs = getComputedStyle(host);
+    var room = host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if (room <= 0) return;
+    svg.style.maxWidth = 'none';
+    svg.style.minWidth = '0';
+    var w = vb.width;
+    svg.style.width = Math.round(w <= room ? w : (room / w >= 0.62 ? room : w * 0.7)) + 'px';
+  }
+  var fitTimer = null;
+  global.addEventListener('resize', function () {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(function () {
+      var hosts = document.querySelectorAll('.diagram[data-flow]');
+      for (var i = 0; i < hosts.length; i++) fitFlow(hosts[i]);
+    }, 150);
+  });
 
   /* Mermaid is optional. Vendor assets/js/vendor/mermaid.min.js and diagrams
      render; leave it out and a ```mermaid fence stays a readable code block.
@@ -250,6 +304,17 @@
               host.setAttribute('tabindex', '0');
               host.setAttribute('role', 'region');
               host.setAttribute('aria-label', 'Diagram: ' + (t ? t.textContent : 'illustration') + '. Scroll sideways on small screens.');
+              var key = flowKey(src);
+              var flow = code.textContent.match(/%% flowchart: ([\w-]+)/);
+              if (flow) {
+                host.dataset.flow = flow[1];
+                key = key || node('p', 'diagram__key');
+                var open = node('a', 'diagram__open', 'Open larger, with notes');
+                open.href = 'flowcharts/#' + flow[1];
+                key.appendChild(open);
+              }
+              if (key) host.appendChild(key);
+              if (flow) fitFlow(host);
             })
             .catch(function () { host.textContent = code.textContent; host.dataset.failed = 'true'; });
         } catch (e) {
@@ -435,7 +500,8 @@
   var VIEWS = {
     cost: 'Cost planner', readiness: 'Readiness', exam: 'Mock exam', cards: 'Flashcards',
     review: 'Retention review', preview: 'Verification watchlist', coverage: 'Objective coverage',
-    prep: 'Exam prep', domain: 'Domain review'
+    prep: 'Exam prep', domain: 'Domain review', compare: 'Compare controls', posters: 'Study posters',
+    cases: 'Case studies', drills: 'Break-fix drills'
   };
 
   function parseRoute() {
@@ -551,7 +617,7 @@
   /* #/module/01-01/check and friends: scroll to a stage once it exists. The
      knowledge check is filled asynchronously, so retry briefly. */
   function jumpTo(anchor) {
-    var id = /^(orient|learn|visualize|distinguish|practice|check|review)$/.test(anchor) ? 'stage-' + anchor : anchor;
+    var id = /^(orient|understand|learn|visualize|distinguish|practice|lens|check|review)$/.test(anchor) ? 'stage-' + anchor : anchor;
     var tries = 0;
     (function attempt() {
       var el = document.getElementById(id);
@@ -567,8 +633,8 @@
     var h1 = node('h1', null, 'SC500 Academy');
     contentEl.appendChild(h1);
     contentEl.appendChild(node('p', null,
-      'Twenty-two modules and labs for Exam SC-500, built from Microsoft Learn documentation. ' +
-      'Start with Module 0 - budget guardrails and just-in-time access - before creating any billable resource.'));
+      'Foundation primers, lessons and labs for Exam SC-500, built from Microsoft Learn documentation. ' +
+      'New to cloud? Start with Module 0A. Before any billable lab, do Module 0B: budget guardrails and just-in-time access.'));
 
     if (global.SC500Progress && global.SC500Progress.mountDashboard) {
       global.SC500Progress.mountDashboard(contentEl, manifest);

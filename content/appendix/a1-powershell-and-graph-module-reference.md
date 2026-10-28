@@ -163,7 +163,7 @@ Get-MgContext | Format-List Account, Scopes
 
 ```powershell
 # Directory role template IDs by display name - 01-01
-Get-AzDirectoryRoleTemplate -All | Where-Object DisplayName -in $roleNames
+Get-MgDirectoryRoleTemplate -All | Where-Object DisplayName -in $roleNames
 
 # Built-in authentication strengths - 01-01
 Get-MgPolicyAuthenticationStrengthPolicy -All | Where-Object DisplayName -eq 'Phishing-resistant MFA'
@@ -220,7 +220,7 @@ particularly in the metered labs.
 | `New-AzPolicyDefinition`, `New-AzPolicyAssignment` | Parameter shapes changed across recent Az major versions | 01-03, 04-01 |
 | `Get-AzAccessToken` | Returns a **SecureString** by default in newer versions; `-AsPlainText` availability varies | 02-02 |
 | `Set-AzStorageAccount -SasExpirationPeriod` | Parameter name and availability vary by `Az.Storage` version | 02-01 |
-| `Update-AzPolicyAuthorizationPolicy -DefaultUserRolePermissions` | Complex type - confirm whether partial updates merge or replace | 01-01 |
+| `Update-MgPolicyAuthorizationPolicy -DefaultUserRolePermissions` | Complex type - confirm whether partial updates merge or replace | 01-01 |
 | `Set-AzSqlServerAudit` | Parameter set has shifted | 02-02 |
 | `*-AzNetworkManager*` | Virtual Network Manager cmdlets have changed name and shape more than once | 02-03 |
 | Recovery Services **immutability** and **MUA** | Move between `Az.RecoveryServices` and `Az.DataProtection`; portal-driven in this guide | 01-03 |

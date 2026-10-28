@@ -20,12 +20,14 @@
         null,
         "Semantic caching reduces backend calls for repeated prompts. It does not separate one consumer's quota from another's.",
         "A circuit breaker protects against a failing backend. The problem here is one shared token counter."
-      ]
+      ],
+      "scenario_clue": "\"one application's runaway loop starves every other consumer\" - a shared token counter.",
+      "misconception": "That any token limit isolates consumers, whatever counter key it uses."
     },
     {
       "id": "03-03-q2",
       "sub_skill": "Configure and deploy AI Gateway in Azure API Management for Microsoft Foundry",
-      "prompt": "A requirement says oversized prompts must be rejected before they reach the model, so no backend cost is incurred. Which setting?",
+      "prompt": "Once a consumer has used up its token allowance, its further requests must be refused at the gateway rather than reaching the model and incurring backend cost. Which setting?",
       "options": [
         "Semantic caching with a low similarity threshold",
         "estimate-prompt-tokens on the llm-token-limit policy",
@@ -33,70 +35,78 @@
         "An llm-emit-token-metric dimension on prompt length"
       ],
       "answer": 1,
-      "explanation": "The token limit policy can precalculate prompt tokens at the gateway, so a request that already exceeds the limit never reaches the backend at all.",
+      "explanation": "With estimate-prompt-tokens set to true, llm-token-limit estimates prompt tokens from the API's prompt schema before forwarding, which can stop requests reaching the backend once the limit is already exceeded. Set to false, the policy counts from the model's response, so the request that pushes a consumer over the limit has already reached the model.",
       "why_not": [
         "Semantic caching answers repeated prompts from the cache. It does not reject oversized ones.",
         null,
         "A circuit breaker reacts to backend failures. It does not measure prompt size.",
         "Emitting a metric reports token usage after the fact. It rejects nothing."
-      ]
+      ],
+      "scenario_clue": "\"refused at the gateway rather than reaching the model\" - the gateway must estimate prompt tokens before forwarding.",
+      "misconception": "That a token limit can only react after the backend has already processed the request."
     },
     {
       "id": "03-03-q3",
-      "sub_skill": "Enable Defender for AI Service in Cloud Workload Protection in Defender for Cloud",
-      "prompt": "Your team enables content filters on a Foundry deployment and considers indirect prompt injection handled. Why is it not?",
+      "sub_skill": "Configure guardrails for agent security in Foundry",
+      "prompt": "Your team sets strict harm-category thresholds in the guardrail on a Foundry model deployment. A new agent built on that deployment has its own guardrail assigned, with no controls on tool responses. The team says indirect prompt injection arriving through the agent's tools is handled. Why is it not?",
       "options": [
-        "Content filters apply only to completions, never to prompts",
-        "Content filters govern harm categories in content; detecting instructions hidden in retrieved material is what Prompt Shields does",
-        "Content filters are disabled whenever groundedness detection is enabled",
-        "Indirect injection can only be addressed at the API Management gateway"
+        "Harm-category controls only scan completions, never prompts",
+        "Harm categories govern harmful content, not injected instructions; and the agent uses its own guardrail, which has no indirect attack control on the tool response intervention point",
+        "Agent guardrails are applied only after the model guardrail has already blocked the content",
+        "Indirect injection can only be detected at the API Management gateway"
       ],
       "answer": 1,
-      "explanation": "Prompt Shields detects the attack — direct and indirect injection attempts. Content filters govern the content. An injection carried in a retrieved document is not a harm-category problem, and treating it as one is how organisations conclude they have handled something they have not.",
+      "explanation": "Indirect attacks are a separate risk (Prompt Shields), not a harm category. And an agent with its own guardrail is governed by that guardrail alone - it fully overrides the model deployment's. Content returned by a tool is scanned only if the agent's guardrail has a control on the tool response intervention point.",
       "why_not": [
-        "The direction filters apply in is not the problem. An injection hidden in retrieved content is not a harm category, so content filters do not look for it.",
+        "Harm-category controls can scan user input and output. The gap is that injected instructions are not a harm category, and the agent's own guardrail has no tool response control.",
         null,
-        "Groundedness detection does not switch content filters off. The gap is that detecting injection is Prompt Shields' job.",
-        "Prompt Shields, in Foundry, is the control built to detect direct and indirect injection attempts. The gateway is not the only place to address it."
-      ]
+        "The agent's guardrail does not run after the model's - it fully replaces it for that agent. The model deployment's thresholds no longer apply to the agent.",
+        "The gateway's llm-content-safety policy is one place to check prompts, but tool responses inside an agent's orchestration are scanned by the agent's guardrail, at the tool response intervention point."
+      ],
+      "scenario_clue": "\"its own guardrail assigned\" and \"no controls on tool responses\" - the agent ignores the model's guardrail, and nothing scans what tools return.",
+      "misconception": "That strict content filtering on the model also protects an agent built on it against injected instructions."
     },
     {
       "id": "03-03-q4",
-      "sub_skill": "Configure guardrails for agent security in Foundry",
-      "prompt": "Defender for Cloud raises a prompt injection alert on a Foundry workload. The SOC asks what the prompt said. Under what configuration can you answer?",
+      "sub_skill": "Enable Defender for AI Service in Cloud Workload Protection in Defender for Cloud",
+      "prompt": "Defender for AI Services raises a jailbreak alert on a Foundry model deployment. The SOC asks what the prompt actually said. Under what configuration can you show them?",
       "options": [
-        "Always — alerts include the full prompt by default",
-        "Only if the suspicious prompt evidence extension was enabled; otherwise the alert exists and the content does not",
-        "Only if Microsoft Purview is connected to the subscription",
-        "Only if the workload uses API Management with request logging"
+        "Always - every alert includes the full prompt and response",
+        "Only if the plan's suspicious prompt evidence (user prompt evidence) component is on; otherwise the alert still fires but the prompt content is masked",
+        "Only if the data security for AI interactions component sends the prompts to Microsoft Purview",
+        "Only if API Management request logging was enabled in front of the model"
       ],
       "answer": 1,
-      "explanation": "Suspicious prompt evidence is an optional extension of the AI workloads plan, off by default. With it on, short redacted snippets of the triggering prompts surface in Defender XDR. Without it, the alert fires and the evidence was never captured.",
+      "explanation": "Suspicious prompt evidence adds redacted snippets of the suspicious parts of prompts and responses to each alert. With it off, Defender keeps analysing prompts and alerting, but the prompt content is masked in the alert.",
       "why_not": [
-        "Alerts do not include prompt content by default. Suspicious prompt evidence is an optional extension, off by default.",
+        "Alerts never carry the full conversation. Even with prompt evidence on, they contain redacted snippets of the suspicious segments.",
         null,
-        "Connecting Purview is not what captures this evidence. It comes from the AI workloads plan's suspicious prompt evidence extension.",
-        "The alert's own evidence comes from the suspicious prompt evidence extension. Without it, the alert fires with no prompt content attached."
-      ]
+        "The Purview component supports classification, audit and eDiscovery in Purview. The snippet inside the Defender alert comes from the suspicious prompt evidence component.",
+        "Gateway logs are a separate record you would have to build. The question is what the Defender alert itself can show, which depends on suspicious prompt evidence."
+      ],
+      "scenario_clue": "\"what the prompt actually said\" inside a Defender alert points to suspicious prompt evidence.",
+      "misconception": "That a detection alert automatically includes the evidence an investigator needs."
     },
     {
       "id": "03-03-q5",
       "sub_skill": "Monitor AI security by using the Data and AI security dashboard in Defender for Cloud",
-      "prompt": "A Foundry project sits in a subscription where the AI workloads plan has never been enabled. What does Defender for Cloud know about it?",
+      "prompt": "A subscription has Defender CSPM enabled but has never enabled Defender for AI Services. A Foundry resource in it is targeted by repeated jailbreak attempts. What will the Data and AI security dashboard show?",
       "options": [
-        "Everything — discovery is automatic once Defender for Cloud is enabled",
-        "Nothing; discovery of AI services is a consequence of enabling the plan, so the workload does not appear in the Data and AI security dashboard",
-        "Its configuration but not its runtime behaviour",
-        "Only its attack paths, from the cloud security graph"
+        "The jailbreak attempts as alerts, because Defender CSPM includes AI threat detection",
+        "The Foundry resource under AI discovery with its posture and recommendations, but no AI threat protection alerts, because runtime detection comes from Defender for AI Services",
+        "Nothing at all - AI resources are only discovered when Defender for AI Services is on",
+        "Only the attack attempts, with no inventory, because posture needs Defender for AI Services"
       ],
       "answer": 1,
-      "explanation": "Enabling the plan is what triggers discovery of Microsoft Foundry, Azure OpenAI and Azure Machine Learning resources, with results appearing in the Data and AI security dashboard within minutes. Without it, the workload is entirely unmonitored.",
+      "explanation": "Discovery and posture for AI resources come from Defender CSPM (AI security posture management). Runtime threat detection comes from Defender for AI Services. The dashboard reflects the plans enabled, so the resource appears but the attacks go undetected.",
       "why_not": [
-        "Enabling Defender for Cloud alone does not discover AI services. Discovery is triggered by enabling the AI workloads plan.",
+        "Defender CSPM provides discovery, recommendations and attack paths for AI resources. It does not inspect prompts at runtime.",
         null,
-        "Without the plan the workload is not discovered as an AI workload at all, so it does not appear in the Data and AI security dashboard.",
-        "The plan is what triggers discovery of AI services. Without it, Defender for Cloud has no AI-specific view of the workload."
-      ]
+        "AI discovery is part of Defender CSPM. The resource appears; what is missing is runtime threat detection.",
+        "It is the other way round: CSPM supplies the inventory and posture, and the missing plan is the one that would supply alerts."
+      ],
+      "scenario_clue": "\"Defender CSPM enabled but ... never enabled Defender for AI Services\" - posture yes, runtime detection no.",
+      "misconception": "That AI discovery and AI threat detection come from the same plan."
     }
   ]
 }

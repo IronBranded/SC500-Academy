@@ -41,7 +41,7 @@ from the moment provisioning completes, independent of traffic, queries or promp
 
 | Resource | Module | Notes |
 | --- | --- | --- |
-| **Security Copilot SCUs** | [04-05](../04-security-posture/04-05-security-copilot.md) | **Highest in the guide by a wide margin.** Bills hourly while provisioned, used or not |
+| **Security Copilot SCUs** | [04-05](../04-security-posture/04-05-security-copilot.md) | **Highest in the guide by a wide margin** if you provision. Bills hourly while provisioned, used or not. Microsoft 365 E5/E7 include 400 SCUs a month per 1,000 licences in an auto-provisioned default capacity |
 | **Azure Firewall** | [02-04](../02-storage-databases-networking/02-04-private-access-and-perimeter.md) | Hourly plus per-GB data processing |
 | **Application Gateway WAF v2** | [03-06](../03-secure-compute/03-06-app-platform-serverless-web-and-apis.md) | Hourly plus capacity units |
 | **Azure Bastion** | [03-04](../03-secure-compute/03-04-servers-and-virtual-machines.md) | Hourly per host plus outbound data |
@@ -50,7 +50,7 @@ from the moment provisioning completes, independent of traffic, queries or promp
 | **Virtual WAN hub / VPN gateway** | [02-03](../02-storage-databases-networking/02-03-network-segmentation-and-connectivity.md) | Walkthrough-only in this guide for exactly this reason |
 | **Virtual machines while allocated** | 02-03, 03-04, 03-05, 04-01, 04-03 | Stopped is not deallocated |
 | **Public IP addresses** | several | Bill separately and survive the resource they were attached to |
-| **Defender EASM** | [04-01](../04-security-posture/04-01-defender-for-cloud-posture.md) | **Per asset in inventory** - a broad seed can return thousands |
+| **Defender EASM** | [04-01](../04-security-posture/04-01-defender-for-cloud-posture.md) | 30-day trial, then **per Approved Inventory asset** - a broad seed can auto-approve thousands |
 
 ## 2. Subscription-scope settings that survive resource group deletion
 
@@ -101,11 +101,11 @@ Not costs, but they will block a re-run and occasionally keep charging.
 | 02-04 Perimeter | **HIGH** | **Azure Firewall, hourly** |
 | 03-01 AI data exposure | **$0** | M365 E5 only |
 | 03-02 Agent governance | **$0** | Licensing-gated, not cost-gated |
-| 03-03 AI platform | Medium-HIGH | **API Management, hourly**; AI workloads plan |
+| 03-03 AI platform | Medium-HIGH | **API Management, hourly**; Defender for AI Services plan (30-day trial capped by tokens scanned) |
 | 03-04 Servers and VMs | **HIGH** | **Bastion + Defender for Servers P2 + VM, three meters** |
-| 03-05 Containers | Medium-HIGH | **AKS node pool, continuous**; Defender for Containers per vCore-hour |
+| 03-05 Containers | Medium-HIGH | **AKS node pool, continuous**; Defender for Containers, by protected cluster capacity (unit on the pricing page) |
 | 03-06 Serverless, web, APIs | Medium | **Application Gateway WAF v2**; APIM |
-| 04-01 Defender for Cloud posture | Medium | Defender CSPM; **EASM per asset** |
+| 04-01 Defender for Cloud posture | Medium | Defender CSPM; **EASM per Approved Inventory asset** |
 | 04-02 Sentinel workspace | Low | Ingestion only - **set the daily cap first** |
 | 04-03 Connectors and collection | Medium | **Ingestion. The module where cost can run away** |
 | 04-04 Automation, retention, audit | Low | Logic Apps consumption; **search jobs and restores have minimums** |
@@ -131,8 +131,10 @@ making them expensive.
 
 | Capability | Requires | Blocks |
 | --- | --- | --- |
-| **Microsoft Entra Private Access** | Microsoft Entra Suite or standalone Global Secure Access | One of five sub-objectives in [02-04](../02-storage-databases-networking/02-04-private-access-and-perimeter.md) |
-| **Conditional Access for agents** | **Microsoft Agent 365** per user, plus Entra ID P1/P2 | Part of [03-02](../03-secure-compute/03-02-ai-agent-identity-and-governance.md) |
+| **Microsoft Entra Private Access** | Microsoft Entra Private Access (standalone) or Microsoft Entra Suite (included in Microsoft 365 E7), with Entra ID P1/P2 as a prerequisite. Not in Microsoft 365 E5 | One of five sub-objectives in [02-04](../02-storage-databases-networking/02-04-private-access-and-perimeter.md) |
+| **Conditional Access for agents** | **Microsoft 365 E7**, or **Microsoft Agent 365** with at least Entra ID P1 or Microsoft 365 E3 | Part of [03-02](../03-secure-compute/03-02-ai-agent-identity-and-governance.md) |
+| **Defender security for Copilot Studio and Foundry agents** (discovery, posture, threat detection, real-time protection) | **Microsoft Agent 365** from 1 July 2026 (no longer covered by Defender for Cloud Apps or Defender for Cloud licences) | Parts of 03-02 and 03-03 |
+| **Generative-orchestration Copilot Studio agents** | Microsoft 365 Copilot, a Copilot Studio licence or pay-as-you-go, or the Copilot Studio trial (build and test, no publishing). E5 includes only the Teams plan (classic agents) | Part of 03-02 |
 | **Network controls for agents** | Microsoft Entra Internet Access | Part of 03-02 |
 | **SharePoint permission-state snapshot reports, RCD, RAC** | **SharePoint Advanced Management** - unlocked automatically if **anyone** in the tenant holds a Microsoft 365 Copilot licence, otherwise a paid add-on | Parts of [03-01](../03-secure-compute/03-01-ai-data-exposure-and-purview-dspm.md) |
 | **Everything in Domains 2, 3 (Azure) and 4** | A companion **Azure subscription** | Most of the guide |
@@ -144,7 +146,7 @@ deliverable, rather than being skipped or pretended around.
 
 | Instead of | Use | Where |
 | --- | --- | --- |
-| Defender CSPM | **Foundational CSPM** - free, but **opt-in for new subscriptions from 27 Oct 2026** | 04-01 |
+| Defender CSPM | **Foundational CSPM** - free, and on by default for subscriptions onboarded to Defender for Cloud | 04-01 |
 | A dedicated Bastion host | The lowest Bastion tier available in your region | 03-04 |
 | General-purpose VM SKUs | **B-series burstable**, one node, smallest size | 02-03, 03-04, 03-05 |
 | SQL Managed Instance | **Azure SQL Database serverless with auto-pause.** Never deploy MI in a self-funded lab | 02-02 |

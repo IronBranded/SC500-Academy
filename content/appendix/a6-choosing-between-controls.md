@@ -397,8 +397,9 @@ The rest of the AI surface:
 > the verb. *Block* is guardrails. *Alert and investigate* is Defender. *Limit, meter, or inspect
 > centrally across many apps* is the APIM gateway. *Discover what data is exposed* is Purview.
 >
-> Second trap: user prompt evidence in Defender for AI services is **opt-in**, because it surfaces
-> portions of real prompts. Expect at least one privacy-flavoured stem about who can see that.
+> Second trap: user prompt evidence in Defender for AI services is a **deliberate choice**, because
+> it surfaces (redacted) portions of real prompts in alerts. With it off, alerts still fire but the
+> prompt content is masked. Expect at least one privacy-flavoured stem about who can see that.
 
 ---
 

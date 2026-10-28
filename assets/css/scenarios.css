@@ -1,0 +1,277 @@
+/* scenarios.css - SC-500 guide
+   Case studies (#/cases) and break-fix drills (#/drills). Builds on the
+   knowledge-check card (.kc, learn.css) and the domain card (.dcard), so
+   only what is new lives here. Colour never carries meaning alone: marked
+   rows and lines also gain a word ("Proof", "Your pick"). */
+
+.crumb { margin: 0 0 var(--s-2); font-size: var(--t-sm); }
+.crumb a { color: var(--ink-soft); }
+
+.scen-meta,
+.scen-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--ink-soft);
+}
+.scen-meta { margin-bottom: var(--s-3); }
+.case-badges { display: inline-flex; flex-wrap: wrap; gap: var(--s-1); }
+.scen-card__state { margin: 0; font-size: var(--t-sm); color: var(--ink-faint); }
+.scen-card__state[data-state="solved"] { color: var(--state-done); }
+.scen-card__state[data-state="review"] { color: var(--state-review); }
+.scen-card p { margin: 0; }
+
+/* ------------------------------------------------------------ case file */
+
+.case-file {
+  margin: var(--s-4) 0 var(--s-5);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+  max-width: 52rem;
+}
+.case-file__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  padding: 0 var(--s-3);
+}
+.case-file__tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  padding: var(--s-3) var(--s-3) calc(var(--s-3) - 2px);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.case-file__tab:hover { color: var(--ink); }
+.case-file__tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.case-file__tab:focus-visible { outline: var(--focus); outline-offset: -2px; }
+.case-file__panel { padding: var(--s-4) var(--s-5); }
+.case-file__panel:focus-visible { outline: var(--focus); outline-offset: -2px; }
+.case-file__panel p { margin: 0; max-width: var(--measure); }
+.case-file__list { margin: 0; padding-left: 1.2rem; display: grid; gap: var(--s-2); }
+
+.case-reqs {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s-2) var(--s-3);
+  margin: 0;
+}
+.case-reqs dt {
+  font-family: var(--face-mono);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--accent-deep);
+}
+.case-reqs dd { margin: 0; max-width: var(--measure); }
+
+/* ------------------------------------------------------------ questions */
+
+.case-q__reqs {
+  list-style: none;
+  margin: 0 0 var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border-left: 3px solid var(--d, var(--accent));
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  display: grid;
+  gap: var(--s-1);
+  font-size: var(--t-sm);
+  color: var(--ink-soft);
+}
+.case-q__reqs strong { font-family: var(--face-mono); color: var(--ink); }
+
+.case-q__slots { display: grid; gap: var(--s-3); }
+.case-slot {
+  display: grid;
+  grid-template-columns: minmax(10rem, 16rem) 1fr;
+  gap: var(--s-2) var(--s-3);
+  align-items: center;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+}
+.case-slot__label { font-weight: 600; font-size: var(--t-sm); }
+.case-slot__select {
+  width: 100%;
+  min-width: 0;
+  padding: var(--s-2);
+  font: inherit;
+  font-size: var(--t-sm);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.case-slot__select:focus-visible { outline: var(--focus); outline-offset: 2px; }
+.case-slot[data-mark="correct"] { border-color: var(--state-done); }
+.case-slot[data-mark="picked-wrong"] { border-color: var(--state-review); border-style: dashed; }
+
+.case-q__slotfb { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.case-q__slotfb li { padding-left: var(--s-3); border-left: 3px solid var(--state-done); }
+.case-q__slotfb li[data-mark="wrong"] { border-left-color: var(--state-review); }
+.case-q__why { color: var(--ink-soft); }
+
+/* -------------------------------------------------------- design review */
+
+.case-design,
+.drill-done {
+  margin: var(--s-6) 0 var(--s-5);
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raise);
+  max-width: 52rem;
+}
+.case-design h2,
+.drill-done h2 { margin-top: 0; }
+.case-design__out:not(:empty) { margin-top: var(--s-4); }
+.case-design__score { font-weight: 600; }
+.case-design__conflicts { padding-left: 0; list-style: none; display: grid; gap: var(--s-2); }
+.case-design__conflicts li {
+  padding: var(--s-2) var(--s-3);
+  border-left: 3px solid var(--call-warn);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.case-design__conflicts li::before { content: "Conflict: "; font-weight: 700; color: var(--ink); }
+.case-design__ref { margin-top: var(--s-3); }
+.case-design__ref > summary { cursor: pointer; color: var(--ink-soft); }
+
+.scen-sources { max-width: 52rem; }
+.scen-sources__list { font-size: var(--t-sm); overflow-wrap: anywhere; }
+
+/* ----------------------------------------------------------------- drills */
+
+.drill-ticket { max-width: 52rem; margin-bottom: var(--s-5); }
+.drill-ticket__from { margin: 0 0 var(--s-2); font-size: var(--t-sm); color: var(--ink-soft); }
+.drill-ticket__text {
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border-left: 4px solid var(--d, var(--accent));
+  background: var(--paper-raise);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  font-size: var(--t-md);
+  line-height: 1.5;
+}
+
+/* .content h2 adds a large top margin and a rule; inside a step card the
+   step title sits directly under its "Step n of 4" label instead. */
+.content .drill-step__title { margin: 0 0 var(--s-3); padding: 0; border: 0; font-size: var(--t-lg); }
+.drill-step__title:focus { outline: none; }
+.drill-step__title:focus-visible { outline: var(--focus); outline-offset: 2px; }
+
+.drill-evidence { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+.drill-art { margin: 0; min-width: 0; }
+.drill-art__cap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+.drill-art__note {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  border: 1px solid var(--rule);
+  border-radius: 99px;
+  padding: 0 0.5em;
+}
+
+.drill-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+  overflow-wrap: normal;   /* .kc breaks anywhere; evidence words must stay whole */
+  word-break: normal;
+}
+td > .drill-line__tag { margin: 0 var(--s-2) var(--s-1) 0; }
+.drill-table th,
+.drill-table td {
+  text-align: left;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.drill-table th { font-size: var(--t-xs); font-weight: 600; color: var(--ink-faint); }
+.drill-table td.drill-pick,
+.drill-table th.drill-pick { width: 2.25rem; padding-right: 0; }
+
+.drill-log {
+  list-style: none;
+  margin: 0;
+  padding: var(--s-2) 0;
+  background: var(--paper-sink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+.drill-log li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-1) var(--s-3);
+}
+.drill-log code {
+  font-family: var(--face-mono);
+  font-size: var(--t-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: none;
+  padding: 0;
+}
+.drill-line input { margin: 0.3em 0 0; flex: none; accent-color: var(--accent-fill); }
+.drill-line:has(input:checked) { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.drill-line[data-mark="correct"] { box-shadow: inset 4px 0 0 var(--state-done); }
+.drill-line[data-mark="picked-wrong"] { box-shadow: inset 4px 0 0 var(--state-review); }
+/* Text in --ink for contrast on every surface; the state colour is the
+   border, alongside the word itself. */
+.drill-line__tag {
+  display: inline-block;
+  margin-left: var(--s-2);
+  padding: 0 0.45em;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  color: var(--ink);
+  border: 2px solid var(--state-done);
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.drill-line[data-mark="picked-wrong"] .drill-line__tag { border-color: var(--state-review); border-style: dashed; }
+
+.drill-done__takeaway {
+  padding: var(--s-3);
+  border-left: 3px solid var(--d, var(--accent));
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+@media (max-width: 640px) {
+  .case-slot { grid-template-columns: 1fr; }
+  .case-reqs { grid-template-columns: 1fr; gap: 0 0; }
+  .case-reqs dd { margin-bottom: var(--s-3); }
+  .case-file__panel, .case-design, .drill-done { padding-left: var(--s-4); padding-right: var(--s-4); }
+}
+
+@media print {
+  .case-file__tabs, .kc__actions, .case-design .btn { display: none !important; }
+  .case-file__panel[hidden] { display: block !important; }
+}
+
+/* learn.css turns .table-scroll overflow off on narrow screens because its
+   tables stack into cards there. Evidence tables don't stack: keep them
+   scrolling inside their own box. */
+.content .drill-art .table-scroll { overflow-x: auto; margin-bottom: 0; }

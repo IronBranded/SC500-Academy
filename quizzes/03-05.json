@@ -20,7 +20,9 @@
         null,
         "Defender does see process activity on VMs. The point is that on a VM, installing things is normal.",
         "Binaries can be changed inside a running container - that is exactly what drift detection catches. The argument is that doing so is never the legitimate path, whereas on a VM it often is."
-      ]
+      ],
+      "scenario_clue": "\"stronger signal inside a container\" - the container's definition (exactly its image) is what makes it work.",
+      "misconception": "That binary drift is strong because of the sensor, rather than because of what a container is."
     },
     {
       "id": "03-05-q2",
@@ -42,7 +44,9 @@
         null,
         "Microsoft Defender Vulnerability Management covers language packages as well as OS packages.",
         "Assessing running images is not an admission-time check. It depends on the prerequisites above, and on the image's registry being scanned at all."
-      ]
+      ],
+      "scenario_clue": "\"running workload\" versus \"registry shows its source image as clean\" - two different scan surfaces.",
+      "misconception": "That a clean registry scan means the running cluster is clean."
     },
     {
       "id": "03-05-q3",
@@ -64,12 +68,14 @@
         null,
         "Authorised IP ranges restrict where the API server can be reached from. They do not explain why the engineer's credential still works.",
         "AcrPull on the kubelet identity lets nodes pull images. It gives an engineer no kubectl access."
-      ]
+      ],
+      "scenario_clue": "\"Entra integration and Kubernetes RBAC enabled\" and \"left the company\" - a non-Entra path, or permissions not held in Azure.",
+      "misconception": "That enabling Entra integration removes every other way into the cluster."
     },
     {
       "id": "03-05-q4",
       "sub_skill": "Implement and configure security controls for Azure Container Registry",
-      "prompt": "A pipeline authenticates to Azure Container Registry with the admin account. What is wrong, and what replaces it?",
+      "prompt": "A build pipeline authenticates to Azure Container Registry with the admin account, which someone enabled last year. What is wrong, and what replaces it?",
       "options": [
         "Nothing — the admin account is the supported automation path",
         "It is a single shared credential with push rights and no identity behind it; disable it and use Entra with AcrPush for the pipeline and AcrPull on the cluster's kubelet identity",
@@ -77,13 +83,15 @@
         "It should be replaced with an anonymous pull token"
       ],
       "answer": 1,
-      "explanation": "The admin account is the storage account key problem from 02-01 in a different costume. Entra authentication with AcrPull and AcrPush role assignments removes the shared credential, and attaching the registry to AKS grants AcrPull to the kubelet identity so no registry credential exists anywhere.",
+      "explanation": "The admin account is disabled by default for a reason: it is one shared credential with registry-wide push and pull rights and no identity behind it. Disable it again, give the pipeline a Microsoft Entra identity with AcrPush, and grant AcrPull to the AKS kubelet identity so no registry credential exists anywhere.",
       "why_not": [
         "The admin account is a single shared credential with push rights and no identity behind it - the storage account key problem again.",
         null,
         "It is no better for pipelines. Every holder shares one credential with push rights and no identity.",
         "Anonymous pull removes authentication altogether. The goal is an identity behind every caller."
-      ]
+      ],
+      "scenario_clue": "\"admin account\" in a pipeline - a shared credential with push rights.",
+      "misconception": "That a registry's built-in admin account is the normal automation path."
     },
     {
       "id": "03-05-q5",
@@ -102,7 +110,9 @@
         null,
         "The sensor detects at runtime, after the pod exists. Admission control is the only place to stop creation.",
         "Admission control happens at the cluster's API server, not in the container registry."
-      ]
+      ],
+      "scenario_clue": "\"guarantee ... can ever be created\" and \"regardless of what a developer submits\" - prevention at admission, with deny.",
+      "misconception": "That runtime detection or network policy can stop a pod from being created."
     },
     {
       "id": "03-05-q6",
@@ -121,7 +131,9 @@
         null,
         "External ingress is still internet-reachable, and the ACR admin account is a shared credential.",
         "Internal ingress is right, but the ACR admin account is still a stored, shared credential."
-      ]
+      ],
+      "scenario_clue": "\"no credential stored anywhere\" and \"not reachable from the internet\" - managed identity and internal ingress.",
+      "misconception": "That an IP allow-list or a non-public app makes a shared credential acceptable."
     }
   ]
 }
