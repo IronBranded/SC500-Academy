@@ -115,6 +115,25 @@ records the outline check and every factual correction.
 - `docs/STYLE-GUIDE.md`, `docs/CONTRIBUTING.md`, `docs/BUILD-PROMPT.md`,
   `docs/SYLLABUS.md` and the README updated for the new anatomy.
 
+### Fixed - site
+
+- **A deploy did not show until the second or third reload** (`sw.js`, `sc500-v9`).
+  The service worker served its cache first and refreshed behind, so the first load
+  after every push ran the new `index.html` with the old scripts and lessons: the
+  posters, the flowcharts and the new nav links looked missing. Reproduced against a
+  GitHub Pages stand-in (same `/SC500-Academy/` path, HTTPS, 10-minute caching): two
+  stale loads after a deploy. The worker is now network first with a 4-second
+  fallback to the cache, so online readers always get one consistent version and the
+  precache still serves the whole guide offline. Checked: a later deploy shows on the
+  first load, and lessons and posters still open offline. The switch from `sc500-v8`
+  itself still takes one extra reload, because the old worker handles that load.
+- **The posters were hard to find.** They were linked only from the sidebar's
+  Practice section. They are now on the dashboard's study tools row too, and each card
+  on `#/posters` shows a front and back preview (`posters/preview/`, written by
+  `tools/render-posters.js`; `--previews` renders them without touching the PDFs).
+  The README has a **Study posters** gallery as well: each poster's front, linked to
+  its PDF and print page, plus the all-in-one PDF and printing notes.
+
 ### Fixed - content corrected against Microsoft Learn
 
 Full list with sources in `docs/OBJECTIVE-VALIDATION.md` §6. Highlights:

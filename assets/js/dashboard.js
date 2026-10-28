@@ -429,6 +429,7 @@
      ['Compare controls', '#/compare', 'The look-alike controls, answered on the same nine questions'],
      ['Case studies', '#/cases', 'One design, many requirements: find the conflicts'],
      ['Break-fix drills', '#/drills', 'A ticket and the evidence: find the cause, fix it, prove it'],
+     ['Study posters', '#/posters', 'Five printable two-sided posters: which control, who wins, AI, posture, operations'],
      ['Exam prep', '#/prep', 'Review by domain, objective, wrong answers and bookmarks'],
      ['Mock exam', '#/exam', 'Timed, weighted, mixed across every quiz'],
      ['Flashcards', '#/cards', 'Distinctions, spaced repetition'],

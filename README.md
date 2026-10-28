@@ -51,6 +51,7 @@ for AZ-500, appendix A5 shows what changed.
   - [Domain 4: Security Posture & Monitoring](#domain-4--security-posture--monitoring-2025-of-the-exam)
   - [Appendices](#appendices)
   - [Study tools](#study-tools)
+  - [Study posters](#study-posters)
 - [A study plan that works](#a-study-plan-that-works)
 - [About the labs](#about-the-labs)
 - [Before exam day](#before-exam-day)
@@ -227,7 +228,7 @@ cleanup checklist every later lab uses. Do it before creating anything billable.
 | [Flowcharts](https://ironbranded.github.io/SC500-Academy/flowcharts/) | Twenty flowcharts of the controls working together: nine requests step by step with yes/no decisions (an admin change, an app reading a secret, a request through WAF and API Management, VM egress through Azure Firewall, an AI agent calling a tool), four *which control?* decision trees, and five *who wins?* evaluation orders (Conditional Access, NSGs, Azure Policy, Azure Firewall, Key Vault and Storage data access). Each lists what to remember and the lessons that teach it, and 17 of them also appear inside those lessons |
 | [Case studies](https://ironbranded.github.io/SC500-Academy/#/cases) | Four organisations, each with an environment, numbered requirements and several exam-style questions about one design (single answer, choose two, drop-down lists). **Review my design** shows where your answers conflict with each other |
 | [Break-fix drills](https://ironbranded.github.io/SC500-Academy/#/drills) | Eight broken configurations on paper: read the ticket and the evidence, pick the line that proves the cause, then choose the cause, the fix and how to prove it worked |
-| [Study posters](https://ironbranded.github.io/SC500-Academy/#/posters) | Five two-sided tabloid posters (17 × 11 in), each with its own header colour: which control, who wins, the AI security stack, posture and monitoring, and the portal paths and PowerShell to build, revoke, disable and clean up. PDFs in `posters/pdf/` |
+| [Study posters](https://ironbranded.github.io/SC500-Academy/#/posters) | Five two-sided tabloid posters (17 × 11 in), each with its own header colour and a front and back preview on its card: which control, who wins, the AI security stack, posture and monitoring, and the portal paths and PowerShell to build, revoke, disable and clean up. Previews and PDFs [below](#study-posters) |
 | [Objective coverage](https://ironbranded.github.io/SC500-Academy/#/coverage) | Every official sub-objective, and the lesson, comparisons, lab, questions and foundation primers that cover it |
 | [Cost planner](https://ironbranded.github.io/SC500-Academy/#/cost) | Every lab, ordered by what it costs to run |
 | [Verification watchlist](https://ironbranded.github.io/SC500-Academy/#/preview) | Lessons covering preview features, or due for a fresh check against the documentation |
@@ -236,6 +237,57 @@ The Academy works offline after your first visit. Your progress stays in your br
 only, so export it from the dashboard before you switch devices. Nothing on the site
 predicts a pass. It shows what you have actually done, because the exam is scaled, and
 a single percentage would hide exactly the gaps you need to see.
+
+### Study posters
+
+Five two-sided study posters, one per exam theme. Select a poster to open its PDF.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/01-which-control.pdf"><img src="posters/preview/01-which-control-front.jpg" width="100%" alt="Poster 1, Which control?: open the PDF"></a>
+      <p><b>1. Which control?</b> <sub>All four domains</sub><br>
+      Nineteen decisions SC-500 is built around, each with the scenario words that select it and the wrong answer it tempts. The back is a phrase-to-control decoder for every domain.<br>
+      Open the <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/01-which-control.pdf">PDF</a> (front and back) or the <a href="https://ironbranded.github.io/SC500-Academy/posters/01-which-control.html">print page</a>.</p>
+    </td>
+    <td width="50%" valign="top">
+      <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/02-who-wins.pdf"><img src="posters/preview/02-who-wins-front.jpg" width="100%" alt="Poster 2, Who wins?: open the PDF"></a>
+      <p><b>2. Who wins?</b> <sub>All four domains</sub><br>
+      Evaluation order and precedence, from Conditional Access to Azure SQL. The back follows a packet, a request and an alert, and shows which controls block and which only alert.<br>
+      Open the <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/02-who-wins.pdf">PDF</a> (front and back) or the <a href="https://ironbranded.github.io/SC500-Academy/posters/02-who-wins.html">print page</a>.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/03-ai-security-stack.pdf"><img src="posters/preview/03-ai-security-stack-front.jpg" width="100%" alt="Poster 3, The AI security stack: open the PDF"></a>
+      <p><b>3. The AI security stack</b> <sub>Objective 3.1</sub><br>
+      Where each security-for-AI control acts, from who asks to what data is read, and one indirect prompt injection with five places to stop it. The back shows how each control behaves.<br>
+      Open the <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/03-ai-security-stack.pdf">PDF</a> (front and back) or the <a href="https://ironbranded.github.io/SC500-Academy/posters/03-ai-security-stack.html">print page</a>.</p>
+    </td>
+    <td width="50%" valign="top">
+      <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/04-posture-and-monitoring.pdf"><img src="posters/preview/04-posture-and-monitoring-front.jpg" width="100%" alt="Poster 4, Posture and monitoring: open the PDF"></a>
+      <p><b>4. Posture and monitoring</b> <sub>Domain 4</sub><br>
+      Defender for Cloud: foundational CSPM against Defender CSPM, workload protection plans, compliance and attack paths. The back covers Sentinel, Purview Audit and Security Copilot.<br>
+      Open the <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/04-posture-and-monitoring.pdf">PDF</a> (front and back) or the <a href="https://ironbranded.github.io/SC500-Academy/posters/04-posture-and-monitoring.html">print page</a>.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/05-operate-it.pdf"><img src="posters/preview/05-operate-it-front.jpg" width="100%" alt="Poster 5, Operate it: open the PDF"></a>
+      <p><b>5. Operate it</b> <sub>All four domains</sub><br>
+      Nine portals, which PowerShell module talks to what, and the portal path beside each command. The back shows how to revoke, disable or isolate each thing, and what that leaves running.<br>
+      Open the <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/05-operate-it.pdf">PDF</a> (front and back) or the <a href="https://ironbranded.github.io/SC500-Academy/posters/05-operate-it.html">print page</a>.</p>
+    </td>
+    <td width="50%" valign="top">
+      <p><b>All five in one file</b><br>
+      <a href="https://ironbranded.github.io/SC500-Academy/posters/pdf/sc500-posters-all.pdf">Download all five (PDF, 10 pages)</a></p>
+      <p><b>Printing</b><br>
+      Tabloid, 17 × 11 in landscape, double-sided and flipped on the short edge: one sheet per poster.
+      For A3 or Letter, choose <i>fit to page</i>; A3 keeps the text readable, Letter shrinks it to about two thirds.</p>
+      <p>Every claim was checked against Microsoft Learn on 20 October 2026. The posters summarise; the lessons teach.</p>
+    </td>
+  </tr>
+</table>
 
 ---
 

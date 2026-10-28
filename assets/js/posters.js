@@ -3,8 +3,9 @@
    (17 x 11 in) PDF with its own header colour.
 
    The posters are generated pages in posters/ (HTML + poster.css), rendered
-   to posters/pdf/ by tools/render-posters.js. This view only lists them; it
-   does not load the PDFs. Every claim on them was checked against Microsoft
+   to posters/pdf/ and to small previews in posters/preview/ by
+   tools/render-posters.js. This view shows the previews and links the PDFs;
+   it does not load the PDFs. Every claim on them was checked against Microsoft
    Learn on the date in CHECKED - see docs/OBJECTIVE-VALIDATION.md. */
 
 (function (global) {
@@ -85,6 +86,27 @@
       head.appendChild(h);
       head.appendChild(node('span', 'dcard__weight poster-card__scope', p.ids));
       card.appendChild(head);
+
+      /* Both sides at a glance. Each preview opens the full-size page. */
+      var previews = node('div', 'poster-card__previews');
+      ['front', 'back'].forEach(function (side) {
+        var fig = node('figure', 'poster-card__preview');
+        var a = link('poster-card__thumb', 'posters/' + p.slug + '.html', null);
+        a.target = '_blank';
+        a.rel = 'noopener';
+        var img = node('img');
+        img.src = 'posters/preview/' + p.slug + '-' + side + '.jpg';
+        img.width = 800;
+        img.height = 518;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.alt = (side === 'front' ? 'Front' : 'Back') + ' of poster ' + p.n + ', ' + p.title + ': open it full size';
+        a.appendChild(img);
+        fig.appendChild(a);
+        fig.appendChild(node('figcaption', null, side === 'front' ? 'Front' : 'Back'));
+        previews.appendChild(fig);
+      });
+      card.appendChild(previews);
 
       var dl = node('dl', 'poster-card__sides');
       dl.appendChild(node('dt', null, 'Front'));

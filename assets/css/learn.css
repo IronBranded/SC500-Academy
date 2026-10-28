@@ -1014,3 +1014,10 @@
 .content .poster-card__sides dt { font-weight: 650; color: var(--ink-soft); }
 .content .poster-card__sides dd { margin: 0; color: var(--ink); }
 .poster-card__swatch { box-shadow: 0 0 0 1px var(--rule); }
+/* Front and back previews (posters/preview/, made by tools/render-posters.js). */
+.content .poster-card__previews { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: var(--s-3) 0; }
+.content .poster-card__preview { margin: 0; display: grid; gap: var(--s-1); }
+.content .poster-card__preview figcaption { font-size: var(--t-xs); color: var(--ink-faint); }
+.poster-card__thumb { display: block; border-radius: var(--radius); }
+.poster-card__thumb img { display: block; width: 100%; height: auto; aspect-ratio: 800 / 518; border: 1px solid var(--rule); border-radius: var(--radius); background: #fff; }
+.poster-card__thumb:hover img { border-color: var(--accent); }

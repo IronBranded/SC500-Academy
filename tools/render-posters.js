@@ -1,6 +1,8 @@
 /* render-posters.js - SC-500 Academy
    Renders every posters/NN-*.html to posters/pdf/NN-*.pdf: one 17 x 11 in
    (tabloid, landscape) page per .sheet, backgrounds printed, fonts embedded.
+   It also writes posters/preview/NN-*-front.jpg and -back.jpg, the small
+   images the #/posters page shows on each card (PREVIEW_WIDTH pixels wide).
 
    It also refuses to write a PDF that would cut content off: before printing,
    it measures every sheet, column and panel, and exits 1 if anything overflows
@@ -11,7 +13,8 @@
      npm install --no-save playwright@1.56.0
      npx playwright install chromium
      node tools/render-posters.js              (all posters)
-     node tools/render-posters.js 02           (one poster)          */
+     node tools/render-posters.js 02           (one poster)
+     node tools/render-posters.js --previews   (previews only, PDFs untouched) */
 
 'use strict';
 
@@ -23,19 +26,27 @@ const { pathToFileURL } = require('url');
 const ROOT = path.resolve(__dirname, '..');
 const DIR = path.join(ROOT, 'posters');
 const OUT = path.join(DIR, 'pdf');
+const PREVIEWS = path.join(DIR, 'preview');
+const PREVIEW_WIDTH = 800;
+const SIDES = ['front', 'back'];
 
 (async () => {
-  const only = process.argv[2];
+  const args = process.argv.slice(2);
+  const previewsOnly = args.includes('--previews');
+  const only = args.find(a => !a.startsWith('--'));
   const files = fs.readdirSync(DIR)
     .filter(f => /^\d\d-.+\.html$/.test(f))
     .filter(f => !only || f.startsWith(only))
     .sort();
   if (!files.length) { console.error('No posters/NN-*.html files found.'); process.exit(1); }
   fs.mkdirSync(OUT, { recursive: true });
+  fs.mkdirSync(PREVIEWS, { recursive: true });
 
   const launch = process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {};
   const browser = await chromium.launch(launch);
   const page = await browser.newPage({ viewport: { width: 1632, height: 1056 } });
+  /* Previews: the same sheet, scaled so one side is PREVIEW_WIDTH pixels wide. */
+  const thumbs = await browser.newPage({ viewport: { width: 1632, height: 1056 }, deviceScaleFactor: PREVIEW_WIDTH / 1632 });
   let failed = 0;
 
   for (const f of files) {
@@ -70,8 +81,16 @@ const OUT = path.join(DIR, 'pdf');
       continue;
     }
     const pdf = path.join(OUT, f.replace(/\.html$/, '.pdf'));
-    await page.pdf({ path: pdf, printBackground: true, preferCSSPageSize: true });
-    console.log(`ok    ${f} -> posters/pdf/${path.basename(pdf)}`);
+    if (!previewsOnly) await page.pdf({ path: pdf, printBackground: true, preferCSSPageSize: true });
+
+    await thumbs.goto(pathToFileURL(path.join(DIR, f)).href, { waitUntil: 'load' });
+    await thumbs.evaluate(() => document.fonts.ready);
+    await thumbs.emulateMedia({ media: 'print' });
+    const sheets = await thumbs.$$('.sheet');
+    for (let i = 0; i < sheets.length && i < SIDES.length; i++) {
+      await sheets[i].screenshot({ path: path.join(PREVIEWS, f.replace(/\.html$/, `-${SIDES[i]}.jpg`)), type: 'jpeg', quality: 82 });
+    }
+    console.log(`ok    ${f} -> ${previewsOnly ? '' : 'posters/pdf/' + path.basename(pdf) + ', '}${sheets.length} previews`);
   }
 
   await browser.close();

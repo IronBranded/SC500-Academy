@@ -20,18 +20,24 @@
      session could see assets swap under it; for a static study site that is
      acceptable, and the alternative is readers stuck on a stale version they
      have no way to notice.
-   - Cache-first for content, with a background revalidate. Study material that
-     loads instantly and is a day stale beats material that waits for a network
-     round trip.
+   - Network first for everything, the cache only when the network fails or
+     is slow (NETWORK_TIMEOUT_MS). The site used to serve its cache first and
+     refresh behind, which meant the first load after every deploy showed the
+     new index.html running the old scripts and lessons: a deploy looked like
+     it had not happened (the posters and flowcharts "missing") until a second
+     or third reload. Online, the reader now always gets one consistent
+     version; offline, the precache still serves the whole guide.
    - Navigations fall back to the cached shell, because the site is a hash
      router - every route is index.html.
 
    Bump CACHE_VERSION whenever the shell changes. Old caches are deleted on
    activate. */
 
-/* Bump on EVERY deploy that changes a JS or CSS file. Content is revalidated
-   in the background, but the shell is served cache-first. */
-var CACHE_VERSION = 'sc500-v8';
+/* Bump on every deploy, so the precache is rebuilt and old caches are deleted.
+   Online readers get the network copy either way. */
+var CACHE_VERSION = 'sc500-v9';
+/* Past this, a slow network (a train, a captive portal) gets the cached copy. */
+var NETWORK_TIMEOUT_MS = 4000;
 var SHELL = [
   './',
   'index.html',
@@ -140,31 +146,36 @@ self.addEventListener('fetch', function (event) {
   if (req.method !== 'GET') return;
   if (new URL(req.url).origin !== self.location.origin) return;
 
-  /* Hash routing means every navigation is index.html. */
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req).catch(function () {
-        return caches.match('index.html').then(function (hit) {
-          return hit || caches.match('./');
-        });
-      })
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(req).then(function (hit) {
-      var network = fetch(req).then(function (res) {
-        if (res && res.ok) {
-          var copy = res.clone();
-          caches.open(CACHE_VERSION).then(function (c) { c.put(req, copy); });
-        }
-        return res;
-      }).catch(function () { return hit; });
-
-      /* Cache first, refresh behind. A reader gets the page instantly and the
-         next visit gets whatever changed. */
-      return hit || network;
-    })
-  );
+  event.respondWith(networkFirst(req));
 });
+
+function fromCache(req) {
+  return caches.match(req).then(function (hit) {
+    if (hit || req.mode !== 'navigate') return hit;
+    /* Hash routing means every navigation is index.html. */
+    return caches.match('index.html').then(function (shell) {
+      return shell || caches.match('./');
+    });
+  });
+}
+
+function networkFirst(req) {
+  var network = fetch(req).then(function (res) {
+    if (res && res.ok && res.type === 'basic') {
+      var copy = res.clone();
+      caches.open(CACHE_VERSION).then(function (c) { c.put(req, copy); });
+    }
+    return res;
+  });
+  var slow = new Promise(function (resolve) {
+    setTimeout(function () { resolve('slow'); }, NETWORK_TIMEOUT_MS);
+  });
+  return Promise.race([network, slow]).then(function (res) {
+    if (res !== 'slow') return res;
+    /* Slow: answer from the cache if we can, otherwise keep waiting. */
+    return fromCache(req).then(function (hit) { return hit || network; });
+  }, function () {
+    /* Offline or the request failed outright. */
+    return fromCache(req).then(function (hit) { return hit || Response.error(); });
+  });
+}
